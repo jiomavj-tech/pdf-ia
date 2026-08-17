@@ -78,4 +78,12 @@ celular (ou copia o link no computador), e dá para adicionar à tela de início
 
 ## Licença
 
-MIT — veja [LICENSE](LICENSE).
+**Todos os direitos reservados** — veja [LICENSE](LICENSE).
+
+O aplicativo é livre para usar. O código não é livre para copiar: redistribuir, hospedar
+uma cópia própria, modificar ou explorar comercialmente exige autorização por escrito.
+Pedidos pelo [perfil do autor](https://github.com/jiomavj-tech).
+
+Enquanto o repositório for público, os Termos do GitHub permitem que outros utilizadores
+o vejam e bifurquem dentro da plataforma — isso a licença não afasta. Fora do GitHub, as
+restrições acima aplicam-se integralmente.

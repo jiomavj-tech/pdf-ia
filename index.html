@@ -1,7 +1,19 @@
 <!DOCTYPE html>
+<!--
+  PDF → IA
+  Copyright (c) 2026 Jeovani. Todos os direitos reservados.
+
+  Usar a aplicação é permitido. Copiar, redistribuir, hospedar cópia própria,
+  modificar ou explorar comercialmente este código NÃO é permitido sem
+  autorização prévia e por escrito do titular.
+
+  Licença: https://github.com/jiomavj-tech/pdf-ia/blob/master/LICENSE
+-->
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
+<meta name="author" content="Jeovani">
+<meta name="copyright" content="Copyright (c) 2026 Jeovani. Todos os direitos reservados.">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PDF → IA · funciona offline</title>
 <style>
@@ -171,6 +183,8 @@
   footer{margin-top:56px;border-top:1px solid var(--line);padding-top:16px;
          font-size:13px;color:var(--muted);max-width:62ch}
   footer p{margin:0 0 8px}
+  .direitos{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);
+            font-size:12px;color:var(--muted)}
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -288,6 +302,7 @@
   <footer>
     <p>Este arquivo não faz nenhuma requisição de rede: o leitor de PDF está embutido nele. Funciona em modo avião, e os documentos nunca saem do seu computador.</p>
     <p>A estimativa de tokens usa a média de ~4 caracteres por token, para comparar tamanhos. PDFs escaneados não têm texto embutido e precisam de OCR antes.</p>
+    <p class="direitos">© 2026 Jeovani · Todos os direitos reservados. Usar é livre; copiar, redistribuir, hospedar ou vender exige autorização.</p>
   </footer>
 
 </div>
