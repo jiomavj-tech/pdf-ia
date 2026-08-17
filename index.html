@@ -2322,13 +2322,36 @@ var ReadZip = (function () {
     var dica=document.getElementById('dicaIos');
     var pedido=null;
 
+    // Dentro da janela da aplicação instalada não existe barra de endereço, e
+    // 'standalone' é o sinal disso. Alguns Chrome ainda disparam
+    // beforeinstallprompt lá dentro, o que fazia aparecer um botão "Instalar"
+    // dentro do próprio aplicativo já instalado — sem sentido, e sem efeito.
     function jaInstalado(){
-      return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
-             navigator.standalone===true;
+      if(navigator.standalone===true) return true;
+      if(!window.matchMedia) return false;
+      return ['standalone','minimal-ui','fullscreen','window-controls-overlay']
+        .some(function(m){ return window.matchMedia('(display-mode: '+m+')').matches; });
+    }
+
+    function esconder(){
+      if(btn){ btn.hidden=true; btn.disabled=false; }
+      if(dica) dica.hidden=true;
+    }
+
+    // Se já corre instalado, não há nada a oferecer: sai sem ligar nada.
+    if(jaInstalado()){ esconder(); return; }
+
+    // E se for instalado com a página aberta, o botão desaparece na hora.
+    if(window.matchMedia){
+      var mq=window.matchMedia('(display-mode: standalone)');
+      var aoMudar=function(e){ if(e.matches){ pedido=null; esconder(); } };
+      if(mq.addEventListener) mq.addEventListener('change',aoMudar);
+      else if(mq.addListener) mq.addListener(aoMudar);
     }
 
     window.addEventListener('beforeinstallprompt',function(e){
       e.preventDefault();
+      if(jaInstalado()){ esconder(); return; }
       pedido=e;
       if(btn) btn.hidden=false;
       if(dica) dica.hidden=true;
@@ -2341,11 +2364,28 @@ var ReadZip = (function () {
     });
 
     if(btn) btn.addEventListener('click',function(){
-      if(!pedido) return;
+      var rot=document.getElementById('btnInstalarTxt');
+      // Sem pedido guardado não há como abrir o diálogo do navegador. Antes
+      // isto era um return silencioso: o botão parecia estragado.
+      if(!pedido){
+        if(rot){
+          var antes=rot.textContent;
+          rot.textContent='Use o menu do navegador → Instalar';
+          setTimeout(function(){ rot.textContent=antes; },4000);
+        }
+        return;
+      }
       btn.disabled=true;
-      pedido.prompt();
-      pedido.userChoice.then(function(){
-        pedido=null; btn.hidden=true; btn.disabled=false;
+      try{
+        pedido.prompt();
+      }catch(e){
+        btn.disabled=false;
+        return;
+      }
+      pedido.userChoice.then(function(r){
+        pedido=null;
+        btn.disabled=false;
+        if(r && r.outcome==='accepted') btn.hidden=true;
       },function(){
         btn.disabled=false;
       });
@@ -2399,13 +2439,20 @@ var ReadZip = (function () {
       return /\.pdf$/i.test(f.name)||f.type==='application/pdf'||/\.zip$/i.test(f.name);
     });
     if(!pdfs.length){
-      var sub=document.querySelector('#pf .tile-sub');
-      sub.textContent = all.length
-        ? 'Nenhum PDF encontrado nessa pasta ('+all.length+' arquivo(s) de outros tipos).'
-        : 'Nenhum arquivo selecionado.';
-      setTimeout(function(){
-        sub.textContent='Acha sozinho todo PDF lá dentro';
-      },5000);
+      // Antes esta mensagem era um subtítulo cinzento dentro do cartão que
+      // desaparecia em 5 s. Passava despercebida, e escolher uma pasta sem
+      // PDFs parecia não fazer nada. Agora fica um aviso que não se perde.
+      results.innerHTML='';
+      results.appendChild(errorCard(
+        all.length ? 'Nenhum PDF nessa pasta' : 'Nenhuma pasta foi escolhida',
+        all.length
+          ? 'Foram lidos '+all.length+' arquivo(s), mas nenhum é PDF. Verifique se '+
+            'escolheu a pasta certa — os PDFs podem estar um nível acima ou abaixo.'
+          : 'O seletor fechou sem nada escolhido, ou a pasta está vazia. '+
+            'No computador, escolha a pasta e confirme o aviso do navegador '+
+            'sobre enviar vários arquivos.'));
+      try{ results.scrollIntoView({block:'nearest'}); }catch(e){}
+      folderInput.value='';
       return;
     }
     pdfs.sort(function(a,b){
