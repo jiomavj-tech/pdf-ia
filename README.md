@@ -1,4 +1,4 @@
-# PDF para TXT / Markdown — offline
+# PDF → IA — offline
 
 Converte PDFs em texto puro (`.txt`) ou Markdown (`.md`) **inteiramente dentro do navegador**.
 Nenhum arquivo é enviado para lugar nenhum: não há servidor, não há upload, não há conta.
