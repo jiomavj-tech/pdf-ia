@@ -69,11 +69,12 @@ Basta salvar o arquivo e abrir.
 
 ## Publicar sua própria cópia
 
-Ative o GitHub Pages nas configurações do repositório (Settings → Pages → Branch: `main`,
+Ative o GitHub Pages nas configurações do repositório (Settings → Pages → Branch: `master`,
 pasta `/root`). Em poucos minutos a página fica no ar e você compartilha o link.
 
-Servida por HTTPS, ela ganha duas coisas que o `file://` não permite: o botão de copiar
-usa a área de transferência moderna, e dá para adicionar à tela de início do celular.
+Servida por HTTPS, ela ganha três coisas que o `file://` não permite: o botão de copiar
+usa a área de transferência moderna, o botão **Compartilhar** abre a folha de partilha do
+celular (ou copia o link no computador), e dá para adicionar à tela de início.
 
 ## Licença
 
