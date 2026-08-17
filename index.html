@@ -1,0 +1,2198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF → TXT · funciona offline</title>
+<style>
+  :root{
+    --canvas:#E6E8EF;
+    --ink:#141C33;
+    --sheet:#FFFFFF;
+    --mark:#EDE04A;
+    --muted:#666E8C;
+    --line:#C9CDDC;
+    --warn:#A8500F;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--canvas);color:var(--ink);font-family:var(--sans);
+       font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:32px 20px 72px}
+
+  .masthead{border-bottom:2px solid var(--ink);padding-bottom:18px;margin-bottom:28px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+           color:var(--muted);margin:0 0 10px}
+  h1{font-weight:800;line-height:.95;letter-spacing:-.035em;
+     font-size:clamp(38px,9vw,68px);margin:0 0 12px}
+  h1 .mark{position:relative;display:inline-block;z-index:0;padding:0 .08em}
+  h1 .mark::before{content:"";position:absolute;inset:14% -.04em 12% -.04em;
+                   background:var(--mark);transform:skewX(-9deg);z-index:-1}
+  .lede{margin:0;max-width:56ch;color:var(--muted);font-size:15px}
+
+  .escolha{display:grid;gap:14px;margin-top:4px;padding-top:14px;align-items:stretch}
+  @media (min-width:660px){ .escolha{grid-template-columns:1fr auto 1fr;gap:18px} }
+
+  .tile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:28px 20px 24px;border-radius:2px;background:var(--sheet);
+    cursor:pointer;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
+  .tile input{position:absolute;opacity:0;width:1px;height:1px}
+  .tile:focus-within{outline:3px solid var(--ink);outline-offset:3px}
+  .tile:hover{transform:translateY(-2px)}
+  .tile-eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:10px}
+  .tile-title{font-weight:800;font-size:20px;letter-spacing:-.02em;line-height:1.15}
+  .tile-sub{font-size:13.5px;color:var(--muted);margin-top:5px;line-height:1.4}
+  .tile svg{display:block;margin-bottom:12px}
+
+  /* Folhas soltas: pilha de papéis atrás, feita com sombras (imune a transform) */
+  .tile--folhas{border:1.5px solid var(--line);
+    box-shadow:6px 6px 0 -1.5px var(--sheet), 6px 6px 0 0 var(--line),
+               12px 12px 0 -1.5px var(--sheet), 12px 12px 0 0 var(--line)}
+  .tile--folhas:hover,.tile--folhas.dragging{border-color:var(--ink)}
+  .tile--folhas.dragging{transform:translateY(-2px)}
+
+  /* Pasta: aba amarela recortada em cima, traço grosso */
+  .tile--pasta{border:2px solid var(--ink)}
+  .tile--pasta::before{content:"";position:absolute;top:-12px;left:20px;width:82px;height:14px;
+    background:var(--mark);border:2px solid var(--ink);border-bottom:none;
+    border-radius:3px 3px 0 0;z-index:1}
+  .tile--pasta:hover{box-shadow:5px 5px 0 var(--ink)}
+
+  .ou{display:flex;align-items:center;justify-content:center;gap:10px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .ou::before,.ou::after{content:"";background:var(--line)}
+  .ou::before,.ou::after{height:1px;flex:1}
+  @media (min-width:660px){
+    .ou{flex-direction:column;padding:0 2px}
+    .ou::before,.ou::after{width:1px;height:auto;flex:1}
+  }
+
+  .rodape-entrada{margin:16px 0 0;font-size:13px;color:var(--muted);line-height:1.5}
+  .rodape-entrada b{color:var(--ink);font-weight:600}
+  .rodape-entrada .chave{background:var(--mark);color:var(--ink);padding:0 4px;font-weight:600}
+
+  .fmt{margin:36px 0 0;border:1.5px solid var(--ink);border-radius:2px;padding:14px 16px 16px}
+  .fmt legend{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+              padding:0 8px;color:var(--muted)}
+  .fmt label{display:flex;align-items:baseline;gap:8px;font-size:14px;padding:5px 0;cursor:pointer}
+  .fmt input{accent-color:var(--ink);width:16px;height:16px;flex:none}
+  .fmt b{font-family:var(--mono);font-size:13px}
+  .fmt span{color:var(--muted);font-size:13px}
+  .fmt label:has(input:checked) b{background:var(--mark);padding:1px 4px}
+
+  .options{margin:28px 0 0;border-top:1px solid var(--line);padding-top:18px;
+           display:grid;gap:14px;grid-template-columns:1fr}
+  @media(min-width:640px){.options{grid-template-columns:1fr 1fr}}
+  .opt{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+  .opt input[type=checkbox]{margin-top:3px;accent-color:var(--ink);width:16px;height:16px;flex:none}
+  .opt small{display:block;color:var(--muted);font-size:12.5px;line-height:1.4}
+  .range{display:flex;align-items:center;gap:8px;font-size:14px;flex-wrap:wrap}
+  .range input{font-family:var(--mono);font-size:13px;padding:7px 9px;width:130px;
+    border:1px solid var(--line);border-radius:2px;background:var(--sheet);color:var(--ink)}
+  .range input:focus{outline:2px solid var(--ink);outline-offset:1px}
+  code{font-family:var(--mono);font-size:.9em}
+
+  .progress{margin-top:26px;font-family:var(--mono);font-size:13px;color:var(--muted)}
+  .bar{height:4px;background:var(--line);margin-top:8px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:var(--ink);transition:width .15s linear}
+
+  .fila{margin-top:24px;border:2px solid var(--ink);border-radius:2px;background:var(--sheet)}
+  .fila-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:10px 13px;border-bottom:2px solid var(--ink);
+    font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .fila-topo button{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+    padding:5px 9px;background:transparent;color:var(--muted);border-color:var(--line)}
+  .fila-topo button:hover{color:var(--ink);border-color:var(--ink)}
+  .fila-topo .fila-acoes{display:flex;gap:7px;flex:none}
+  .fila-lista{list-style:none;margin:0;padding:0;max-height:44vh;overflow:auto}
+  .fila-item{display:flex;align-items:center;gap:10px;padding:9px 13px;
+    border-bottom:1px solid var(--line);font-size:14px}
+  .fila-item:last-child{border-bottom:none}
+  .fila-num{font-family:var(--mono);font-size:11px;color:var(--muted);flex:none;min-width:20px}
+  .fila-nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fila-tam{font-family:var(--mono);font-size:12px;color:var(--muted);flex:none}
+  .fila-x{flex:none;width:26px;height:26px;padding:0;line-height:1;border-radius:50%;
+    border-color:var(--line);color:var(--muted);font-size:15px}
+  .fila-x:hover{border-color:var(--warn);color:var(--warn)}
+  .fila-rodape{padding:13px;border-top:2px solid var(--ink);
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .fila-aviso{font-size:12.5px;color:var(--warn);flex:1;min-width:180px;line-height:1.4}
+  .btn-converter{background:var(--ink);color:var(--sheet);border-color:var(--ink);
+    font-size:16px;font-weight:700;padding:13px 22px;letter-spacing:-.01em;
+    box-shadow:4px 4px 0 var(--mark);transition:transform .12s,box-shadow .12s}
+  .btn-converter:hover{transform:translate(-1px,-1px);box-shadow:6px 6px 0 var(--mark)}
+  .btn-converter[disabled]{opacity:.45;box-shadow:none;cursor:default;transform:none}
+
+  .batch{margin-top:32px;background:var(--ink);color:var(--sheet);padding:14px 18px;
+         display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;border-radius:2px}
+  .batch-count{font-family:var(--mono);font-size:12.5px;letter-spacing:.04em}
+  .batch-btns{display:flex;flex-wrap:wrap;gap:10px}
+  .batch button{border-color:var(--mark);background:var(--mark);color:var(--ink);font-weight:600}
+  .batch button.ghost{background:transparent;color:var(--sheet);border-color:var(--sheet)}
+  .batch button[disabled]{opacity:.5;cursor:default}
+
+  .results{margin-top:40px;display:grid;gap:18px}
+  .card{background:var(--sheet);border:1px solid var(--line);border-radius:2px}
+  .card-head{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;justify-content:space-between;
+             padding:16px 18px;border-bottom:1px solid var(--line)}
+  .fname{font-weight:700;font-size:17px;word-break:break-word;margin:0;letter-spacing:-.02em}
+  .meta{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .stats{display:flex;flex-wrap:wrap;font-family:var(--mono);font-size:12px}
+  .stat{padding:12px 18px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+        flex:1 1 120px}
+  .stat b{display:block;font-size:18px;font-weight:600;letter-spacing:-.01em}
+  .stat em{font-style:normal;color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+  .savings{background:var(--mark)}
+  .savings em{color:#5C5410}
+  pre.preview{margin:0;padding:18px;font-family:var(--mono);font-size:12.5px;line-height:1.7;
+    max-height:320px;overflow:auto;white-space:pre-wrap;word-break:break-word;
+    border-bottom:1px solid var(--line)}
+  .actions{padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px}
+  button{font-family:var(--sans);font-size:14px;font-weight:500;padding:9px 16px;
+    border:1.5px solid var(--ink);background:var(--ink);color:var(--sheet);border-radius:2px;cursor:pointer}
+  button.ghost{background:transparent;color:var(--ink)}
+  button:hover{opacity:.85}
+  button:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+  .flag{padding:12px 18px;font-size:13.5px;background:#FBF3E4;color:var(--warn);
+        border-bottom:1px solid var(--line);margin:0}
+  .flag.err{background:#FBE9E7;color:#8C2A1C}
+
+  footer{margin-top:56px;border-top:1px solid var(--line);padding-top:16px;
+         font-size:13px;color:var(--muted);max-width:62ch}
+  footer p{margin:0 0 8px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Offline · nenhuma conexão de rede</p>
+    <h1>Do PDF para o <span class="mark">TXT</span></h1>
+    <p class="lede">Extrai o texto das páginas e devolve um arquivo limpo, muito mais barato de enviar para uma IA do que o PDF original. Tudo acontece dentro do seu navegador.</p>
+  </header>
+
+  <div class="escolha">
+    <label class="tile tile--folhas" id="dz">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M7 3h6l4 4v11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>
+        <path d="M13 3v4h4"/>
+      </svg>
+      <span class="tile-eyebrow">Arquivos soltos</span>
+      <span class="tile-title">Escolher PDFs</span>
+      <span class="tile-sub">Você marca um ou vários na lista</span>
+      <input type="file" id="file" accept="application/pdf,.pdf,application/zip,.zip" multiple>
+    </label>
+
+    <div class="ou" aria-hidden="true"><span>ou</span></div>
+
+    <label class="tile tile--pasta" id="pf">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 7a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>
+        <path d="M3 11h18"/>
+      </svg>
+      <span class="tile-eyebrow">Pasta inteira</span>
+      <span class="tile-title">Escolher pasta</span>
+      <span class="tile-sub">Acha sozinho todo PDF lá dentro</span>
+      <input type="file" id="folder" webkitdirectory directory multiple>
+    </label>
+  </div>
+
+  <p class="rodape-entrada" id="notaEntrada">
+    <b>Escolher pasta não funciona no iPhone</b> — o Safari não permite. Lá, compacte a pasta
+    no app Arquivos (segurar → <span class="chave">Compactar</span>) e mande o .zip pelo botão da esquerda.
+    No computador também dá para arrastar tudo para cá.
+  </p>
+
+  <section class="fila" id="fila" hidden>
+    <div class="fila-topo">
+      <span id="filaResumo">0 arquivos</span>
+      <span class="fila-acoes">
+        <button type="button" id="filaOrdenar">Ordenar A–Z</button>
+        <button type="button" id="filaLimpar">Limpar</button>
+      </span>
+    </div>
+    <ul class="fila-lista" id="filaLista"></ul>
+    <div class="fila-rodape">
+      <button type="button" class="btn-converter" id="btnConverter">Converter</button>
+      <span class="fila-aviso" id="filaAviso" hidden></span>
+    </div>
+  </section>
+
+  <fieldset class="fmt">
+    <legend>Formato de saída</legend>
+    <label><input type="radio" name="fmt" value="txt" checked> <b>.txt</b> <span>texto corrido, o mais leve</span></label>
+    <label><input type="radio" name="fmt" value="md"> <b>.md</b> <span>títulos, listas e tabelas preservados</span></label>
+  </fieldset>
+
+  <div class="options">
+    <label class="opt">
+      <input type="checkbox" id="optParas" checked>
+      <span>Juntar linhas em parágrafos
+        <small>Só no modo .txt: remove quebras no meio das frases e reúne palavras cortadas por hífen.</small></span>
+    </label>
+    <label class="opt">
+      <input type="checkbox" id="optPages">
+      <span>Marcar o número de cada página
+        <small>Insere <code>[página 3]</code> no .txt, ou um comentário oculto no .md.</small></span>
+    </label>
+    <div class="range">
+      <label for="pages">Páginas:</label>
+      <input type="text" id="pages" placeholder="ex.: 1-5, 12">
+      <span style="color:var(--muted);font-size:12.5px">vazio = todas</span>
+    </div>
+    <label class="opt">
+      <input type="checkbox" id="optTrim" checked>
+      <span>Enxugar espaços e linhas vazias
+        <small>Colapsa espaços repetidos e sequências de linhas em branco.</small></span>
+    </label>
+  </div>
+
+  <div class="progress" id="progress" hidden>
+    <span id="progressText">Lendo…</span>
+    <div class="bar"><i id="progressBar"></i></div>
+    <button type="button" class="ghost" id="btnCancel" hidden style="margin-top:10px">Cancelar</button>
+  </div>
+
+  <div class="batch" id="batch" hidden>
+    <span class="batch-count" id="batchCount"></span>
+    <div class="batch-btns">
+      <button id="btnZip">Baixar todos (.zip)</button>
+      <button id="btnJoin" class="ghost">Juntar num ficheiro só</button>
+    </div>
+  </div>
+
+  <div class="results" id="results"></div>
+
+  <footer>
+    <p>Este arquivo não faz nenhuma requisição de rede: o leitor de PDF está embutido nele. Funciona em modo avião, e os documentos nunca saem do seu computador.</p>
+    <p>A estimativa de tokens usa a média de ~4 caracteres por token, para comparar tamanhos. PDFs escaneados não têm texto embutido e precisam de OCR antes.</p>
+  </footer>
+
+</div>
+
+<script>
+/* pdftext.js — extrator de texto de PDF em JavaScript puro.
+   Sem dependências externas. Usa DecompressionStream (nativo do navegador/Node 18+).
+   Exporta: PDFText.extract(uint8array) -> Promise<{numPages, pages:[{n, lines:[{y,text}]}]}>
+*/
+var PDFText = (function () {
+  "use strict";
+
+  /* ============ bytes <-> string latin1 ============ */
+
+  function toLatin1(bytes) {
+    var out = "", CH = 0x8000;
+    for (var i = 0; i < bytes.length; i += CH) {
+      out += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
+    }
+    return out;
+  }
+  function fromLatin1(str) {
+    var b = new Uint8Array(str.length);
+    for (var i = 0; i < str.length; i++) b[i] = str.charCodeAt(i) & 0xff;
+    return b;
+  }
+
+  /* ============ filtros ============ */
+
+  async function inflate(bytes) {
+    var last = null;
+    var formats = ["deflate", "deflate-raw"];
+    for (var i = 0; i < formats.length; i++) {
+      try {
+        var ds = new DecompressionStream(formats[i]);
+        var buf = await new Response(new Blob([bytes]).stream().pipeThrough(ds)).arrayBuffer();
+        return new Uint8Array(buf);
+      } catch (e) { last = e; }
+    }
+    throw last || new Error("inflate");
+  }
+
+  function applyPredictor(data, parms) {
+    var pred = num(parms.Predictor, 1);
+    if (pred < 2) return data;
+    var colors = num(parms.Colors, 1),
+        bpc = num(parms.BitsPerComponent, 8),
+        columns = num(parms.Columns, 1);
+    var bpp = Math.ceil(colors * bpc / 8);
+    var rowLen = Math.ceil(colors * bpc * columns / 8);
+    if (pred === 2) return data;                       // TIFF: raro, devolve cru
+    var rows = Math.floor(data.length / (rowLen + 1));
+    var out = new Uint8Array(rows * rowLen);
+    var prev = new Uint8Array(rowLen);
+    for (var r = 0; r < rows; r++) {
+      var ft = data[r * (rowLen + 1)];
+      var src = data.subarray(r * (rowLen + 1) + 1, (r + 1) * (rowLen + 1));
+      var cur = out.subarray(r * rowLen, (r + 1) * rowLen);
+      for (var i = 0; i < rowLen; i++) {
+        var raw = src[i] || 0, left = i >= bpp ? cur[i - bpp] : 0, up = prev[i],
+            ul = i >= bpp ? prev[i - bpp] : 0, v;
+        switch (ft) {
+          case 0: v = raw; break;
+          case 1: v = raw + left; break;
+          case 2: v = raw + up; break;
+          case 3: v = raw + ((left + up) >> 1); break;
+          case 4:
+            var p = left + up - ul, pa = Math.abs(p - left), pb = Math.abs(p - up), pc = Math.abs(p - ul);
+            v = raw + (pa <= pb && pa <= pc ? left : pb <= pc ? up : ul); break;
+          default: v = raw;
+        }
+        cur[i] = v & 0xff;
+      }
+      prev = cur;
+    }
+    return out;
+  }
+
+  function asciiHexDecode(bytes) {
+    var s = toLatin1(bytes).replace(/[^0-9A-Fa-f>]/g, "");
+    var end = s.indexOf(">"); if (end >= 0) s = s.slice(0, end);
+    if (s.length % 2) s += "0";
+    var out = new Uint8Array(s.length / 2);
+    for (var i = 0; i < out.length; i++) out[i] = parseInt(s.substr(i * 2, 2), 16);
+    return out;
+  }
+
+  function ascii85Decode(bytes) {
+    var s = toLatin1(bytes).replace(/\s/g, "");
+    if (s.slice(0, 2) === "<~") s = s.slice(2);
+    var end = s.indexOf("~>"); if (end >= 0) s = s.slice(0, end);
+    var out = [], tuple = [], i, j;
+    for (i = 0; i < s.length; i++) {
+      var c = s[i];
+      if (c === "z" && tuple.length === 0) { out.push(0, 0, 0, 0); continue; }
+      tuple.push(s.charCodeAt(i) - 33);
+      if (tuple.length === 5) {
+        var v = 0; for (j = 0; j < 5; j++) v = v * 85 + tuple[j];
+        out.push((v >>> 24) & 255, (v >>> 16) & 255, (v >>> 8) & 255, v & 255);
+        tuple = [];
+      }
+    }
+    if (tuple.length) {
+      var n = tuple.length;
+      for (j = n; j < 5; j++) tuple.push(84);
+      var w = 0; for (j = 0; j < 5; j++) w = w * 85 + tuple[j];
+      var full = [(w >>> 24) & 255, (w >>> 16) & 255, (w >>> 8) & 255, w & 255];
+      for (j = 0; j < n - 1; j++) out.push(full[j]);
+    }
+    return new Uint8Array(out);
+  }
+
+  /* ============ modelo de objetos PDF ============ */
+  // Name  -> {__n:'Page'}     String -> {__s:'bytes'}
+  // Ref   -> {__r:12,__g:0}   Dict   -> {__d:{...}}
+
+  function isName(v, n) { return !!v && v.__n !== undefined && (n === undefined || v.__n === n); }
+  function isDict(v) { return !!v && v.__d !== undefined; }
+  function isRef(v) { return !!v && v.__r !== undefined; }
+  function num(v, d) { return typeof v === "number" && isFinite(v) ? v : d; }
+
+  var WS = " \t\r\n\f\0";
+  var DELIM = "()<>[]{}/%";
+
+  function Lexer(s, pos) { this.s = s; this.p = pos || 0; }
+  Lexer.prototype.skip = function () {
+    var s = this.s;
+    for (;;) {
+      while (this.p < s.length && WS.indexOf(s[this.p]) >= 0) this.p++;
+      if (s[this.p] === "%") { while (this.p < s.length && s[this.p] !== "\n" && s[this.p] !== "\r") this.p++; }
+      else return;
+    }
+  };
+  Lexer.prototype.token = function () {          // devolve string bruta do próximo token
+    this.skip();
+    var s = this.s, st = this.p;
+    if (st >= s.length) return null;
+    var c = s[st];
+    if (c === "<" && s[st + 1] === "<") { this.p += 2; return "<<"; }
+    if (c === ">" && s[st + 1] === ">") { this.p += 2; return ">>"; }
+    if ("[]{}".indexOf(c) >= 0) { this.p++; return c; }
+    if (c === "/" || c === "(" || c === "<") return c;   // tratados no parser
+    var e = st;
+    while (e < s.length && WS.indexOf(s[e]) < 0 && DELIM.indexOf(s[e]) < 0) e++;
+    if (e === st) { this.p++; return s[st]; }
+    this.p = e;
+    return s.slice(st, e);
+  };
+  Lexer.prototype.peekToken = function () { var p = this.p, t = this.token(); this.p = p; return t; };
+
+  Lexer.prototype.name = function () {           // posicionado no '/'
+    var s = this.s; this.p++;
+    var st = this.p;
+    while (this.p < s.length && WS.indexOf(s[this.p]) < 0 && DELIM.indexOf(s[this.p]) < 0) this.p++;
+    var raw = s.slice(st, this.p);
+    return { __n: raw.replace(/#([0-9A-Fa-f]{2})/g, function (_, h) { return String.fromCharCode(parseInt(h, 16)); }) };
+  };
+
+  Lexer.prototype.litString = function () {      // posicionado no '('
+    var s = this.s; this.p++;
+    var depth = 1, out = "";
+    while (this.p < s.length) {
+      var c = s[this.p++];
+      if (c === "\\") {
+        var d = s[this.p++];
+        if (d === "n") out += "\n"; else if (d === "r") out += "\r";
+        else if (d === "t") out += "\t"; else if (d === "b") out += "\b";
+        else if (d === "f") out += "\f";
+        else if (d >= "0" && d <= "7") {
+          var oct = d;
+          for (var k = 0; k < 2 && s[this.p] >= "0" && s[this.p] <= "7"; k++) oct += s[this.p++];
+          out += String.fromCharCode(parseInt(oct, 8) & 0xff);
+        } else if (d === "\n") { /* continuação */ }
+        else if (d === "\r") { if (s[this.p] === "\n") this.p++; }
+        else out += d;
+      } else if (c === "(") { depth++; out += c; }
+      else if (c === ")") { depth--; if (!depth) break; out += c; }
+      else out += c;
+    }
+    return { __s: out };
+  };
+
+  Lexer.prototype.hexString = function () {      // posicionado no '<'
+    var s = this.s; this.p++;
+    var hex = "";
+    while (this.p < s.length && s[this.p] !== ">") {
+      var c = s[this.p++];
+      if (/[0-9A-Fa-f]/.test(c)) hex += c;
+    }
+    this.p++;
+    if (hex.length % 2) hex += "0";
+    var out = "";
+    for (var i = 0; i < hex.length; i += 2) out += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    return { __s: out };
+  };
+
+  Lexer.prototype.object = function () {
+    this.skip();
+    var s = this.s, c = s[this.p];
+    if (c === undefined) return null;
+    if (c === "/") return this.name();
+    if (c === "(") return this.litString();
+    if (c === "<" && s[this.p + 1] !== "<") return this.hexString();
+
+    var t = this.token();
+    if (t === null) return null;
+    if (t === "<<") {
+      var d = {};
+      for (;;) {
+        this.skip();
+        if (this.s[this.p] === undefined) break;
+        if (this.s[this.p] === ">" && this.s[this.p + 1] === ">") { this.p += 2; break; }
+        if (this.s[this.p] !== "/") { var junk = this.object(); if (junk === null) break; continue; }
+        var key = this.name().__n;
+        var val = this.object();
+        d[key] = val;
+      }
+      return { __d: d };
+    }
+    if (t === "[") {
+      var a = [];
+      for (;;) {
+        this.skip();
+        if (this.s[this.p] === undefined) break;
+        if (this.s[this.p] === "]") { this.p++; break; }
+        var v = this.object();
+        if (v === null) break;
+        a.push(v);
+      }
+      return a;
+    }
+    if (t === "true") return true;
+    if (t === "false") return false;
+    if (t === "null") return null;
+
+    if (/^[+-]?[\d.]+$/.test(t)) {
+      var n1 = parseFloat(t);
+      if (/^\d+$/.test(t)) {                     // possível referência "n g R"
+        var save = this.p;
+        var t2 = this.token();
+        if (t2 !== null && /^\d+$/.test(t2)) {
+          var t3 = this.token();
+          if (t3 === "R") return { __r: n1, __g: parseInt(t2, 10) };
+        }
+        this.p = save;
+      }
+      return isFinite(n1) ? n1 : 0;
+    }
+    return { __op: t };                          // operador ou lixo
+  };
+
+  /* ============ documento ============ */
+
+  function Doc(bytes) {
+    this.bytes = bytes;
+    this.s = toLatin1(bytes);
+    this.objs = {};        // "num" -> {val, streamStart, streamLenRaw}
+    this.cache = {};
+  }
+
+  Doc.prototype.scan = function () {
+    var re = /(\d{1,10})[ \t\r\n]+(\d{1,5})[ \t\r\n]+obj\b/g, m;
+    while ((m = re.exec(this.s)) !== null) {
+      var before = m.index === 0 ? " " : this.s[m.index - 1];
+      if (/[0-9]/.test(before)) continue;
+      var lex = new Lexer(this.s, m.index + m[0].length);
+      var val;
+      try { val = lex.object(); } catch (e) { continue; }
+      var rec = { val: val, streamStart: -1, dict: isDict(val) ? val.__d : null };
+      lex.skip();
+      if (this.s.substr(lex.p, 6) === "stream") {
+        var q = lex.p + 6;
+        if (this.s[q] === "\r") q++;
+        if (this.s[q] === "\n") q++;
+        rec.streamStart = q;
+      }
+      this.objs[m[1]] = rec;                    // gerações posteriores sobrescrevem
+      re.lastIndex = m.index + m[0].length;
+    }
+  };
+
+  Doc.prototype.resolve = function (v) {
+    var guard = 0;
+    while (isRef(v) && guard++ < 32) {
+      var rec = this.objs[String(v.__r)];
+      v = rec ? rec.val : null;
+    }
+    return v;
+  };
+  Doc.prototype.get = function (dict, key) {
+    if (!dict) return undefined;
+    return this.resolve(dict[key]);
+  };
+
+  Doc.prototype.rawStream = function (rec) {
+    if (rec.streamStart < 0) return null;
+    var len = this.get(rec.dict, "Length");
+    var start = rec.streamStart, end = -1;
+    if (typeof len === "number" && len >= 0 && start + len <= this.s.length) {
+      var tail = this.s.substr(start + len, 20);
+      if (/^\s*endstream/.test(tail)) end = start + len;
+    }
+    if (end < 0) {
+      end = this.s.indexOf("endstream", start);
+      if (end < 0) return null;
+      while (end > start && (this.s[end - 1] === "\n" || this.s[end - 1] === "\r")) end--;
+    }
+    return this.bytes.subarray(start, end);
+  };
+
+  Doc.prototype.stream = async function (rec) {
+    if (!rec || rec.streamStart < 0) return null;
+    if (rec.__data) return rec.__data;
+    var data = this.rawStream(rec);
+    if (!data) return null;
+    var filters = this.get(rec.dict, "Filter");
+    var parms = this.get(rec.dict, "DecodeParms") || this.get(rec.dict, "DP");
+    if (!filters) { rec.__data = data; return data; }
+    var list = Array.isArray(filters) ? filters : [filters];
+    var plist = Array.isArray(parms) ? parms : [parms];
+    for (var i = 0; i < list.length; i++) {
+      var f = this.resolve(list[i]);
+      var pd = this.resolve(plist[i]);
+      pd = isDict(pd) ? pd.__d : {};
+      var pp = {};
+      for (var k in pd) pp[k] = this.resolve(pd[k]);
+      if (!isName(f)) continue;
+      try {
+        if (f.__n === "FlateDecode" || f.__n === "Fl") {
+          data = await inflate(data);
+          data = applyPredictor(data, pp);
+        } else if (f.__n === "ASCIIHexDecode" || f.__n === "AHx") {
+          data = asciiHexDecode(data);
+        } else if (f.__n === "ASCII85Decode" || f.__n === "A85") {
+          data = ascii85Decode(data);
+        } else {
+          return null;                            // LZW, DCT, JPX: não é texto
+        }
+      } catch (e) { return null; }
+    }
+    rec.__data = data;
+    return data;
+  };
+
+  // Expande objetos guardados dentro de /ObjStm (PDF 1.5+)
+  Doc.prototype.expandObjStreams = async function () {
+    var keys = Object.keys(this.objs);
+    for (var i = 0; i < keys.length; i++) {
+      var rec = this.objs[keys[i]];
+      if (!rec.dict || !isName(this.get(rec.dict, "Type"), "ObjStm")) continue;
+      var data = await this.stream(rec);
+      if (!data) continue;
+      var str = toLatin1(data);
+      var n = num(this.get(rec.dict, "N"), 0), first = num(this.get(rec.dict, "First"), 0);
+      var head = new Lexer(str, 0), pairs = [];
+      for (var j = 0; j < n; j++) {
+        var a = head.token(), b = head.token();
+        if (a === null || b === null) break;
+        pairs.push([a, parseInt(b, 10)]);
+      }
+      for (var k = 0; k < pairs.length; k++) {
+        var id = pairs[k][0];
+        if (this.objs[id] && this.objs[id].streamStart >= 0) continue;   // já existe com stream
+        if (this.objs[id] && this.objs[id].__fromScan) continue;
+        var lx = new Lexer(str, first + pairs[k][1]);
+        var val;
+        try { val = lx.object(); } catch (e) { continue; }
+        this.objs[id] = { val: val, streamStart: -1, dict: isDict(val) ? val.__d : null };
+      }
+    }
+  };
+
+  /* ============ páginas ============ */
+
+  Doc.prototype.pageList = function () {
+    var self = this, pages = [], seen = {};
+    var catalog = null, keys = Object.keys(this.objs);
+    for (var i = 0; i < keys.length; i++) {
+      var d = this.objs[keys[i]].dict;
+      if (d && isName(this.get(d, "Type"), "Catalog")) { catalog = d; break; }
+    }
+    function walk(node, inherited, depth) {
+      if (!node || depth > 64) return;
+      var d = isDict(node) ? node.__d : null;
+      if (!d) return;
+      var inh = {
+        Resources: d.Resources !== undefined ? d.Resources : inherited.Resources,
+        MediaBox: d.MediaBox !== undefined ? d.MediaBox : inherited.MediaBox
+      };
+      var type = self.get(d, "Type");
+      var kids = self.get(d, "Kids");
+      if (isName(type, "Page") || (!kids && d.Contents !== undefined)) {
+        pages.push({ dict: d, inh: inh });
+        return;
+      }
+      if (Array.isArray(kids)) {
+        for (var j = 0; j < kids.length; j++) {
+          var key = isRef(kids[j]) ? String(kids[j].__r) : null;
+          if (key) { if (seen[key]) continue; seen[key] = 1; }
+          walk(self.resolve(kids[j]), inh, depth + 1);
+        }
+      }
+    }
+    if (catalog) walk(this.get(catalog, "Pages"), {}, 0);
+    if (!pages.length) {                          // sem catálogo utilizável: varre tudo
+      var nums = keys.map(Number).sort(function (a, b) { return a - b; });
+      for (var q = 0; q < nums.length; q++) {
+        var dd = this.objs[String(nums[q])].dict;
+        if (dd && isName(this.get(dd, "Type"), "Page")) pages.push({ dict: dd, inh: {} });
+      }
+    }
+    return pages;
+  };
+
+  /* ============ fontes ============ */
+
+  var COMBINING = {
+    acute: "\u0301", grave: "\u0300", circumflex: "\u0302", tilde: "\u0303",
+    dieresis: "\u0308", cedilla: "\u0327", ring: "\u030A", caron: "\u030C",
+    breve: "\u0306", macron: "\u0304", ogonek: "\u0328", dotaccent: "\u0307",
+    hungarumlaut: "\u030B"
+  };
+  var NAMED = {
+    space: 32, exclam: 33, quotedbl: 34, numbersign: 35, dollar: 36, percent: 37,
+    ampersand: 38, quotesingle: 39, parenleft: 40, parenright: 41, asterisk: 42,
+    plus: 43, comma: 44, hyphen: 45, period: 46, slash: 47, colon: 58, semicolon: 59,
+    less: 60, equal: 61, greater: 62, question: 63, at: 64, bracketleft: 91,
+    backslash: 92, bracketright: 93, asciicircum: 94, underscore: 95, grave: 96,
+    braceleft: 123, bar: 124, braceright: 125, asciitilde: 126,
+    zero: 48, one: 49, two: 50, three: 51, four: 52, five: 53, six: 54, seven: 55,
+    eight: 56, nine: 57,
+    quoteleft: 8216, quoteright: 8217, quotedblleft: 8220, quotedblright: 8221,
+    quotesinglbase: 8218, quotedblbase: 8222, endash: 8211, emdash: 8212,
+    bullet: 8226, ellipsis: 8230, dagger: 8224, daggerdbl: 8225, perthousand: 8240,
+    trademark: 8482, Euro: 8364, degree: 176, plusminus: 177, multiply: 215,
+    divide: 247, copyright: 169, registered: 174, paragraph: 182, section: 167,
+    sterling: 163, yen: 165, cent: 162, currency: 164, ordfeminine: 170,
+    ordmasculine: 186, guillemotleft: 171, guillemotright: 187, questiondown: 191,
+    exclamdown: 161, germandbls: 223, ae: 230, AE: 198, oslash: 248, Oslash: 216,
+    eth: 240, thorn: 254, fi: 0xFB01, fl: 0xFB02, minus: 8722, fraction: 8260,
+    nbspace: 32, uni00A0: 32
+  };
+  function glyphToUnicode(name) {
+    if (!name) return "";
+    if (NAMED[name] !== undefined) return String.fromCharCode(NAMED[name]);
+    if (/^[A-Za-z]$/.test(name)) return name;
+    var m = name.match(/^uni([0-9A-Fa-f]{4,6})$/);
+    if (m) return String.fromCodePoint(parseInt(m[1], 16));
+    m = name.match(/^u([0-9A-Fa-f]{4,6})$/);
+    if (m) return String.fromCodePoint(parseInt(m[1], 16));
+    m = name.match(/^([A-Za-z])(acute|grave|circumflex|tilde|dieresis|cedilla|ring|caron|breve|macron|ogonek|dotaccent|hungarumlaut)$/);
+    if (m) return (m[1] + COMBINING[m[2]]).normalize("NFC");
+    m = name.match(/^(?:g|cid|index)(\d+)$/i);
+    if (m) return "";
+    return "";
+  }
+
+  var WIN_HIGH = {                                 // 128–159 do WinAnsiEncoding
+    128: 8364, 130: 8218, 131: 402, 132: 8222, 133: 8230, 134: 8224, 135: 8225,
+    136: 710, 137: 8240, 138: 352, 139: 8249, 140: 338, 142: 381, 145: 8216,
+    146: 8217, 147: 8220, 148: 8221, 149: 8226, 150: 8211, 151: 8212, 152: 732,
+    153: 8482, 154: 353, 155: 8250, 156: 339, 158: 382, 159: 376
+  };
+
+  function parseCMap(text) {
+    var map = {}, codeLen = 0, m;
+    var csr = /begincodespacerange([\s\S]*?)endcodespacerange/g;
+    while ((m = csr.exec(text)) !== null) {
+      var pair = m[1].match(/<([0-9A-Fa-f]+)>/);
+      if (pair) codeLen = Math.max(codeLen, Math.ceil(pair[1].length / 2));
+    }
+    function hexToStr(h) {                          // UTF-16BE -> string
+      var out = "";
+      for (var i = 0; i + 3 < h.length + 1; i += 4) {
+        var cu = parseInt(h.substr(i, 4), 16);
+        if (isNaN(cu)) break;
+        out += String.fromCharCode(cu);
+      }
+      if (h.length === 2) out = String.fromCharCode(parseInt(h, 16));
+      return out;
+    }
+    var bfc = /beginbfchar([\s\S]*?)endbfchar/g;
+    while ((m = bfc.exec(text)) !== null) {
+      var re1 = /<([0-9A-Fa-f]+)>\s*(?:<([0-9A-Fa-f]+)>|\/(\S+))/g, r;
+      while ((r = re1.exec(m[1])) !== null) {
+        var src = parseInt(r[1], 16);
+        if (!codeLen) codeLen = Math.ceil(r[1].length / 2);
+        map[src] = r[2] !== undefined ? hexToStr(r[2]) : glyphToUnicode(r[3]);
+      }
+    }
+    var bfr = /beginbfrange([\s\S]*?)endbfrange/g;
+    while ((m = bfr.exec(text)) !== null) {
+      var body = m[1];
+      var re2 = /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*(?:<([0-9A-Fa-f]+)>|\[([\s\S]*?)\])/g, r2;
+      while ((r2 = re2.exec(body)) !== null) {
+        var lo = parseInt(r2[1], 16), hi = parseInt(r2[2], 16);
+        if (!codeLen) codeLen = Math.ceil(r2[1].length / 2);
+        if (hi - lo > 65535) continue;
+        if (r2[3] !== undefined) {
+          var base = r2[3];
+          var baseVal = parseInt(base.slice(-4), 16);
+          var prefix = base.length > 4 ? base.slice(0, base.length - 4) : "";
+          for (var c = lo; c <= hi; c++) {
+            var v = (baseVal + (c - lo)).toString(16).padStart(4, "0");
+            map[c] = hexToStr(prefix + v);
+          }
+        } else {
+          var items = r2[4].match(/<([0-9A-Fa-f]+)>/g) || [];
+          for (var k = 0; k < items.length && lo + k <= hi; k++) {
+            map[lo + k] = hexToStr(items[k].replace(/[<>]/g, ""));
+          }
+        }
+      }
+    }
+    return { map: map, codeLen: codeLen || 0 };
+  }
+
+  /* ---- cmap de fontes TrueType embutidas: recupera glifo -> unicode ---- */
+
+  function ttfTables(d) {
+    if (d.length < 12) return null;
+    var view = new DataView(d.buffer, d.byteOffset, d.byteLength);
+    var tag = view.getUint32(0);
+    var off = 0;
+    if (tag === 0x74746366) { if (d.length < 16) return null; off = view.getUint32(12); } // 'ttcf'
+    if (off + 12 > d.length) return null;
+    var n = view.getUint16(off + 4), t = {};
+    for (var i = 0; i < n; i++) {
+      var p = off + 12 + i * 16;
+      if (p + 16 > d.length) break;
+      var name = String.fromCharCode(d[p], d[p + 1], d[p + 2], d[p + 3]).replace(/\s+$/, "");
+      t[name] = { off: view.getUint32(p + 8), len: view.getUint32(p + 12) };
+    }
+    return { view: view, tables: t };
+  }
+
+  function parseTTFCmap(bytes) {
+    var out = null;
+    try {
+      var f = ttfTables(bytes);
+      if (!f || !f.tables.cmap) return null;
+      var v = f.view, base = f.tables.cmap.off;
+      if (base + 4 > bytes.length) return null;
+      var ntab = v.getUint16(base + 2);
+      out = {};
+      for (var i = 0; i < ntab; i++) {
+        var rec = base + 4 + i * 8;
+        if (rec + 8 > bytes.length) break;
+        var pid = v.getUint16(rec), eid = v.getUint16(rec + 2);
+        var sub = base + v.getUint32(rec + 4);
+        if (sub + 4 > bytes.length) continue;
+        var fmt = v.getUint16(sub);
+        var pairs = [];
+        if (fmt === 0) {
+          for (var c0 = 0; c0 < 256; c0++) {
+            var g0 = bytes[sub + 6 + c0];
+            if (g0) pairs.push([c0, g0]);
+          }
+        } else if (fmt === 4) {
+          var segX2 = v.getUint16(sub + 6), seg = segX2 >> 1;
+          var endB = sub + 14, startB = endB + segX2 + 2, deltaB = startB + segX2, roB = deltaB + segX2;
+          if (roB + segX2 > bytes.length) continue;
+          for (var s = 0; s < seg; s++) {
+            var end = v.getUint16(endB + s * 2), start = v.getUint16(startB + s * 2);
+            var delta = v.getInt16(deltaB + s * 2), ro = v.getUint16(roB + s * 2);
+            if (start > end || end - start > 20000) continue;
+            for (var c = start; c <= end && c !== 0xffff; c++) {
+              var g;
+              if (ro === 0) g = (c + delta) & 0xffff;
+              else {
+                var gp = roB + s * 2 + ro + (c - start) * 2;
+                if (gp + 2 > bytes.length) continue;
+                g = v.getUint16(gp);
+                if (g) g = (g + delta) & 0xffff;
+              }
+              if (g) pairs.push([c, g]);
+            }
+          }
+        } else if (fmt === 6) {
+          var first = v.getUint16(sub + 6), cnt = v.getUint16(sub + 8);
+          for (var k = 0; k < cnt; k++) {
+            var g6 = v.getUint16(sub + 10 + k * 2);
+            if (g6) pairs.push([first + k, g6]);
+          }
+        } else if (fmt === 12) {
+          var ngroups = v.getUint32(sub + 12);
+          for (var gi = 0; gi < ngroups && gi < 20000; gi++) {
+            var gp2 = sub + 16 + gi * 12;
+            if (gp2 + 12 > bytes.length) break;
+            var sc = v.getUint32(gp2), ec = v.getUint32(gp2 + 4), sg = v.getUint32(gp2 + 8);
+            if (ec - sc > 20000) ec = sc + 20000;
+            for (var cc = sc; cc <= ec; cc++) pairs.push([cc, sg + (cc - sc)]);
+          }
+        } else continue;
+
+        var macRoman = (pid === 1);
+        for (var q = 0; q < pairs.length; q++) {
+          var code = pairs[q][0], gid = pairs[q][1];
+          var uni = code;
+          if (code >= 0xf000 && code <= 0xf0ff) uni = code - 0xf000;   // cmap simbólico (3,0)
+          else if (macRoman && code > 127) continue;                    // MacRoman alto: ignora
+          if (uni < 32) continue;
+          if (out[gid] === undefined) out[gid] = uni;
+        }
+      }
+    } catch (e) { return null; }
+    return out && Object.keys(out).length ? out : null;
+  }
+
+  function familyOf(name) {
+    return String(name || "").replace(/^[A-Z]{6}\+/, "").split(/[,\-]/)[0].toLowerCase();
+  }
+
+  // Percorre o documento e recolhe todos os mapas glifo->unicode disponíveis.
+  Doc.prototype.harvestGlyphMaps = async function () {
+    this.gidByFamily = {};
+    this.gidGlobal = {};
+    var keys = Object.keys(this.objs);
+    for (var i = 0; i < keys.length; i++) {
+      var d = this.objs[keys[i]].dict;
+      if (!d || d.FontFile2 === undefined) continue;
+      var ref = d.FontFile2;
+      var rec = isRef(ref) ? this.objs[String(ref.__r)] : null;
+      if (!rec) continue;
+      var data = await this.stream(rec);
+      if (!data) continue;
+      var map = parseTTFCmap(data);
+      if (!map) continue;
+      var fam = familyOf(isName(this.get(d, "FontName")) ? this.get(d, "FontName").__n : "");
+      rec.__gidmap = map;
+      if (fam) {
+        if (!this.gidByFamily[fam]) this.gidByFamily[fam] = {};
+        for (var g in map) if (this.gidByFamily[fam][g] === undefined) this.gidByFamily[fam][g] = map[g];
+      }
+      for (var g2 in map) if (this.gidGlobal[g2] === undefined) this.gidGlobal[g2] = map[g2];
+    }
+  };
+
+  Doc.prototype.buildFont = async function (fdict) {
+    var f = { two: false, map: null, diff: null, widths: {}, dw: 500, base: "" };
+    if (!fdict) return f;
+    var sub = this.get(fdict, "Subtype");
+    var base = this.get(fdict, "BaseFont");
+    f.base = isName(base) ? base.__n : "";
+    var isType0 = isName(sub, "Type0");
+
+    var tu = fdict.ToUnicode !== undefined ? this.objs[isRef(fdict.ToUnicode) ? String(fdict.ToUnicode.__r) : ""] : null;
+    if (tu) {
+      var data = await this.stream(tu);
+      if (data) {
+        var cm = parseCMap(toLatin1(data));
+        f.map = cm.map;
+        if (cm.codeLen >= 2) f.two = true;
+      }
+    }
+    if (isType0) {
+      f.two = true;
+      var enc = this.get(fdict, "Encoding");
+      if (isName(enc) && /^(Identity-H|Identity-V)$/.test(enc.__n) === false && /UCS2|UTF16/.test(enc.__n)) f.two = true;
+      var desc = this.get(fdict, "DescendantFonts");
+      var d0 = Array.isArray(desc) ? this.resolve(desc[0]) : null;
+      var dd = isDict(d0) ? d0.__d : null;
+      if (dd) {
+        if (!f.map) {                                  // sem ToUnicode: usa glifo -> unicode
+          var fdesc = this.get(dd, "FontDescriptor");
+          var own = null, fam = "";
+          if (isDict(fdesc)) {
+            var ffref = fdesc.__d.FontFile2;
+            var frec = isRef(ffref) ? this.objs[String(ffref.__r)] : null;
+            if (frec && frec.__gidmap) own = frec.__gidmap;
+            var fn = this.get(fdesc.__d, "FontName");
+            fam = familyOf(isName(fn) ? fn.__n : "");
+          }
+          if (!fam) fam = familyOf(f.base);
+          var famMap = (this.gidByFamily && this.gidByFamily[fam]) || null;
+          if (own || famMap || this.gidGlobal) {
+            var merged = {}, src = [this.gidGlobal, famMap, own], si, kk;
+            for (si = 0; si < src.length; si++) {
+              if (!src[si]) continue;
+              for (kk in src[si]) merged[kk] = src[si][kk];   // prioridade crescente
+            }
+            f.gid = merged;
+          }
+        }
+        f.dw = num(this.get(dd, "DW"), 1000);
+        var W = this.get(dd, "W");
+        if (Array.isArray(W)) {
+          for (var i = 0; i < W.length;) {
+            var a = this.resolve(W[i]);
+            var b = this.resolve(W[i + 1]);
+            if (Array.isArray(b)) {
+              for (var j = 0; j < b.length; j++) f.widths[a + j] = num(this.resolve(b[j]), f.dw);
+              i += 2;
+            } else {
+              var c2 = this.resolve(W[i + 2]);
+              if (typeof b === "number" && typeof c2 === "number") {
+                if (b - a < 65536) for (var c = a; c <= b; c++) f.widths[c] = c2;
+              }
+              i += 3;
+            }
+          }
+        }
+      }
+    } else {
+      var fc = num(this.get(fdict, "FirstChar"), 0);
+      var ws = this.get(fdict, "Widths");
+      if (Array.isArray(ws)) {
+        for (var w = 0; w < ws.length; w++) {
+          var wv = num(this.resolve(ws[w]), NaN);
+          if (!isNaN(wv)) f.widths[fc + w] = wv;
+        }
+      }
+      var e2 = this.get(fdict, "Encoding");
+      if (isDict(e2)) {
+        var diffs = this.get(e2.__d, "Differences");
+        if (Array.isArray(diffs)) {
+          f.diff = {};
+          var code = 0;
+          for (var k = 0; k < diffs.length; k++) {
+            var it = this.resolve(diffs[k]);
+            if (typeof it === "number") code = it;
+            else if (isName(it)) f.diff[code++] = it.__n;
+          }
+        }
+      }
+      if (/Symbol|Dingbat/i.test(f.base) && !f.map && !f.diff) f.symbolic = true;
+    }
+    return f;
+  };
+
+  function decodeString(font, raw) {              // raw: string latin1 de bytes
+    var out = "", codes = [];
+    if (font.two) {
+      for (var i = 0; i + 1 < raw.length; i += 2) codes.push((raw.charCodeAt(i) << 8) | raw.charCodeAt(i + 1));
+      if (raw.length % 2) codes.push(raw.charCodeAt(raw.length - 1));
+    } else {
+      for (var j = 0; j < raw.length; j++) codes.push(raw.charCodeAt(j));
+    }
+    for (var k = 0; k < codes.length; k++) {
+      var c = codes[k], ch = null;
+      if (font.map && font.map[c] !== undefined) ch = font.map[c];
+      else if (font.diff && font.diff[c] !== undefined) ch = glyphToUnicode(font.diff[c]);
+      else if (font.gid && font.gid[c] !== undefined) ch = String.fromCodePoint(font.gid[c]);
+      else if (font.gid) { font.unresolved = (font.unresolved || 0) + 1; ch = ""; }
+      if (ch === null || ch === undefined || ch === "") {
+        if (font.gid) { out += ch || ""; continue; }
+        if (font.two) ch = c >= 32 && c < 0xd800 ? String.fromCharCode(c) : "";
+        else if (WIN_HIGH[c]) ch = String.fromCharCode(WIN_HIGH[c]);
+        else if (c >= 32) ch = String.fromCharCode(c);
+        else ch = "";
+      }
+      out += ch;
+    }
+    return { text: out, codes: codes };
+  }
+
+  function widthOf(font, codes) {
+    var total = 0;
+    for (var i = 0; i < codes.length; i++) {
+      var w = font.widths[codes[i]];
+      total += (typeof w === "number" ? w : font.dw);
+    }
+    return total / 1000;
+  }
+
+  /* ============ interpretador do content stream ============ */
+
+  function mul(m, n) {                              // m * n (matrizes 3x2)
+    return [
+      m[0] * n[0] + m[1] * n[2], m[0] * n[1] + m[1] * n[3],
+      m[2] * n[0] + m[3] * n[2], m[2] * n[1] + m[3] * n[3],
+      m[4] * n[0] + m[5] * n[2] + n[4], m[4] * n[1] + m[5] * n[3] + n[5]
+    ];
+  }
+
+  async function runContent(doc, content, fonts, items) {
+    var lex = new Lexer(content, 0);
+    var stack = [];
+    var ctm = [1, 0, 0, 1, 0, 0], ctmStack = [];
+    var tm = null, tlm = null;
+    var font = { two: false, map: null, widths: {}, dw: 500 }, size = 12;
+    var leading = 0, charSp = 0, wordSp = 0, hscale = 1, rise = 0;
+    var guard = 0;
+
+    function show(rawStr) {
+      var dec = decodeString(font, rawStr);
+      if (!dec.text) { advance(widthOf(font, dec.codes) * size * hscale + dec.codes.length * charSp * hscale); return; }
+      var trm = mul([size * hscale, 0, 0, size, 0, rise], mul(tm, ctm));
+      var x = trm[4], y = trm[5];
+      var scale = Math.sqrt(Math.abs(tm[0] * tm[3] - tm[1] * tm[2]) || 1) *
+                  Math.sqrt(Math.abs(ctm[0] * ctm[3] - ctm[1] * ctm[2]) || 1);
+      var nspaces = 0;
+      for (var i = 0; i < dec.codes.length; i++) if (!font.two && dec.codes[i] === 32) nspaces++;
+      var w = widthOf(font, dec.codes) * size + dec.codes.length * charSp + nspaces * wordSp;
+      w *= hscale;
+      var last = items.length ? items[items.length - 1] : null;
+      if (last && Math.abs(last.y - y) < 0.6 && x - last.xEnd < 0.02 * size * scale && x >= last.xEnd - 0.6 * size * scale) {
+        last.text += dec.text;                       // continuação sem espaço
+        last.xEnd = x + w;
+      } else {
+        items.push({ x: x, xEnd: x + w, y: y, size: Math.max(1, size * scale), text: dec.text });
+      }
+      advance(w);
+    }
+    function advance(w) { tm = mul([1, 0, 0, 1, w, 0], tm); }
+    function gap(adj) {                              // ajuste do TJ
+      var t = -adj / 1000 * size * hscale;
+      advance(t);
+      var last = items.length ? items[items.length - 1] : null;
+      if (!last) return;
+      if (t > 0.7 * size) return;                    // salto de coluna: fecha o fragmento
+      if (t > 0.17 * size && !/\s$/.test(last.text)) { last.text += " "; last.xEnd += t; }
+      else last.xEnd += t;
+    }
+
+    for (;;) {
+      if (guard++ > 4000000) break;
+      lex.skip();
+      if (lex.p >= content.length) break;
+      var c = content[lex.p];
+      var obj;
+      if (c === "/" || c === "(" || c === "[" || (c === "<")) { obj = lex.object(); stack.push(obj); continue; }
+      var t = lex.token();
+      if (t === null) break;
+      if (/^[+-]?[\d.]+(?:[eE][+-]?\d+)?$/.test(t)) { stack.push(parseFloat(t)); continue; }
+      if (t === "<<") { lex.p -= 2; stack.push(lex.object()); continue; }
+      if (t === "]" || t === ">>" || t === "{" || t === "}") { continue; }
+
+      switch (t) {
+        case "q": ctmStack.push(ctm.slice()); break;
+        case "Q": if (ctmStack.length) ctm = ctmStack.pop(); break;
+        case "cm":
+          if (stack.length >= 6) ctm = mul(stack.slice(-6), ctm);
+          break;
+        case "BT": tm = [1, 0, 0, 1, 0, 0]; tlm = tm.slice(); break;
+        case "ET": tm = null; break;
+        case "Tf":
+          size = num(stack[stack.length - 1], 12);
+          var nm = stack[stack.length - 2];
+          if (isName(nm) && fonts[nm.__n]) font = fonts[nm.__n];
+          break;
+        case "Td":
+          if (stack.length >= 2 && tlm) {
+            tlm = mul([1, 0, 0, 1, num(stack[stack.length - 2], 0), num(stack[stack.length - 1], 0)], tlm);
+            tm = tlm.slice();
+          }
+          break;
+        case "TD":
+          if (stack.length >= 2 && tlm) {
+            leading = -num(stack[stack.length - 1], 0);
+            tlm = mul([1, 0, 0, 1, num(stack[stack.length - 2], 0), num(stack[stack.length - 1], 0)], tlm);
+            tm = tlm.slice();
+          }
+          break;
+        case "Tm":
+          if (stack.length >= 6) { tlm = stack.slice(-6).map(function (v) { return num(v, 0); }); tm = tlm.slice(); }
+          break;
+        case "T*":
+          if (tlm) { tlm = mul([1, 0, 0, 1, 0, -leading], tlm); tm = tlm.slice(); }
+          break;
+        case "TL": leading = num(stack[stack.length - 1], 0); break;
+        case "Tc": charSp = num(stack[stack.length - 1], 0); break;
+        case "Tw": wordSp = num(stack[stack.length - 1], 0); break;
+        case "Tz": hscale = num(stack[stack.length - 1], 100) / 100; break;
+        case "Ts": rise = num(stack[stack.length - 1], 0); break;
+        case "Tj":
+          if (tm && stack.length && stack[stack.length - 1] && stack[stack.length - 1].__s !== undefined) show(stack[stack.length - 1].__s);
+          break;
+        case "'":
+          if (tlm) { tlm = mul([1, 0, 0, 1, 0, -leading], tlm); tm = tlm.slice(); }
+          if (tm && stack.length && stack[stack.length - 1] && stack[stack.length - 1].__s !== undefined) show(stack[stack.length - 1].__s);
+          break;
+        case '"':
+          if (stack.length >= 3) { wordSp = num(stack[stack.length - 3], wordSp); charSp = num(stack[stack.length - 2], charSp); }
+          if (tlm) { tlm = mul([1, 0, 0, 1, 0, -leading], tlm); tm = tlm.slice(); }
+          if (tm && stack.length && stack[stack.length - 1] && stack[stack.length - 1].__s !== undefined) show(stack[stack.length - 1].__s);
+          break;
+        case "TJ":
+          var arr = stack[stack.length - 1];
+          if (tm && Array.isArray(arr)) {
+            for (var i = 0; i < arr.length; i++) {
+              var el = arr[i];
+              if (el && el.__s !== undefined) show(el.__s);
+              else if (typeof el === "number") gap(el);
+            }
+          }
+          break;
+        default: break;
+      }
+      if (t !== "<<") stack.length = 0;
+    }
+  }
+
+  /* ============ montagem das linhas ============ */
+
+  function assemble(items) {
+    if (!items.length) return [];
+    var seen = {}, uniq = [];                    // descarta sobre-impressão exata
+    for (var u = 0; u < items.length; u++) {
+      var it0 = items[u];
+      var k = Math.round(it0.x) + "|" + Math.round(it0.y) + "|" + it0.text;
+      if (seen[k]) continue;
+      seen[k] = 1;
+      uniq.push(it0);
+    }
+    items = uniq;
+    var sorted = items.slice().sort(function (a, b) {
+      if (Math.abs(a.y - b.y) > 0.1) return b.y - a.y;
+      return a.x - b.x;
+    });
+    var lines = [], cur = null;
+    for (var i = 0; i < sorted.length; i++) {
+      var it = sorted[i];
+      var tol = Math.max(1.6, it.size * 0.42);
+      if (!cur || Math.abs(cur.y - it.y) > tol) {
+        cur = { y: it.y, size: it.size, parts: [it] };
+        lines.push(cur);
+      } else {
+        cur.parts.push(it);
+        cur.size = Math.max(cur.size, it.size);
+      }
+    }
+    return lines.map(function (l) {
+      l.parts.sort(function (a, b) { return a.x - b.x; });
+      var text = "", end = null, cells = [], cur = null;
+      for (var j = 0; j < l.parts.length; j++) {
+        var p = l.parts[j];
+        var newCell = false;
+        if (end !== null) {
+          var g = p.x - end;
+          if (g > p.size * 0.9) { text += "  "; newCell = true; }   // salto grande: coluna
+          else if (g > p.size * 0.16 && !/\s$/.test(text) && !/^\s/.test(p.text)) text += " ";
+        }
+        if (!cur || newCell) { cur = { x: p.x, text: "" }; cells.push(cur); }
+        else if (cur.text && !/\s$/.test(cur.text) && !/^\s/.test(p.text)) cur.text += " ";
+        cur.text += p.text;
+        text += p.text;
+        end = p.xEnd;
+      }
+      for (var m = 0; m < cells.length; m++) cells[m].text = cells[m].text.trim();
+      var frags = l.parts.map(function (p) {
+        return { x: p.x, xEnd: p.xEnd, text: p.text };
+      });
+      return { y: l.y, size: l.size, text: text.replace(/\s+$/, ""), cells: cells, parts: frags };
+    }).filter(function (l) { return l.text.trim() !== ""; });
+  }
+
+  /* ============ API ============ */
+
+  async function extract(bytes, opts) {
+    opts = opts || {};
+    var doc = new Doc(bytes);
+    if (/\/Encrypt\s+\d+\s+\d+\s+R/.test(doc.s) || /\/Encrypt\s*<</.test(doc.s)) {
+      var err = new Error("PDF protegido por criptografia");
+      err.code = "encrypted";
+      throw err;
+    }
+    doc.scan();
+    await doc.expandObjStreams();
+    await doc.harvestGlyphMaps();
+
+    var pages = doc.pageList();
+    var wanted = opts.pages || null;                  // Set de números 1-based
+    var out = [];
+
+    for (var pi = 0; pi < pages.length; pi++) {
+      var n = pi + 1;
+      if (wanted && !wanted.has(n)) continue;
+      var pg = pages[pi];
+      var contents = doc.get(pg.dict, "Contents");
+      var recs = [];
+      if (Array.isArray(contents)) {
+        for (var i = 0; i < contents.length; i++) {
+          var r = isRef(contents[i]) ? doc.objs[String(contents[i].__r)] : null;
+          if (r) recs.push(r);
+        }
+      } else if (pg.dict.Contents !== undefined && isRef(pg.dict.Contents)) {
+        var rr = doc.objs[String(pg.dict.Contents.__r)];
+        if (rr) recs.push(rr);
+      }
+      var buf = "";
+      for (var q = 0; q < recs.length; q++) {
+        var data = await doc.stream(recs[q]);
+        if (data) buf += toLatin1(data) + "\n";
+      }
+
+      // fontes da página
+      var res = doc.resolve(pg.dict.Resources !== undefined ? pg.dict.Resources : pg.inh.Resources);
+      var fonts = {};
+      if (isDict(res)) {
+        var fd = doc.get(res.__d, "Font");
+        if (isDict(fd)) {
+          for (var key in fd.__d) {
+            var fo = doc.resolve(fd.__d[key]);
+            if (isDict(fo)) fonts[key] = await doc.buildFont(fo.__d);
+          }
+        }
+      }
+
+      var items = [];
+      if (buf) {
+        try { await runContent(doc, buf, fonts, items); } catch (e) { /* página problemática */ }
+      }
+      out.push({ n: n, lines: assemble(items) });
+      if (opts.onPage) opts.onPage(out.length, wanted ? wanted.size : pages.length, n);
+    }
+
+    return { numPages: pages.length, pages: out };
+  }
+
+  return { extract: extract, _Doc: Doc, _glyph: glyphToUnicode };
+})();
+
+if (typeof module !== "undefined" && module.exports) module.exports = PDFText;
+
+/* tomd.js — converte as linhas extraídas em markdown.
+   Deteta títulos pelo tamanho da fonte, tabelas pelo alinhamento das colunas
+   e listas pelos marcadores. Usado tanto no Node (testes) como no navegador. */
+var ToMarkdown = (function () {
+  "use strict";
+
+  function esc(s) {
+    return String(s).replace(/\|/g, "\\|").replace(/\s+/g, " ").trim();
+  }
+
+  function bodySize(pages) {                     // tamanho de fonte mais comum
+    var tally = {};
+    pages.forEach(function (p) {
+      p.lines.forEach(function (l) {
+        var k = Math.round(l.size * 2) / 2;
+        tally[k] = (tally[k] || 0) + l.text.length;
+      });
+    });
+    var best = 0, bestN = -1;
+    for (var k in tally) if (tally[k] > bestN) { bestN = tally[k]; best = parseFloat(k); }
+    return best || 10;
+  }
+
+  // Agrupa as posições x de todos os fragmentos do bloco em colunas.
+  function columnsOf(rows, size) {
+    var tol = Math.max(4, size * 0.75);
+    var xs = [];
+    rows.forEach(function (r) {
+      (r.parts || []).forEach(function (p) { xs.push(p.x); });
+    });
+    if (!xs.length) return [];
+    xs.sort(function (a, b) { return a - b; });
+    var cols = [], group = [xs[0]];
+    for (var i = 1; i < xs.length; i++) {
+      if (xs[i] - group[group.length - 1] <= tol) group.push(xs[i]);
+      else { cols.push(group); group = [xs[i]]; }
+    }
+    cols.push(group);
+    return cols.map(function (g) {
+      var sum = 0;
+      for (var k = 0; k < g.length; k++) sum += g[k];
+      return { x: sum / g.length, n: g.length };
+    });
+  }
+
+  function toTable(rows, size) {
+    var cols = columnsOf(rows, size);
+    if (cols.length < 2) return null;
+    var grid = rows.map(function (r) {
+      var line = new Array(cols.length).fill("");
+      (r.parts || []).forEach(function (c) {
+        var best = 0, bd = 1e9;
+        for (var i = 0; i < cols.length; i++) {
+          var d = Math.abs(cols[i].x - c.x);
+          if (d < bd) { bd = d; best = i; }
+        }
+        var v = esc(c.text);
+        if (!v) return;
+        line[best] = line[best] ? line[best] + " " + v : v;
+      });
+      return line;
+    });
+    // funde colunas com pouco conteúdo na vizinha mais próxima
+    var centers = cols.map(function (c) { return c.x; });
+    var limit = Math.max(1, Math.ceil(grid.length * 0.3));
+    for (;;) {
+      if (centers.length <= 2) break;
+      var support = centers.map(function (_, i) {
+        return grid.reduce(function (n, g) { return n + (g[i] ? 1 : 0); }, 0);
+      });
+      var weak = -1, weakN = limit;
+      for (var i = 0; i < support.length; i++) {
+        if (support[i] < weakN) { weakN = support[i]; weak = i; }
+      }
+      if (weak < 0) break;
+      var into;
+      if (weak === 0) into = 1;
+      else if (weak === centers.length - 1) into = weak - 1;
+      else into = (centers[weak] - centers[weak - 1] <= centers[weak + 1] - centers[weak]) ? weak - 1 : weak + 1;
+      grid.forEach(function (g) {
+        if (g[weak]) g[into] = g[into] ? g[into] + " " + g[weak] : g[weak];
+      });
+      grid.forEach(function (g) { g.splice(weak, 1); });
+      centers.splice(weak, 1);
+    }
+    if (centers.length < 2) return null;
+
+    // cabeçalhos ocupam por vezes 2-3 linhas: junta-as
+    var ncol = centers.length, merges = 0;
+    while (grid.length > 3 && merges < 2) {
+      var filled = grid[1].reduce(function (n, v) { return n + (v ? 1 : 0); }, 0);
+      if (filled >= ncol * 0.7) break;
+      for (var m = 0; m < ncol; m++) {
+        if (grid[1][m]) grid[0][m] = grid[0][m] ? grid[0][m] + " " + grid[1][m] : grid[1][m];
+      }
+      grid.splice(1, 1);
+      merges++;
+    }
+
+    var out = ["| " + grid[0].join(" | ") + " |",
+               "|" + grid[0].map(function () { return "---"; }).join("|") + "|"];
+    for (var r = 1; r < grid.length; r++) out.push("| " + grid[r].join(" | ") + " |");
+    return out.join("\n");
+  }
+
+  function isBullet(t) { return /^[•·▪◦‣›»\u00AD\u2022\u203A]\s*/.test(t); }
+
+  function convert(pages, opts) {
+    opts = opts || {};
+    var body = bodySize(pages);
+    var out = [];
+
+    pages.forEach(function (page) {
+      if (opts.pageMarks) out.push("<!-- página " + page.n + " -->");
+      var lines = page.lines;
+      var i = 0;
+      while (i < lines.length) {
+        var l = lines[i];
+
+        // bloco de tabela: linhas seguidas com várias células alinhadas
+        if (l.parts && l.parts.length >= 3) {
+          var j = i, rows = [];
+          while (j < lines.length && lines[j].parts && lines[j].parts.length >= 2 &&
+                 !isBullet(lines[j].text.trim()) &&
+                 Math.abs(lines[j].size - l.size) < 2.5) {
+            rows.push(lines[j]); j++;
+          }
+          if (rows.length >= 2) {
+            var tbl = toTable(rows, l.size);
+            if (tbl) { out.push(tbl); i = j; continue; }
+          }
+        }
+
+        var t = l.text.trim();
+
+        if (isBullet(t)) {
+          out.push("- " + esc(t.replace(/^[•·▪◦‣›»\u00AD\u2022\u203A]\s*/, "")));
+          i++; continue;
+        }
+
+        if (l.size > body * 1.45) out.push("# " + t);
+        else if (l.size > body * 1.22) out.push("## " + t);
+        else if (l.size > body * 1.08 && t.length < 90) out.push("### " + t);
+        else out.push(t);
+        i++;
+      }
+      out.push("");
+    });
+
+    return out.join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/^\s+|\s+$/g, "") + "\n";
+  }
+
+  return { convert: convert };
+})();
+
+if (typeof module !== "undefined" && module.exports) module.exports = ToMarkdown;
+
+/* zip.js — cria ficheiros ZIP sem bibliotecas externas.
+   Usa CompressionStream('deflate-raw'), nativa do navegador e do Node 18+.
+   makeZip([{name, text}]) -> Promise<Blob> */
+var MakeZip = (function () {
+  "use strict";
+
+  var TABLE = (function () {
+    var t = new Uint32Array(256);
+    for (var n = 0; n < 256; n++) {
+      var c = n;
+      for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+
+  function crc32(bytes) {
+    var c = 0xFFFFFFFF;
+    for (var i = 0; i < bytes.length; i++) c = TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  async function deflateRaw(bytes) {
+    try {
+      var cs = new CompressionStream("deflate-raw");
+      var buf = await new Response(new Blob([bytes]).stream().pipeThrough(cs)).arrayBuffer();
+      var out = new Uint8Array(buf);
+      return out.length < bytes.length ? { data: out, method: 8 } : { data: bytes, method: 0 };
+    } catch (e) {
+      return { data: bytes, method: 0 };            // sem compressão, mas ZIP válido
+    }
+  }
+
+  function dosDateTime(d) {
+    var time = ((d.getHours() & 31) << 11) | ((d.getMinutes() & 63) << 5) | ((d.getSeconds() / 2) & 31);
+    var date = (((d.getFullYear() - 1980) & 127) << 9) | (((d.getMonth() + 1) & 15) << 5) | (d.getDate() & 31);
+    return { time: time, date: date };
+  }
+
+  // Evita nomes repetidos dentro do arquivo.
+  function uniqueNames(entries) {
+    var used = {};
+    return entries.map(function (e) {
+      var name = e.name, base = name.replace(/\.[^.]*$/, ""), ext = name.slice(base.length), n = 2;
+      while (used[name.toLowerCase()]) { name = base + " (" + n + ")" + ext; n++; }
+      used[name.toLowerCase()] = 1;
+      return { name: name, text: e.text };
+    });
+  }
+
+  async function makeZip(entries, onProgress) {
+    entries = uniqueNames(entries);
+    var enc = new TextEncoder();
+    var stamp = dosDateTime(new Date());
+    var chunks = [], central = [], offset = 0;
+
+    for (var i = 0; i < entries.length; i++) {
+      if (onProgress) onProgress(i, entries.length, entries[i].name);
+      var nameBytes = enc.encode(entries[i].name);
+      var raw = enc.encode(entries[i].text);
+      var crc = crc32(raw);
+      var rawLen = raw.length;
+      var packed = await deflateRaw(raw);
+      raw = null;
+
+      var local = new Uint8Array(30 + nameBytes.length);
+      var lv = new DataView(local.buffer);
+      lv.setUint32(0, 0x04034b50, true);
+      lv.setUint16(4, 20, true);
+      lv.setUint16(6, 0x0800, true);                 // nomes em UTF-8
+      lv.setUint16(8, packed.method, true);
+      lv.setUint16(10, stamp.time, true);
+      lv.setUint16(12, stamp.date, true);
+      lv.setUint32(14, crc, true);
+      lv.setUint32(18, packed.data.length, true);
+      lv.setUint32(22, rawLen, true);
+      lv.setUint16(26, nameBytes.length, true);
+      lv.setUint16(28, 0, true);
+      local.set(nameBytes, 30);
+
+      chunks.push(local, packed.data);
+
+      var cen = new Uint8Array(46 + nameBytes.length);
+      var cv = new DataView(cen.buffer);
+      cv.setUint32(0, 0x02014b50, true);
+      cv.setUint16(4, 20, true);
+      cv.setUint16(6, 20, true);
+      cv.setUint16(8, 0x0800, true);
+      cv.setUint16(10, packed.method, true);
+      cv.setUint16(12, stamp.time, true);
+      cv.setUint16(14, stamp.date, true);
+      cv.setUint32(16, crc, true);
+      cv.setUint32(20, packed.data.length, true);
+      cv.setUint32(24, rawLen, true);
+      cv.setUint16(28, nameBytes.length, true);
+      cv.setUint32(42, offset, true);
+      cen.set(nameBytes, 46);
+      central.push(cen);
+
+      offset += local.length + packed.data.length;
+    }
+
+    var centralSize = central.reduce(function (n, c) { return n + c.length; }, 0);
+    var end = new Uint8Array(22);
+    var ev = new DataView(end.buffer);
+    ev.setUint32(0, 0x06054b50, true);
+    ev.setUint16(8, entries.length, true);
+    ev.setUint16(10, entries.length, true);
+    ev.setUint32(12, centralSize, true);
+    ev.setUint32(16, offset, true);
+
+    return new Blob(chunks.concat(central, [end]), { type: "application/zip" });
+  }
+
+  return { makeZip: makeZip, _crc32: crc32 };
+})();
+
+if (typeof module !== "undefined" && module.exports) module.exports = MakeZip;
+
+// Leitor de ZIP em JS puro — extrai os PDFs de uma pasta compactada.
+// Sem dependências: usa DecompressionStream nativa para o deflate.
+var ReadZip = (function () {
+
+  function u16(v, o) { return v.getUint16(o, true); }
+  function u32(v, o) { return v.getUint32(o, true); }
+
+  async function inflateRaw(bytes) {
+    var ds = new DecompressionStream("deflate-raw");
+    var buf = await new Response(new Blob([bytes]).stream().pipeThrough(ds)).arrayBuffer();
+    return new Uint8Array(buf);
+  }
+
+  // Procura o End Of Central Directory a partir do fim do ficheiro.
+  function findEOCD(bytes) {
+    var max = Math.min(bytes.length, 66000);           // comentário cabe em 64 KB
+    for (var i = bytes.length - 22; i >= bytes.length - max && i >= 0; i--) {
+      if (bytes[i] === 0x50 && bytes[i + 1] === 0x4b &&
+          bytes[i + 2] === 0x05 && bytes[i + 3] === 0x06) return i;
+    }
+    return -1;
+  }
+
+  // Zip64: se os campos de 32 bits estiverem saturados, o valor real está no extra field 0x0001.
+  function readZip64Extra(view, start, len, need) {
+    var p = start, out = {};
+    while (p + 4 <= start + len) {
+      var id = u16(view, p), size = u16(view, p + 2);
+      if (id === 0x0001) {
+        var q = p + 4;
+        if (need.size)   { out.size   = Number(view.getBigUint64(q, true)); q += 8; }
+        if (need.packed) { out.packed = Number(view.getBigUint64(q, true)); q += 8; }
+        if (need.offset) { out.offset = Number(view.getBigUint64(q, true)); q += 8; }
+        return out;
+      }
+      p += 4 + size;
+    }
+    return out;
+  }
+
+  function decodeName(bytes, utf8) {
+    try {
+      return new TextDecoder(utf8 ? "utf-8" : "cp437", { fatal: false }).decode(bytes);
+    } catch (e) {
+      return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+    }
+  }
+
+  // Lixo que o macOS/iOS mete dentro do ZIP.
+  function ehLixo(nome) {
+    if (/(^|\/)__MACOSX\//.test(nome)) return true;
+    var base = nome.split("/").pop();
+    return base === "" || base.charAt(0) === "." || base === "Thumbs.db";
+  }
+
+  function listar(bytes) {
+    var view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    var eocd = findEOCD(bytes);
+    if (eocd < 0) throw new Error("Não parece ser um arquivo ZIP válido.");
+
+    var total = u16(view, eocd + 10);
+    var cdOff = u32(view, eocd + 16);
+
+    // Localizador Zip64, se existir logo antes do EOCD.
+    if (cdOff === 0xffffffff || total === 0xffff) {
+      var loc = eocd - 20;
+      if (loc >= 0 && u32(view, loc) === 0x07064b50) {
+        var z64 = Number(view.getBigUint64(loc + 8, true));
+        if (u32(view, z64) === 0x06064b50) {
+          total = Number(view.getBigUint64(z64 + 32, true));
+          cdOff = Number(view.getBigUint64(z64 + 48, true));
+        }
+      }
+    }
+
+    var itens = [], p = cdOff;
+    for (var i = 0; i < total && p + 46 <= bytes.length; i++) {
+      if (u32(view, p) !== 0x02014b50) break;
+      var flag    = u16(view, p + 8),
+          metodo  = u16(view, p + 10),
+          packed  = u32(view, p + 20),
+          size    = u32(view, p + 24),
+          nLen    = u16(view, p + 28),
+          eLen    = u16(view, p + 30),
+          cLen    = u16(view, p + 32),
+          offset  = u32(view, p + 42);
+
+      var nome = decodeName(bytes.subarray(p + 46, p + 46 + nLen), (flag & 0x800) !== 0);
+
+      if (size === 0xffffffff || packed === 0xffffffff || offset === 0xffffffff) {
+        var ex = readZip64Extra(view, p + 46 + nLen, eLen, {
+          size: size === 0xffffffff,
+          packed: packed === 0xffffffff,
+          offset: offset === 0xffffffff
+        });
+        if (ex.size !== undefined) size = ex.size;
+        if (ex.packed !== undefined) packed = ex.packed;
+        if (ex.offset !== undefined) offset = ex.offset;
+      }
+
+      itens.push({ nome: nome, metodo: metodo, packed: packed, size: size,
+                   offset: offset, cifrado: (flag & 0x1) !== 0 });
+      p += 46 + nLen + eLen + cLen;
+    }
+    return itens;
+  }
+
+  async function extrair(bytes, item) {
+    var view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    var lh = item.offset;
+    if (u32(view, lh) !== 0x04034b50) throw new Error("cabeçalho local inválido");
+    var nLen = u16(view, lh + 26), eLen = u16(view, lh + 28);
+    var ini = lh + 30 + nLen + eLen;
+    var cru = bytes.subarray(ini, ini + item.packed);
+    if (item.metodo === 0) return cru.slice();
+    if (item.metodo === 8) return await inflateRaw(cru);
+    throw new Error("método de compressão " + item.metodo + " não suportado");
+  }
+
+  // Devolve objetos File, prontos para o mesmo caminho dos PDFs soltos.
+  async function pdfsDoZip(bytes, onProgress) {
+    var itens = listar(bytes).filter(function (it) {
+      return !ehLixo(it.nome) && /\.pdf$/i.test(it.nome);
+    });
+    itens.sort(function (a, b) {
+      return a.nome.localeCompare(b.nome, "pt", { numeric: true, sensitivity: "base" });
+    });
+
+    var saida = [], problemas = [];
+    for (var i = 0; i < itens.length; i++) {
+      var it = itens[i];
+      if (onProgress) onProgress(i, itens.length, it.nome.split("/").pop());
+      if (it.cifrado) { problemas.push(it.nome + " (protegido por senha)"); continue; }
+      try {
+        var dados = await extrair(bytes, it);
+        saida.push(new File([dados], it.nome.split("/").pop(),
+                            { type: "application/pdf" }));
+      } catch (e) {
+        problemas.push(it.nome + " (" + (e.message || "falhou") + ")");
+      }
+      await new Promise(function (r) { setTimeout(r, 0); });
+    }
+    return { arquivos: saida, problemas: problemas, totalNoZip: listar(bytes).length };
+  }
+
+  return { listar: listar, extrair: extrair, pdfsDoZip: pdfsDoZip };
+})();
+
+
+</script>
+
+<script>
+(function(){
+  "use strict";
+  var dz=document.getElementById('dz'), input=document.getElementById('file'),
+      results=document.getElementById('results'), progress=document.getElementById('progress'),
+      progText=document.getElementById('progressText'), progBar=document.getElementById('progressBar'),
+      btnCancel=document.getElementById('btnCancel');
+  btnCancel.addEventListener('click',function(){
+    cancelar=true; btnCancel.disabled=true; btnCancel.textContent='A parar…';
+    progText.textContent='Terminando o arquivo atual…';
+  });
+
+  function fmtBytes(n){ return n<1024?n+' B':n<1048576?(n/1024).toFixed(0)+' KB':(n/1048576).toFixed(1)+' MB'; }
+  function fmtNum(n){ return n.toLocaleString('pt-BR'); }
+  function fmtTokens(t){ return t>=1000?(t/1000).toFixed(1).replace('.',',')+' mil':String(t); }
+
+  function parseRange(str,total){
+    str=(str||'').trim(); if(!str) return null;
+    var set=new Set();
+    str.split(',').forEach(function(part){
+      part=part.trim(); if(!part) return;
+      var m=part.match(/^(\d+)\s*[-–]\s*(\d+)$/);
+      if(m){ var a=Math.max(1,+m[1]), b=Math.min(total,+m[2]); for(var i=a;i<=b;i++) set.add(i); }
+      else if(/^\d+$/.test(part)){ var p=+part; if(p>=1&&p<=total) set.add(p); }
+    });
+    return set.size?set:null;
+  }
+
+  function joinParagraphs(t){
+    return t.replace(/([A-Za-zÀ-ÿ])-\n([a-zà-ÿ])/g,'$1$2')
+            .replace(/([^\n.!?:;•\-–—"'”’)\]])\n(?=[a-zà-ÿ0-9(“"'])/g,'$1 ');
+  }
+  function trimText(t){
+    return t.replace(/[ \t\u00A0]{3,}/g,'  ').replace(/ *\n */g,'\n')
+            .replace(/\n{3,}/g,'\n\n').replace(/^\s+|\s+$/g,'');
+  }
+
+  function currentFormat(){
+    var r=document.querySelector('input[name=fmt]:checked');
+    return r?r.value:'txt';
+  }
+
+  function build(pagesData){
+    var wantPages=document.getElementById('optPages').checked,
+        wantParas=document.getElementById('optParas').checked,
+        wantTrim=document.getElementById('optTrim').checked;
+
+    if(currentFormat()==='md'){
+      var md=ToMarkdown.convert(pagesData,{pageMarks:wantPages});
+      return wantTrim?md.replace(/\n{3,}/g,'\n\n').replace(/^\s+|\s+$/g,''):md;
+    }
+
+    var text=pagesData.map(function(p){
+      var body=p.lines.map(function(l){return l.text;}).join('\n');
+      if(wantParas) body=joinParagraphs(body);
+      return wantPages?('[página '+p.n+']\n'+body):body;
+    }).join('\n\n');
+    if(wantTrim) text=trimText(text);
+    return text;
+  }
+
+  var batchResults=[];
+
+  function download(name, text, type){
+    var url=URL.createObjectURL(new Blob([text],{type:type||'text/plain;charset=utf-8'}));
+    var a=document.createElement('a'); a.href=url; a.download=name; a.click();
+    setTimeout(function(){URL.revokeObjectURL(url);},4000);
+  }
+
+  function fmtBytesShort(n){ return n<1048576?(n/1024).toFixed(0)+' KB':(n/1048576).toFixed(1)+' MB'; }
+
+  function refreshBatch(){
+    var bar=document.getElementById('batch');
+    if(batchResults.length<2){ bar.hidden=true; return; }
+    var chars=batchResults.reduce(function(n,r){return n+r.text.length;},0);
+    document.getElementById('batchCount').textContent=
+      batchResults.length+' ficheiros convertidos · '+fmtBytesShort(chars)+' de texto';
+    bar.hidden=false;
+  }
+
+  // A API moderna exige contexto seguro (https). Aberto via file://, o navegador
+  // bloqueia-a, por isso há uma alternativa com o método antigo.
+  function copyText(text){
+    return new Promise(function(resolve,reject){
+      function legacy(){
+        try{
+          var ta=document.createElement('textarea');
+          ta.value=text;
+          ta.setAttribute('readonly','');
+          ta.style.position='fixed'; ta.style.left='-9999px'; ta.style.top='0';
+          document.body.appendChild(ta);
+          ta.focus(); ta.select();
+          try{ ta.setSelectionRange(0, text.length); }catch(e){}
+          var ok=document.execCommand && document.execCommand('copy');
+          document.body.removeChild(ta);
+          ok?resolve():reject(new Error('bloqueado'));
+        }catch(err){ reject(err); }
+      }
+      if(navigator.clipboard && window.isSecureContext){
+        navigator.clipboard.writeText(text).then(resolve, legacy);
+      } else legacy();
+    });
+  }
+
+  // Último recurso: seleciona a pré-visualização para o utilizador copiar à mão.
+  function selectPreview(pre){
+    try{
+      var sel=window.getSelection(), range=document.createRange();
+      range.selectNodeContents(pre); sel.removeAllRanges(); sel.addRange(range);
+      pre.scrollIntoView({block:'center'});
+      return true;
+    }catch(e){ return false; }
+  }
+
+  function errorCard(name,msg){
+    var el=document.createElement('article'); el.className='card';
+    var h=document.createElement('div'); h.className='card-head';
+    var t=document.createElement('h2'); t.className='fname'; t.textContent=name;
+    h.appendChild(t); el.appendChild(h);
+    var p=document.createElement('p'); p.className='flag err'; p.textContent=msg;
+    el.appendChild(p); return el;
+  }
+
+  function card(file,res){
+    var text=build(res.pages);
+    var chars=text.length,
+        words=text?text.split(/\s+/).filter(Boolean).length:0,
+        txtBytes=new Blob([text]).size,
+        saved=file.size>0?Math.max(0,Math.round((1-txtBytes/file.size)*100)):0,
+        name=file.name.replace(/\.pdf$/i,'')+(currentFormat()==='md'?'.md':'.txt');
+
+    var el=document.createElement('article'); el.className='card';
+    var head=document.createElement('div'); head.className='card-head';
+    var h2=document.createElement('h2'); h2.className='fname'; h2.textContent=name;
+    var meta=document.createElement('span'); meta.className='meta';
+    meta.textContent=res.pages.length+' de '+res.numPages+' página'+(res.numPages>1?'s':'')+' · '+fmtBytes(file.size);
+    head.appendChild(h2); head.appendChild(meta); el.appendChild(head);
+
+    if(chars<40*Math.max(1,res.pages.length)){
+      var flag=document.createElement('p'); flag.className='flag';
+      flag.textContent='Quase nenhum texto encontrado. Este PDF provavelmente é escaneado (imagem). '+
+        'Passe um OCR antes — abrir o arquivo com o Google Docs pelo Google Drive resolve na maioria dos casos.';
+      el.appendChild(flag);
+    }
+
+    var stats=document.createElement('div'); stats.className='stats';
+    stats.innerHTML='<div class="stat"><b>'+fmtNum(words)+'</b><em>palavras</em></div>'+
+      '<div class="stat"><b>'+fmtNum(chars)+'</b><em>caracteres</em></div>'+
+      '<div class="stat"><b>≈ '+fmtTokens(Math.round(chars/4))+'</b><em>tokens estimados</em></div>'+
+      '<div class="stat savings"><b>'+saved+'%</b><em>menor que o PDF</em></div>';
+    el.appendChild(stats);
+
+    var pre=document.createElement('pre'); pre.className='preview';
+    var LIMITE=3000;
+    if(text.length>LIMITE){
+      pre.textContent=text.slice(0,LIMITE)+'\n\n…';
+      var mais=document.createElement('button');
+      mais.className='ghost'; mais.type='button';
+      mais.textContent='Ver o texto inteiro ('+fmtNum(chars)+' caracteres)';
+      mais.addEventListener('click',function(){
+        pre.textContent=text; mais.remove();
+      });
+      el.appendChild(pre); el.appendChild(mais);
+    }else{
+      pre.textContent=text||'(vazio)'; el.appendChild(pre);
+    }
+
+    var actions=document.createElement('div'); actions.className='actions';
+    var dl=document.createElement('button'); dl.textContent='Baixar '+name;
+    dl.addEventListener('click',function(){ download(name, text); });
+    var cp=document.createElement('button'); cp.className='ghost'; cp.textContent='Copiar texto';
+    cp.addEventListener('click',function(){
+      copyText(text).then(function(){
+        cp.textContent='Copiado';
+        setTimeout(function(){cp.textContent='Copiar texto';},1600);
+      },function(){
+        cp.textContent = selectPreview(pre) ? 'Selecionado — carregue Ctrl+C' : 'O navegador bloqueou a cópia';
+        setTimeout(function(){cp.textContent='Copiar texto';},4000);
+      });
+    });
+    actions.appendChild(dl); actions.appendChild(cp); el.appendChild(actions);
+    batchResults.push({name:name, text:text});
+    return el;
+  }
+
+  async function expandirZips(lista){
+    var saida=[], avisos=[];
+    for(var i=0;i<lista.length;i++){
+      var f=lista[i];
+      if(!(/\.zip$/i.test(f.name)||f.type==='application/zip'||f.type==='application/x-zip-compressed')){
+        saida.push(f); continue;
+      }
+      progress.hidden=false; progBar.style.width='0%';
+      progText.textContent='Abrindo '+f.name+'…';
+      await new Promise(function(r){setTimeout(r,0);});
+      try{
+        var zb=new Uint8Array(await f.arrayBuffer());
+        var r=await ReadZip.pdfsDoZip(zb,function(feito,total,nome){
+          progText.textContent='Tirando do zip: '+nome+' ('+(feito+1)+'/'+total+')';
+          progBar.style.width=Math.round(feito/Math.max(1,total)*100)+'%';
+        });
+        zb=null;
+        if(!r.arquivos.length){
+          avisos.push({nome:f.name, msg:'Nenhum PDF encontrado dentro deste zip'+
+            (r.totalNoZip?' ('+r.totalNoZip+' item(ns) de outros tipos).':'.')});
+        }
+        r.problemas.forEach(function(p){
+          avisos.push({nome:f.name, msg:'Não deu para tirar do zip: '+p});
+        });
+        saida=saida.concat(r.arquivos);
+      }catch(err){
+        avisos.push({nome:f.name, msg:(err&&err.message)||'não foi possível abrir este zip'});
+      }
+    }
+    progress.hidden=true;
+    return {arquivos:saida, avisos:avisos};
+  }
+
+  var fila=[];
+  var filaEl=document.getElementById('fila'),
+      filaLista=document.getElementById('filaLista'),
+      filaResumo=document.getElementById('filaResumo'),
+      filaAviso=document.getElementById('filaAviso'),
+      btnConverter=document.getElementById('btnConverter');
+
+  function chaveDe(f){ return f.name+'|'+f.size; }
+
+  function desenharFila(){
+    filaLista.innerHTML='';
+    if(!fila.length){ filaEl.hidden=true; return; }
+    filaEl.hidden=false;
+
+    var peso=fila.reduce(function(s,f){return s+f.size;},0);
+    filaResumo.textContent=fila.length+' arquivo'+(fila.length>1?'s':'')+' · '+fmtBytes(peso);
+
+    fila.forEach(function(f,i){
+      var li=document.createElement('li'); li.className='fila-item';
+      var n=document.createElement('span'); n.className='fila-num'; n.textContent=(i+1);
+      var nome=document.createElement('span'); nome.className='fila-nome';
+      nome.textContent=f.name; nome.title=f.name;
+      var tam=document.createElement('span'); tam.className='fila-tam'; tam.textContent=fmtBytes(f.size);
+      var x=document.createElement('button');
+      x.type='button'; x.className='fila-x'; x.textContent='×';
+      x.setAttribute('aria-label','Tirar '+f.name+' da lista');
+      x.addEventListener('click',function(){ fila.splice(i,1); desenharFila(); });
+      li.appendChild(n); li.appendChild(nome); li.appendChild(tam); li.appendChild(x);
+      filaLista.appendChild(li);
+    });
+
+    btnConverter.textContent='Converter '+fila.length+' arquivo'+(fila.length>1?'s':'');
+    btnConverter.disabled=false;
+
+    if(fila.length>20 || peso>120*1024*1024){
+      filaAviso.hidden=false;
+      filaAviso.textContent='Lote grande. No celular pode ficar lento — dá para cancelar no meio '+
+        'e baixar o que já tiver saído.';
+    }else{ filaAviso.hidden=true; }
+  }
+
+  // Recebe o que o utilizador escolheu, abre zips, filtra PDFs e junta à fila.
+  async function adicionar(entrada){
+    var brutos=Array.prototype.slice.call(entrada);
+    if(!brutos.length) return;
+
+    var temZip=brutos.some(function(f){
+      return /\.zip$/i.test(f.name)||f.type==='application/zip'||f.type==='application/x-zip-compressed';
+    });
+    var avisos=[];
+    if(temZip){
+      var exp=await expandirZips(brutos);
+      brutos=exp.arquivos; avisos=exp.avisos;
+    }
+
+    var novos=brutos.filter(function(f){
+      return /\.pdf$/i.test(f.name)||f.type==='application/pdf';
+    });
+
+    var jaTem={}; fila.forEach(function(f){ jaTem[chaveDe(f)]=true; });
+    var repetidos=0;
+    novos.forEach(function(f){
+      var k=chaveDe(f);
+      if(jaTem[k]){ repetidos++; return; }
+      jaTem[k]=true; fila.push(f);
+    });
+
+    desenharFila();
+
+    if(avisos.length){
+      results.innerHTML='';
+      avisos.forEach(function(a){ results.appendChild(errorCard(a.nome,a.msg)); });
+    }
+    if(repetidos && fila.length){
+      filaAviso.hidden=false;
+      filaAviso.textContent=repetidos+' arquivo(s) já estavam na lista e não foram repetidos.';
+    }
+    if(!novos.length && !avisos.length){
+      if(fila.length){
+        filaAviso.hidden=false;
+        filaAviso.textContent='Nenhum PDF no que você acabou de escolher — a lista continua igual.';
+      }else{
+        results.innerHTML='';
+        results.appendChild(errorCard('Nada para converter',
+          'Nenhum PDF foi encontrado no que você escolheu.'));
+      }
+    }
+  }
+
+  var cancelar=false, aRodar=false;
+
+  async function run(files){
+    if(aRodar || !files.length) return;
+
+    aRodar=true; cancelar=false;
+    btnConverter.disabled=true;
+    btnCancel.hidden=false; btnCancel.disabled=false; btnCancel.textContent='Cancelar';
+    results.innerHTML=''; batchResults=[]; document.getElementById('batch').hidden=true;
+    progress.hidden=false; progBar.style.width='0%';
+
+    var somaTexto=0, avisouMemoria=false, contados=0;
+
+    for(var i=0;i<files.length;i++){
+      if(cancelar) break;
+      var file=files[i];
+      progText.textContent='Lendo '+file.name+' ('+(i+1)+'/'+files.length+')…';
+      progBar.style.width='0%';
+      await new Promise(function(r){setTimeout(r,0);});
+      var bytes=null, res=null;
+      try{
+        bytes=new Uint8Array(await file.arrayBuffer());
+        var head='';
+        for(var k=0;k<Math.min(1024,bytes.length);k++) head+=String.fromCharCode(bytes[k]);
+        if(head.indexOf('%PDF')<0) throw new Error('Este arquivo não parece ser um PDF.');
+
+        var rangeText=document.getElementById('pages').value.trim();
+        var wanted=rangeText?parseRange(rangeText,100000):null;
+
+        res=await PDFText.extract(bytes,{
+          pages:wanted,
+          onPage:function(done,total,n){
+            progText.textContent=file.name+' · página '+n+' ('+done+'/'+total+')';
+            progBar.style.width=Math.round(done/total*100)+'%';
+          }
+        });
+        bytes=null;
+        results.appendChild(card(file,res));
+      }catch(err){
+        var msg = err && err.code==='encrypted'
+          ? 'Este PDF está protegido por criptografia. Abra-o com a senha e salve uma cópia sem proteção.'
+          : 'Não foi possível ler este arquivo: '+((err&&err.message)||'erro desconhecido');
+        results.appendChild(errorCard(file.name,msg));
+      }
+      bytes=null; res=null;
+
+      while(contados<batchResults.length){
+        somaTexto+=batchResults[contados].text.length; contados++;
+      }
+      if(!avisouMemoria && somaTexto>25000000){
+        avisouMemoria=true;
+        results.appendChild(errorCard('Aviso de memória',
+          'Já são mais de 25 milhões de caracteres guardados nesta aba. '+
+          'Convém cancelar, baixar o .zip do que já saiu e depois continuar com o resto da pasta.'));
+      }
+      await new Promise(function(r){setTimeout(r,0);});
+    }
+
+    progress.hidden=true; btnCancel.hidden=true; aRodar=false;
+    btnConverter.disabled=false;
+    if(cancelar){
+      progText.textContent='Cancelado.';
+      results.insertBefore(
+        errorCard('Conversão cancelada',
+          'Foram convertidos '+batchResults.length+' de '+files.length+' arquivos. '+
+          'O que já saiu continua abaixo e pode ser baixado.'),
+        results.firstChild);
+    }
+    refreshBatch();
+  }
+
+  document.getElementById('btnZip').addEventListener('click', async function(){
+    var b=this; if(!batchResults.length) return;
+    var label=b.textContent; b.disabled=true; b.textContent='A compactar…';
+    try{
+      var blob=await MakeZip.makeZip(batchResults,function(feito,total){
+        b.textContent='A compactar… '+(feito+1)+'/'+total;
+      });
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement('a'); a.href=url;
+      a.download='pdf-convertidos-'+new Date().toISOString().slice(0,10)+'.zip'; a.click();
+      setTimeout(function(){URL.revokeObjectURL(url);},4000);
+      b.textContent='Pronto'; setTimeout(function(){b.textContent=label;},1800);
+    }catch(e){ b.textContent='Falhou: '+(e.message||'erro'); }
+    b.disabled=false;
+  });
+
+  document.getElementById('btnJoin').addEventListener('click', function(){
+    if(!batchResults.length) return;
+    var md=currentFormat()==='md';
+    var joined=batchResults.map(function(r){
+      var titulo=r.name.replace(/\.(txt|md)$/,'');
+      return md ? ('# '+titulo+'\n\n'+r.text) : ('===== '+titulo+' =====\n\n'+r.text);
+    }).join('\n\n');
+    download('documentos-juntos'+(md?'.md':'.txt'), joined);
+  });
+
+  btnConverter.addEventListener('click',function(){ run(fila.slice()); });
+
+  document.getElementById('filaOrdenar').addEventListener('click',function(){
+    fila.sort(function(a,b){
+      return a.name.localeCompare(b.name,'pt',{numeric:true,sensitivity:'base'});
+    });
+    desenharFila();
+  });
+
+  document.getElementById('filaLimpar').addEventListener('click',function(){
+    if(aRodar) return;
+    fila=[]; desenharFila();
+    results.innerHTML=''; batchResults=[];
+    document.getElementById('batch').hidden=true;
+  });
+
+  input.addEventListener('change',function(){ adicionar(input.files); input.value=''; });
+
+  // No iOS o Safari ignora a escolha de pasta. Lá, o segundo cartão vira o caminho do .zip.
+  (function(){
+    var ua=navigator.userAgent||'';
+    var ios=/iPad|iPhone|iPod/.test(ua) ||
+            (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+    if(!ios) return;
+    var pf=document.getElementById('pf');
+    pf.querySelector('.tile-eyebrow').textContent='Pasta compactada';
+    pf.querySelector('.tile-title').textContent='Enviar .zip';
+    pf.querySelector('.tile-sub').textContent='Abre o zip e converte os PDFs de dentro';
+    var velho=document.getElementById('folder');
+    velho.removeAttribute('webkitdirectory');
+    velho.removeAttribute('directory');
+    velho.setAttribute('accept','application/zip,.zip');
+    velho.id='zipin';
+    velho.addEventListener('change',function(){ adicionar(velho.files); velho.value=''; });
+    document.getElementById('notaEntrada').innerHTML=
+      'No iPhone o Safari não deixa escolher uma pasta. Para converter uma pasta inteira, '+
+      'abra o app <b>Arquivos</b>, segure o dedo na pasta, toque em '+
+      '<span class="chave">Compactar</span> e mande o .zip que aparecer.';
+  })();
+
+  var folderInput=document.getElementById('folder');
+  if(folderInput) folderInput.addEventListener('change',function(){
+    var all=Array.prototype.slice.call(folderInput.files);
+    var pdfs=all.filter(function(f){
+      return /\.pdf$/i.test(f.name)||f.type==='application/pdf'||/\.zip$/i.test(f.name);
+    });
+    if(!pdfs.length){
+      var sub=document.querySelector('#pf .tile-sub');
+      sub.textContent = all.length
+        ? 'Nenhum PDF encontrado nessa pasta ('+all.length+' arquivo(s) de outros tipos).'
+        : 'Nenhum arquivo selecionado.';
+      setTimeout(function(){
+        sub.textContent='Acha sozinho todo PDF lá dentro';
+      },5000);
+      return;
+    }
+    pdfs.sort(function(a,b){
+      var pa=a.webkitRelativePath||a.name, pb=b.webkitRelativePath||b.name;
+      return pa.localeCompare(pb,'pt',{numeric:true,sensitivity:'base'});
+    });
+    adicionar(pdfs);
+    folderInput.value='';
+  });
+  ['dragenter','dragover'].forEach(function(ev){
+    dz.addEventListener(ev,function(e){e.preventDefault();dz.classList.add('dragging');});
+  });
+  ['dragleave','drop'].forEach(function(ev){
+    dz.addEventListener(ev,function(e){e.preventDefault();dz.classList.remove('dragging');});
+  });
+  dz.addEventListener('drop',function(e){
+    if(e.dataTransfer&&e.dataTransfer.files) adicionar(e.dataTransfer.files);
+  });
+})();
+</script>
+</body>
+</html>
