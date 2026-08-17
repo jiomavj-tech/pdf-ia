@@ -33,6 +33,30 @@ ou juntar num arquivo só.
 | Juntar parágrafos | Emenda linhas quebradas no meio da frase (só `.txt`) |
 | Marcar número de página | Insere uma marca a cada página |
 | Enxugar espaços | Remove espaçamento excessivo |
+| Limpar cabeçalhos e rodapés | Remove o título corrente e o «Página 3 de 40» repetidos |
+| Dividir em blocos | Reparte a saída em ficheiros de ~8, 32 ou 100 mil tokens |
+
+### Limpeza para IA
+
+Três coisas que gastam tokens e confundem modelos, tratadas automaticamente:
+
+**Cabeçalhos e rodapés repetidos.** Detetados por repetição nas primeiras e últimas
+linhas de cada página. Para não apagar conteúdo, exige três condições: tamanho de letra
+não maior que o corpo (um título de secção é maior e sobrevive), mesma altura na página, e
+presença em pelo menos 60% das folhas. Os dígitos só são normalizados em linhas com até 25
+caracteres — o suficiente para «Página 1 de 6» igualar «Página 5 de 6», sem colapsar
+frases de corpo que apenas diferem num número. O app diz quantas linhas removeu, e a opção
+pode ser desligada.
+
+**Palavras cortadas por hífen.** `cons-\ntrução` volta a ser `construção`, nos dois
+formatos, incluindo o hífen suave invisível (U+00AD). Assumida uma limitação: compostos
+legitimamente hifenizados que caiam no fim da linha (`guarda-chuva`) ficam juntos —
+distingui-los exigiria um dicionário.
+
+**Divisão em blocos.** Os cortes caem em fronteiras de parágrafo, nunca no meio de uma
+frase, e só se parte à força um parágrafo maior que o bloco inteiro. Cada ficheiro leva no
+topo o nome do documento e a posição (`bloco 2 de 7`), para o modelo saber o que está a
+ler. Sai um `.zip` com as partes.
 
 ## Como funciona
 

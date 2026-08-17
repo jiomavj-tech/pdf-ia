@@ -153,6 +153,9 @@
   .range input{font-family:var(--mono);font-size:13px;padding:7px 9px;width:130px;
     border:1px solid var(--line);border-radius:2px;background:var(--sheet);color:var(--ink)}
   .range input:focus{outline:2px solid var(--ink);outline-offset:1px}
+  .range select{font-family:var(--mono);font-size:13px;padding:7px 9px;
+    border:1px solid var(--line);border-radius:2px;background:var(--sheet);color:var(--ink)}
+  .range select:focus{outline:2px solid var(--ink);outline-offset:1px}
   code{font-family:var(--mono);font-size:.9em}
 
   .progress{margin-top:26px;font-family:var(--mono);font-size:13px;color:var(--muted)}
@@ -387,6 +390,22 @@
       <span>Enxugar espaços e linhas vazias
         <small>Colapsa espaços repetidos e sequências de linhas em branco.</small></span>
     </label>
+    <label class="opt">
+      <input type="checkbox" id="optBordas" checked>
+      <span>Limpar cabeçalhos e rodapés repetidos
+        <small>Remove o título corrente e o «Página 3 de 40» que se repetem em quase
+          todas as folhas — ruído que gasta tokens e confunde a IA.</small></span>
+    </label>
+    <div class="range">
+      <label for="blocos">Dividir em blocos:</label>
+      <select id="blocos">
+        <option value="0">não dividir</option>
+        <option value="8000">~8 mil tokens</option>
+        <option value="32000">~32 mil tokens</option>
+        <option value="100000">~100 mil tokens</option>
+      </select>
+      <span style="color:var(--muted);font-size:12.5px">para caber na janela do modelo</span>
+    </div>
   </div>
 
   <div class="progress" id="progress" hidden>
@@ -1883,9 +1902,21 @@ var ReadZip = (function () {
     return set.size?set:null;
   }
 
+  /* Palavras cortadas no fim da linha: "cons-\ntrução" -> "construção".
+     Corre sempre, nos dois formatos, porque um modelo lê "cons- trução" como
+     duas palavras inexistentes. Inclui o hífen suave (U+00AD), invisível mas
+     presente em vários PDFs.
+
+     Limitação assumida: compostos legitimamente hifenizados que caem no fim da
+     linha ("guarda-chuva") ficam juntos ("guardachuva"). Distinguir os dois
+     casos exigiria um dicionário, que este ficheiro não carrega. */
+  function juntarHifens(t){
+    return t.replace(/­/g,'')
+            .replace(/([A-Za-zÀ-ÿ])[-‐‑][ \t]*\n[ \t]*([a-zà-ÿ])/g,'$1$2');
+  }
+
   function joinParagraphs(t){
-    return t.replace(/([A-Za-zÀ-ÿ])-\n([a-zà-ÿ])/g,'$1$2')
-            .replace(/([^\n.!?:;•\-–—"'”’)\]])\n(?=[a-zà-ÿ0-9(“"'])/g,'$1 ');
+    return t.replace(/([^\n.!?:;•\-–—"'”’)\]])\n(?=[a-zà-ÿ0-9(“"'])/g,'$1 ');
   }
   function trimText(t){
     return t.replace(/[ \t\u00A0]{3,}/g,'  ').replace(/ *\n */g,'\n')
@@ -1897,23 +1928,180 @@ var ReadZip = (function () {
     return r?r.value:'txt';
   }
 
+  /* ---- cabeçalhos e rodapés repetidos ----
+     Números de página e títulos correntes repetem-se em quase todas as folhas.
+     Para uma IA são ruído: gastam tokens e enganam o modelo. A deteção compara
+     apenas as primeiras e últimas linhas de cada página, com os dígitos
+     normalizados — assim "Página 1 de 10" e "Página 7 de 10" contam como o
+     mesmo padrão. Só remove o que aparece na maioria das páginas, para não
+     apagar texto legítimo. */
+
+  var ZONA_BORDA=2;          // quantas linhas do topo e do fim são candidatas
+  var MAX_CAR_BORDA=120;     // linhas longas são corpo do documento, não rodapé
+  var MAX_CAR_NORMALIZA=25;  // acima disto exige-se texto igual, dígitos incluídos
+
+  /* Normalizar dígitos é o que faz "Página 1 de 6" igualar "Página 5 de 6".
+     Mas aplicá-lo a tudo apagava conteúdo: uma frase de corpo repetida em cada
+     página que só diferia no número ("manutenção a cada 450 horas" /
+     "a cada 500 horas") colapsava no mesmo padrão e desaparecia.
+
+     Por isso os dígitos só se normalizam em linhas bem curtas, onde o número é
+     mesmo o contador de página ("Página 3 de 40", "- 12 -"). Acima disso
+     exige-se igualdade exata: um título corrente cumpre-a naturalmente, uma
+     frase de corpo com números diferentes não — e sobrevive.
+
+     O limite é curto de propósito. Com 40 caracteres ainda apanhava uma linha
+     de texto de 36; a limpeza corre antes da junção de hífens, por isso as
+     linhas vistas aqui são mais curtas do que a frase final. */
+  function chaveBorda(t){
+    var s=String(t||'').replace(/\s+/g,' ').trim();
+    if(s.length<=MAX_CAR_NORMALIZA) s=s.replace(/\d+/g,'#');
+    return s.toLowerCase();
+  }
+
+  // Tamanho de letra do corpo do texto: o mais usado, medido por caracteres.
+  function tamanhoDominante(pages){
+    var conta={};
+    pages.forEach(function(p){
+      p.lines.forEach(function(l){
+        var k=Math.round(l.size*2)/2;
+        conta[k]=(conta[k]||0)+l.text.length;
+      });
+    });
+    var melhor=0, max=-1;
+    for(var k in conta) if(conta[k]>max){ max=conta[k]; melhor=parseFloat(k); }
+    return melhor||10;
+  }
+
+  /* Duas salvaguardas aprendidas a partir de um falso positivo: sem elas, um
+     título de secção como "Secção 3 — Compressores" aparece no topo de todas as
+     páginas e, com os dígitos normalizados, era confundido com cabeçalho e
+     apagado.
+
+       1. Tamanho: cabeçalhos e rodapés nunca são maiores que o corpo. Títulos
+          de secção são. Só entram linhas até ao tamanho do corpo.
+       2. Posição: a repetição tem de ocorrer sempre à mesma altura na página. */
+  function bordasCandidatas(p, dominante){
+    var n=p.lines.length, saida=[], i;
+    var tetoTam=dominante*1.05;
+    for(i=0;i<Math.min(ZONA_BORDA,n);i++) saida.push({i:i,zona:'t',l:p.lines[i]});
+    for(i=0;i<Math.min(ZONA_BORDA,n);i++){
+      var idx=n-1-i;
+      if(idx<Math.min(ZONA_BORDA,n)) break;   // páginas curtas: não conta duas vezes
+      saida.push({i:idx,zona:'f',l:p.lines[idx]});
+    }
+    return saida.filter(function(c){
+      var s=(c.l.text||'').trim();
+      return s.length>0 && s.length<=MAX_CAR_BORDA && c.l.size<=tetoTam;
+    }).map(function(c){
+      return {
+        i:c.i,
+        chave:c.zona+'|'+Math.round(c.l.y/30)+'|'+chaveBorda(c.l.text)
+      };
+    });
+  }
+
+  function detetarBordas(pages, dominante){
+    if(pages.length<3) return null;          // sem páginas suficientes não há padrão fiável
+    var cont={};
+    pages.forEach(function(p){
+      var visto={};
+      bordasCandidatas(p,dominante).forEach(function(c){
+        if(visto[c.chave]) return;
+        visto[c.chave]=1;
+        cont[c.chave]=(cont[c.chave]||0)+1;
+      });
+    });
+    var limite=Math.max(3,Math.ceil(pages.length*0.6));
+    var repetidos={}, algum=false;
+    for(var k in cont) if(cont[k]>=limite){ repetidos[k]=true; algum=true; }
+    return algum?repetidos:null;
+  }
+
+  // Devolve páginas novas sem as linhas repetidas. Não altera as originais:
+  // desmarcar a opção tem de poder reconstruir o texto completo.
+  var bordasRemovidas=0;
+  function limparBordas(pages){
+    bordasRemovidas=0;
+    var dominante=tamanhoDominante(pages);
+    var repetidos=detetarBordas(pages,dominante);
+    if(!repetidos) return pages;
+    return pages.map(function(p){
+      var fora={};
+      bordasCandidatas(p,dominante).forEach(function(c){
+        if(repetidos[c.chave]) fora[c.i]=true;
+      });
+      var mantidas=p.lines.filter(function(_,i){ return !fora[i]; });
+      bordasRemovidas+=p.lines.length-mantidas.length;
+      return {n:p.n, lines:mantidas};
+    });
+  }
+
   function build(pagesData){
     var wantPages=document.getElementById('optPages').checked,
         wantParas=document.getElementById('optParas').checked,
-        wantTrim=document.getElementById('optTrim').checked;
+        wantTrim=document.getElementById('optTrim').checked,
+        wantLimpo=document.getElementById('optBordas').checked;
+
+    if(wantLimpo) pagesData=limparBordas(pagesData); else bordasRemovidas=0;
 
     if(currentFormat()==='md'){
       var md=ToMarkdown.convert(pagesData,{pageMarks:wantPages});
+      // Palavras cortadas por hífen atravessam também o markdown: uma IA lê
+      // "cons- trução" como duas palavras. Aqui juntam-se sempre.
+      md=juntarHifens(md);
       return wantTrim?md.replace(/\n{3,}/g,'\n\n').replace(/^\s+|\s+$/g,''):md;
     }
 
     var text=pagesData.map(function(p){
       var body=p.lines.map(function(l){return l.text;}).join('\n');
+      body=juntarHifens(body);
       if(wantParas) body=joinParagraphs(body);
       return wantPages?('[página '+p.n+']\n'+body):body;
     }).join('\n\n');
     if(wantTrim) text=trimText(text);
     return text;
+  }
+
+  /* ---- divisão em blocos ----
+     Um livro inteiro não cabe na janela de contexto de um modelo. Cortar por
+     tamanho cego parte frases e tabelas ao meio; por isso corta-se em
+     fronteiras de parágrafo, e só à força dentro de um parágrafo gigante.
+     A contagem de tokens é a estimativa habitual de ~4 caracteres por token. */
+
+  function blocoAlvoAtual(){
+    var s=document.getElementById('blocos');
+    return s?parseInt(s.value,10)||0:0;
+  }
+
+  function dividirEmBlocos(text, tokensAlvo, nomeBase, ext){
+    var limite=Math.max(500,tokensAlvo)*4;          // em caracteres
+    if(!tokensAlvo || text.length<=limite) return null;
+
+    var partes=text.split(/\n\n+/), blocos=[], atual='';
+    function fechar(){ if(atual.trim()){ blocos.push(atual.trim()); atual=''; } }
+
+    partes.forEach(function(par){
+      if(par.length>limite){                        // parágrafo maior que o bloco
+        fechar();
+        for(var i=0;i<par.length;i+=limite) blocos.push(par.slice(i,i+limite));
+        return;
+      }
+      if(atual.length+par.length+2>limite) fechar();
+      atual+=(atual?'\n\n':'')+par;
+    });
+    fechar();
+    if(blocos.length<2) return null;
+
+    var largura=String(blocos.length).length;
+    return blocos.map(function(b,i){
+      var n=String(i+1).padStart(largura,'0');
+      // Cada bloco leva o contexto mínimo para a IA saber o que está a ler.
+      var cabeca = ext==='.md'
+        ? '<!-- '+nomeBase+' · bloco '+(i+1)+' de '+blocos.length+' -->\n\n'
+        : '[ '+nomeBase+' · bloco '+(i+1)+' de '+blocos.length+' ]\n\n';
+      return { name:nomeBase+'-bloco-'+n+ext, text:cabeca+b };
+    });
   }
 
   var batchResults=[];
@@ -2031,6 +2219,7 @@ var ReadZip = (function () {
 
   function card(file,res){
     var text=build(res.pages);
+    var limpas=bordasRemovidas;          // build() acabou de o calcular
     var chars=text.length,
         words=text?text.split(/\s+/).filter(Boolean).length:0,
         txtBytes=new Blob([text]).size,
@@ -2049,6 +2238,13 @@ var ReadZip = (function () {
       flag.textContent='Quase nenhum texto encontrado. Este PDF provavelmente é escaneado (imagem). '+
         'Passe um OCR antes — abrir o arquivo com o Google Docs pelo Google Drive resolve na maioria dos casos.';
       el.appendChild(flag);
+    }
+
+    if(limpas>0){
+      var nota=document.createElement('p'); nota.className='flag';
+      nota.textContent=limpas+' linha(s) repetidas de cabeçalho ou rodapé foram removidas. '+
+        'Se faltar algo, desmarque «Limpar cabeçalhos e rodapés repetidos» e converta outra vez.';
+      el.appendChild(nota);
     }
 
     var stats=document.createElement('div'); stats.className='stats';
@@ -2074,8 +2270,26 @@ var ReadZip = (function () {
     }
 
     var actions=document.createElement('div'); actions.className='actions';
-    var dl=document.createElement('button'); dl.textContent='Baixar '+name;
-    dl.addEventListener('click',function(){ download(name, text); });
+
+    var ext=currentFormat()==='md'?'.md':'.txt';
+    var baseNome=file.name.replace(/\.pdf$/i,'');
+    var blocos=dividirEmBlocos(text, blocoAlvoAtual(), baseNome, ext);
+
+    var dl=document.createElement('button');
+    dl.textContent = blocos ? ('Baixar '+blocos.length+' blocos (.zip)') : ('Baixar '+name);
+    dl.addEventListener('click',async function(){
+      if(!blocos){ download(name, text); return; }
+      var rot=dl.textContent; dl.disabled=true; dl.textContent='A compactar…';
+      try{
+        var blob=await MakeZip.makeZip(blocos);
+        baixarBlob(baseNome+'-blocos'+'.zip', blob);
+        dl.textContent=rot;
+      }catch(e){
+        dl.textContent=rot;
+        aviso('Os blocos não foram compactados', e.message||'erro desconhecido', true);
+      }
+      dl.disabled=false;
+    });
     var cp=document.createElement('button'); cp.className='ghost'; cp.textContent='Copiar texto';
     cp.addEventListener('click',function(){
       copyText(text).then(function(){
@@ -2293,7 +2507,15 @@ var ReadZip = (function () {
     var b=this; if(!batchResults.length) return;
     var label=b.textContent; b.disabled=true; b.textContent='A compactar…';
     try{
-      var blob=await MakeZip.makeZip(batchResults,function(feito,total){
+      // Com blocos ligados, cada ficheiro entra no zip já dividido.
+      var alvo=blocoAlvoAtual(), ext=currentFormat()==='md'?'.md':'.txt';
+      var paraZip=[];
+      batchResults.forEach(function(r){
+        var base=r.name.replace(/\.(txt|md)$/,'');
+        var partes=dividirEmBlocos(r.text, alvo, base, ext);
+        if(partes) paraZip=paraZip.concat(partes); else paraZip.push(r);
+      });
+      var blob=await MakeZip.makeZip(paraZip,function(feito,total){
         b.textContent='A compactar… '+(feito+1)+'/'+total;
       });
       baixarBlob('pdf-convertidos-'+new Date().toISOString().slice(0,10)+'.zip', blob);
@@ -2305,14 +2527,27 @@ var ReadZip = (function () {
     b.disabled=false;
   });
 
-  document.getElementById('btnJoin').addEventListener('click', function(){
+  document.getElementById('btnJoin').addEventListener('click', async function(){
     if(!batchResults.length) return;
-    var md=currentFormat()==='md';
+    var md=currentFormat()==='md', ext=md?'.md':'.txt';
     var joined=batchResults.map(function(r){
       var titulo=r.name.replace(/\.(txt|md)$/,'');
       return md ? ('# '+titulo+'\n\n'+r.text) : ('===== '+titulo+' =====\n\n'+r.text);
     }).join('\n\n');
-    download('documentos-juntos'+(md?'.md':'.txt'), joined);
+
+    // Juntar tudo é justamente o caso que estoura a janela do modelo: se a
+    // divisão em blocos estiver ligada, o ficheiro único sai já repartido.
+    var partes=dividirEmBlocos(joined, blocoAlvoAtual(), 'documentos-juntos', ext);
+    if(!partes){ download('documentos-juntos'+ext, joined); return; }
+
+    var b=this, rot=b.textContent; b.disabled=true; b.textContent='A compactar…';
+    try{
+      var blob=await MakeZip.makeZip(partes);
+      baixarBlob('documentos-juntos-blocos.zip', blob);
+    }catch(e){
+      aviso('Os blocos não foram compactados', e.message||'erro desconhecido', true);
+    }
+    b.textContent=rot; b.disabled=false;
   });
 
   btnConverter.addEventListener('click',function(){ run(fila.slice()); });
