@@ -15,7 +15,24 @@
 <meta name="author" content="Jeovani">
 <meta name="copyright" content="Copyright (c) 2026 Jeovani. Todos os direitos reservados.">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PDF → IA · funciona offline</title>
+<title>PDF → IA · converter PDF em texto, offline</title>
+<meta name="description" content="Converte PDF em texto (.txt) ou Markdown (.md) para enviar a uma IA gastando menos. Funciona no navegador, sem instalar nada e sem enviar arquivos: nada sai do seu aparelho.">
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#141C33">
+<link rel="icon" href="icone-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icone-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PDF → IA">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="PDF → IA · converter PDF em texto, offline">
+<meta property="og:description" content="Converte PDF em texto ou Markdown para enviar a uma IA. Funciona offline: nenhum arquivo sai do seu aparelho.">
+<meta property="og:image" content="icone-512.png">
+<meta property="og:locale" content="pt_BR">
+<meta name="twitter:card" content="summary">
 <style>
   :root{
     --canvas:#E6E8EF;
@@ -46,7 +63,16 @@
   .oculto{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   .lede{margin:0;max-width:56ch;color:var(--muted);font-size:15px}
 
-  .share-wrap{position:relative;display:inline-block;margin-top:16px}
+  .acoes-topo{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+  .share-wrap{position:relative;display:inline-block}
+
+  .btn-instalar{display:inline-flex;align-items:center;gap:7px;
+    background:var(--ink);color:var(--sheet);border:1.5px solid var(--ink);
+    font-size:13.5px;font-weight:600;padding:8px 14px;box-shadow:3px 3px 0 var(--mark)}
+  .btn-instalar:hover{opacity:1;transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--mark)}
+  .btn-instalar svg{flex:none}
+  .dica-instalar{margin:12px 0 0;font-size:13px;color:var(--muted);line-height:1.5;max-width:52ch}
+  .dica-instalar b{color:var(--ink);font-weight:600}
   .btn-share{display:inline-flex;align-items:center;gap:7px;
     background:transparent;color:var(--ink);border:1.5px solid var(--ink);
     font-size:13.5px;font-weight:600;padding:8px 14px}
@@ -208,6 +234,7 @@
     <p class="eyebrow">Offline · nenhuma conexão de rede</p>
     <h1>PDF <span class="seta" aria-hidden="true">→</span><span class="oculto"> para </span><span class="mark">IA</span></h1>
     <p class="lede">Extrai o texto das páginas e devolve um arquivo limpo, muito mais barato de enviar para uma IA do que o PDF original. Tudo acontece dentro do seu navegador.</p>
+    <div class="acoes-topo">
     <div class="share-wrap" id="shareWrap">
       <button type="button" class="btn-share" id="btnShare" aria-haspopup="true" aria-expanded="false">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -244,6 +271,20 @@
         </button>
       </div>
     </div>
+
+      <button type="button" class="btn-instalar" id="btnInstalar" hidden>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3v11"/><path d="M8 10.5l4 4 4-4"/><path d="M4 17.5v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/>
+        </svg>
+        <span id="btnInstalarTxt">Instalar aplicativo</span>
+      </button>
+    </div>
+
+    <p class="dica-instalar" id="dicaIos" hidden>
+      Para instalar no iPhone: toque em <b>Partilhar</b> na barra do Safari e escolha
+      <span class="chave">Adicionar ao Ecrã Principal</span>.
+    </p>
   </header>
 
   <div class="escolha">
@@ -2271,6 +2312,60 @@ var ReadZip = (function () {
       if(e.key==='Escape' && !menu.hidden){ fechar(); btn.focus(); }
     });
   })();
+
+  // Instalar como aplicativo. O Chrome avisa por beforeinstallprompt e deixa
+  // guardar o pedido para o mostrar quando o utilizador quiser; o Safari do
+  // iPhone não tem esse evento e exige o passo manual, daí a dica.
+  (function(){
+    var btn=document.getElementById('btnInstalar');
+    var dica=document.getElementById('dicaIos');
+    var pedido=null;
+
+    function jaInstalado(){
+      return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+             navigator.standalone===true;
+    }
+
+    window.addEventListener('beforeinstallprompt',function(e){
+      e.preventDefault();
+      pedido=e;
+      if(btn) btn.hidden=false;
+      if(dica) dica.hidden=true;
+    });
+
+    window.addEventListener('appinstalled',function(){
+      pedido=null;
+      if(btn) btn.hidden=true;
+      if(dica) dica.hidden=true;
+    });
+
+    if(btn) btn.addEventListener('click',function(){
+      if(!pedido) return;
+      btn.disabled=true;
+      pedido.prompt();
+      pedido.userChoice.then(function(){
+        pedido=null; btn.hidden=true; btn.disabled=false;
+      },function(){
+        btn.disabled=false;
+      });
+    });
+
+    // iPhone e iPad: sem beforeinstallprompt, mostra-se o caminho manual.
+    var ios=/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+            (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+    if(ios && !jaInstalado() && location.protocol!=='file:' && dica) dica.hidden=false;
+  })();
+
+  // O service worker é o que faz a aplicação abrir sem rede depois de
+  // instalada. Por file:// não é permitido registá-lo — e aí não faz falta,
+  // porque o ficheiro já está no aparelho.
+  if('serviceWorker' in navigator && location.protocol!=='file:'){
+    window.addEventListener('load',function(){
+      navigator.serviceWorker.register('sw.js').catch(function(){
+        /* sem service worker a aplicação continua a funcionar, só não abre offline */
+      });
+    });
+  }
 
   input.addEventListener('change',function(){ adicionar(input.files); input.value=''; });
 

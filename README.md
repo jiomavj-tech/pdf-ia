@@ -61,11 +61,37 @@ com 0,2% de caracteres sem tradução.
 - Alguns glifos podem faltar quando nenhuma fonte do documento oferece a correspondência.
 - Lotes muito grandes podem pesar no celular. O app avisa e permite cancelar no meio.
 
+## Instalar como aplicativo
+
+Servida por HTTPS, a página instala-se como um aplicativo de verdade — ícone próprio,
+janela sem barra de endereço, e abre **sem internet**.
+
+- **Android e computador (Chrome, Edge):** aparece o botão **Instalar aplicativo** no
+  topo da página.
+- **iPhone e iPad:** o Safari não tem esse botão. Toque em **Partilhar** e escolha
+  *Adicionar ao Ecrã Principal* — a página mostra essa dica sozinha quando deteta iOS.
+
+Depois de instalado, o app abre em modo avião: os arquivos ficam guardados no aparelho.
+
 ## Estrutura
 
-Tudo — HTML, CSS, JavaScript, o extrator de PDF, o gerador e o leitor de ZIP — está
-dentro de `index.html`. É proposital: sem instalação, sem dependências, sem CDN.
-Basta salvar o arquivo e abrir.
+O aplicativo continua a ser **um arquivo só**: `index.html` traz o HTML, o CSS, o
+JavaScript, o extrator de PDF, o gerador e o leitor de ZIP. Sem dependências, sem CDN.
+Basta salvar esse arquivo e abrir — funciona sozinho.
+
+Os restantes arquivos existem apenas para a versão publicada por HTTPS e são opcionais:
+
+| Arquivo | Para que serve |
+|---|---|
+| `manifest.webmanifest` | Nome, cores e ícones para a instalação |
+| `sw.js` | Faz o app abrir sem rede depois de instalado |
+| `icone-*.png` | Ícone no ecrã principal e na lista de aplicativos |
+| `robots.txt`, `sitemap.xml` | Permitem que buscadores encontrem a página |
+
+O `sw.js` busca o HTML **pela rede primeiro** e só recorre à cache se não houver ligação.
+É deliberado: um service worker que serve a cache primeiro faz a versão antiga continuar
+a aparecer depois de publicada uma correção, e o sintoma é indistinguível de um erro no
+código. Ao alterar o app, incremente `VERSAO` no topo do `sw.js`.
 
 ## Publicar sua própria cópia
 

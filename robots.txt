@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://jiomavj-tech.github.io/pdf-ia/sitemap.xml
