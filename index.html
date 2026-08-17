@@ -1455,19 +1455,6 @@ var ToMarkdown = (function () {
     return String(s).replace(/\|/g, "\\|").replace(/\s+/g, " ").trim();
   }
 
-  function bodySize(pages) {                     // tamanho de fonte mais comum
-    var tally = {};
-    pages.forEach(function (p) {
-      p.lines.forEach(function (l) {
-        var k = Math.round(l.size * 2) / 2;
-        tally[k] = (tally[k] || 0) + l.text.length;
-      });
-    });
-    var best = 0, bestN = -1;
-    for (var k in tally) if (tally[k] > bestN) { bestN = tally[k]; best = parseFloat(k); }
-    return best || 10;
-  }
-
   // Agrupa as posições x de todos os fragmentos do bloco em colunas.
   function columnsOf(rows, size) {
     var tol = Math.max(4, size * 0.75);
@@ -1552,9 +1539,50 @@ var ToMarkdown = (function () {
 
   function isBullet(t) { return /^[•·▪◦‣›»\u00AD\u2022\u203A]\s*/.test(t); }
 
+  /* Escala de títulos.
+
+     A versão anterior tomava como corpo o tamanho com mais caracteres e
+     aplicava-lhe limiares fixos. Isso descalibra em documentos com várias
+     densidades de texto: num catálogo de tabelas o tamanho mais comum era
+     7,5 pt, mas o corpo real ia até 9,5 pt. O resultado eram linhas de tabela,
+     linhas de unidades e até números de página promovidos a títulos — uma
+     hierarquia falsa, que é pior para um modelo do que hierarquia nenhuma.
+
+     Aqui o topo do corpo é o tamanho onde a soma dos caracteres atinge 75% do
+     documento. Só acima disso há título, em três níveis por proporção. */
+  function tetoDoCorpo(pages) {
+    var porTam = {};
+    pages.forEach(function (p) {
+      p.lines.forEach(function (l) {
+        var k = Math.round(l.size * 2) / 2;
+        porTam[k] = (porTam[k] || 0) + l.text.length;
+      });
+    });
+    var tamanhos = Object.keys(porTam).map(parseFloat).sort(function (a, b) { return a - b; });
+    if (!tamanhos.length) return 10;
+    var total = 0;
+    tamanhos.forEach(function (s) { total += porTam[s]; });
+    var soma = 0, teto = tamanhos[0];
+    for (var i = 0; i < tamanhos.length; i++) {
+      soma += porTam[tamanhos[i]];
+      teto = tamanhos[i];
+      if (soma >= total * 0.75) break;
+    }
+    return teto || 10;
+  }
+
+  // Linhas que nunca são título, por muito grandes que pareçam.
+  function podeSerTitulo(t) {
+    if (!t || t.length > 120) return false;
+    if (/^[-–—\s]*\d+[-–—\s]*$/.test(t)) return false;        // "-4-", "12"
+    if ((t.match(/\S {2,}\S/g) || []).length >= 2) return false; // linha de tabela
+    if (/^[\d.,\s%°º/|+-]+$/.test(t)) return false;            // só números e sinais
+    return true;
+  }
+
   function convert(pages, opts) {
     opts = opts || {};
-    var body = bodySize(pages);
+    var teto = tetoDoCorpo(pages);
     var out = [];
 
     pages.forEach(function (page) {
@@ -1585,10 +1613,10 @@ var ToMarkdown = (function () {
           i++; continue;
         }
 
-        if (l.size > body * 1.45) out.push("# " + t);
-        else if (l.size > body * 1.22) out.push("## " + t);
-        else if (l.size > body * 1.08 && t.length < 90) out.push("### " + t);
-        else out.push(t);
+        var razao = l.size / teto;
+        if (razao > 1.12 && podeSerTitulo(t)) {
+          out.push((razao >= 1.6 ? "# " : razao >= 1.35 ? "## " : "### ") + t);
+        } else out.push(t);
         i++;
       }
       out.push("");
