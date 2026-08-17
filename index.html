@@ -1549,6 +1549,44 @@ var ToMarkdown = (function () {
       merges++;
     }
 
+    /* Prosa justificada não é tabela.
+
+       Num PDF com texto justificado o espaçamento entre palavras é esticado
+       até à margem, e cada palavra cai numa posição própria. O detetor via
+       colunas alinhadas e transformava parágrafos inteiros em tabelas: uma
+       frase como "É um componente que tem a função de controlar a
+       temperatura" saía repartida em catorze células. Para um modelo isso é
+       pior do que ruído — é estrutura falsa, e ele confia nela.
+
+       Dois sinais separam os casos, medidos em dois documentos reais:
+
+         1. Decisão das colunas. Numa tabela cada coluna está quase sempre
+            cheia ou quase sempre vazia. Em prosa, cada "coluna" enche-se ao
+            acaso, perto de metade das linhas.
+         2. Conteúdo numérico. Tabelas de dados trazem números e códigos;
+            prosa traz palavras.
+
+       Com estes limiares, as 35 falsas tabelas de uma apresentação
+       justificada são todas rejeitadas, e das 156 tabelas de um catálogo
+       técnico só saem 4 — que, olhadas de perto, também eram prosa
+       estilhaçada por detetar. */
+    var nCel = 0, nCheias = 0, nComDigito = 0;
+    var decisao = 0;
+    for (var c = 0; c < ncol; c++) {
+      var cheiasCol = 0;
+      for (var r2 = 0; r2 < grid.length; r2++) {
+        nCel++;
+        if (grid[r2][c]) {
+          nCheias++; cheiasCol++;
+          if (/\d/.test(grid[r2][c])) nComDigito++;
+        }
+      }
+      decisao += Math.abs(cheiasCol / grid.length - 0.5) * 2;
+    }
+    decisao = ncol ? decisao / ncol : 0;
+    var fracaoDigitos = nCheias ? nComDigito / nCheias : 0;
+    if (decisao < 0.60 && fracaoDigitos < 0.25) return null;
+
     var out = ["| " + grid[0].join(" | ") + " |",
                "|" + grid[0].map(function () { return "---"; }).join("|") + "|"];
     for (var r = 1; r < grid.length; r++) out.push("| " + grid[r].join(" | ") + " |");
@@ -1598,6 +1636,32 @@ var ToMarkdown = (function () {
     return true;
   }
 
+  /* Uma frase que não cabe numa linha continua na seguinte, e cada linha era
+     avaliada sozinha. Resultado: um título repartido em três aparecia como três
+     títulos ("Acessórios elétricos" / "do" / "sistema de refrigeração"), e o
+     resto de um tópico saía como título novo — "- Se o relé estiver bom, em
+     qualquer" seguido de "### existir continuidade entre os terminais 1 e 2".
+
+     A continuação exige duas condições, ambas apertadas de propósito: o mesmo
+     tamanho de letra a menos de 5%, e a linha seguinte a começar por minúscula,
+     parêntese ou dígito. Um título novo começa por maiúscula e não é absorvido.
+     E nada se junta depois de pontuação final. */
+  function juntarContinuacao(lines, i) {
+    var texto = lines[i].text.trim();
+    var j = i + 1;
+    while (j < lines.length) {
+      if (/[.!?:;]$/.test(texto)) break;
+      var anterior = lines[j - 1], atual = lines[j];
+      if (Math.abs(atual.size - anterior.size) > anterior.size * 0.05) break;
+      var t = atual.text.trim();
+      if (!t || !/^[a-zà-ÿ(0-9]/.test(t)) break;
+      if ((t.match(/\S {2,}\S/g) || []).length >= 2) break;   // linha de tabela
+      texto += " " + t;
+      j++;
+    }
+    return { texto: texto, fim: j };
+  }
+
   function convert(pages, opts) {
     opts = opts || {};
     var teto = tetoDoCorpo(pages);
@@ -1624,18 +1688,19 @@ var ToMarkdown = (function () {
           }
         }
 
-        var t = l.text.trim();
+        var junto = juntarContinuacao(lines, i);
+        var t = junto.texto;
 
         if (isBullet(t)) {
           out.push("- " + esc(t.replace(/^[•·▪◦‣›»\u00AD\u2022\u203A]\s*/, "")));
-          i++; continue;
+          i = junto.fim; continue;
         }
 
         var razao = l.size / teto;
         if (razao > 1.12 && podeSerTitulo(t)) {
           out.push((razao >= 1.6 ? "# " : razao >= 1.35 ? "## " : "### ") + t);
         } else out.push(t);
-        i++;
+        i = junto.fim;
       }
       out.push("");
     });
