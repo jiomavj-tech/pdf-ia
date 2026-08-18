@@ -228,6 +228,9 @@
   footer p{margin:0 0 8px}
   .direitos{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);
             font-size:12px;color:var(--muted)}
+  .versao{display:inline-block;margin-left:6px;font-family:var(--mono);font-size:11px}
+  .versao b{font-weight:600;color:var(--ink)}
+  .versao .nova{color:var(--warn);font-weight:600}
 
   /* Avisos de ação (descarga, cópia): o navegador não diz onde guardou o
      ficheiro, mas ao menos confirmamos o que saiu e com que tamanho. */
@@ -427,7 +430,8 @@
   <footer>
     <p>Este arquivo não faz nenhuma requisição de rede: o leitor de PDF está embutido nele. Funciona em modo avião, e os documentos nunca saem do seu computador.</p>
     <p>A estimativa de tokens usa a média de ~4 caracteres por token, para comparar tamanhos. PDFs escaneados não têm texto embutido e precisam de OCR antes.</p>
-    <p class="direitos">© 2026 Jeovani · Todos os direitos reservados. Usar é livre; copiar, redistribuir, hospedar ou vender exige autorização.</p>
+    <p class="direitos">© 2026 Jeovani · Todos os direitos reservados. Usar é livre; copiar, redistribuir, hospedar ou vender exige autorização.
+      <span class="versao">versão <b id="versaoApp">9</b><span id="versaoEstado"></span></span></p>
   </footer>
 
   <div class="avisos" id="avisos" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -3121,7 +3125,35 @@ var ReadZip = (function () {
   // porque o ficheiro já está no aparelho.
   if('serviceWorker' in navigator && location.protocol!=='file:'){
     window.addEventListener('load',function(){
-      navigator.serviceWorker.register('sw.js').catch(function(){
+      navigator.serviceWorker.register('sw.js').then(function(reg){
+
+        /* Dizer "recarregue para receber a versão nova" só é útil se houver
+           como saber se já recebeu. A cópia instalada guarda a aplicação no
+           aparelho, e o navegador só a troca quando ela é fechada e reaberta —
+           até lá, continua a correr a versão com que arrancou.
+
+           Aqui pergunta-se ao servidor se há versão mais recente e, havendo,
+           avisa-se no rodapé em vez de deixar o utilizador a adivinhar. */
+        function vigiar(){
+          var novo=reg.installing||reg.waiting;
+          if(!novo || !navigator.serviceWorker.controller) return;
+          var estado=document.getElementById('versaoEstado');
+          if(!estado) return;
+          estado.innerHTML=' · <span class="nova">há uma versão nova: feche e reabra a aplicação</span>';
+        }
+
+        reg.addEventListener('updatefound',vigiar);
+        if(reg.waiting) vigiar();
+
+        /* Pedir a verificação só faz sentido quando já existe um trabalhador
+           ativo. Pedi-la durante a instalação rebenta com "Not found", e um
+           try/catch não apanha isso: reg.update() devolve uma promessa, e a
+           rejeição ficava por tratar. */
+        if(reg.active && navigator.serviceWorker.controller){
+          reg.update().catch(function(){ /* sem rede, fica para a próxima */ });
+        }
+
+      }).catch(function(){
         /* sem service worker a aplicação continua a funcionar, só não abre offline */
       });
     });

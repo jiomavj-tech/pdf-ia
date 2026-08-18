@@ -17,7 +17,9 @@
    apagadas no activate.
 */
 
-const VERSAO = 'pdf-ia-v8';
+// Ao incrementar, atualizar também o número mostrado no rodapé do index.html
+// (elemento #versaoApp): é por ele que se vê qual a versão a correr.
+const VERSAO = 'pdf-ia-v9';
 const ESSENCIAIS = [
   './',
   './index.html',
