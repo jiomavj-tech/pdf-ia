@@ -542,6 +542,102 @@ var PDFText = (function () {
     return new Uint8Array(out);
   }
 
+  /* ============ cifra: handler padrão ============
+
+     A maioria dos PDFs "protegidos" tem palavra-passe de utilizador vazia. A
+     cifra existe para marcar restrições de permissões, não para esconder o
+     conteúdo: qualquer leitor os abre sem pedir nada. Recusá-los à partida
+     deixava de fora documentos que toda a gente consegue ler.
+
+     Suporta RC4 (V1, V2, e V4 com CFM=V2) e AES-128 (V4 com CFM=AESV2), sempre
+     com palavra-passe vazia. AES-256 (V5/R6) precisa da função de hash 2.B e
+     não está implementado — dá erro claro, em vez de devolver texto errado.
+
+     MD5 e RC4 vão escritos à mão porque não existem no navegador; o AES vem da
+     WebCrypto, que é nativa. */
+
+  var PAD_CIFRA = [
+    0x28,0xBF,0x4E,0x5E,0x4E,0x75,0x8A,0x41,0x64,0x00,0x4E,0x56,0xFF,0xFA,0x01,0x08,
+    0x2E,0x2E,0x00,0xB6,0xD0,0x68,0x3E,0x80,0x2F,0x0C,0xA9,0xFE,0x64,0x53,0x69,0x7A
+  ];
+
+  var MD5_S = [7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,
+               5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,
+               4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,
+               6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
+  var MD5_K = (function () {
+    var t = new Int32Array(64);
+    for (var i = 0; i < 64; i++) t[i] = (Math.abs(Math.sin(i + 1)) * 4294967296) | 0;
+    return t;
+  })();
+
+  function md5(input) {
+    var n = input.length;
+    var total = ((((n + 8) >> 6) + 1) * 64);
+    var msg = new Uint8Array(total);
+    msg.set(input);
+    msg[n] = 0x80;
+    var bits = n * 8;
+    for (var b = 0; b < 4; b++) msg[total - 8 + b] = (bits >>> (8 * b)) & 0xff;
+
+    var a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
+    var M = new Int32Array(16);
+    for (var chunk = 0; chunk < total; chunk += 64) {
+      for (var j = 0; j < 16; j++) {
+        var o = chunk + j * 4;
+        M[j] = msg[o] | (msg[o + 1] << 8) | (msg[o + 2] << 16) | (msg[o + 3] << 24);
+      }
+      var A = a0, B = b0, C = c0, D = d0;
+      for (var k = 0; k < 64; k++) {
+        var F, g;
+        if (k < 16) { F = (B & C) | (~B & D); g = k; }
+        else if (k < 32) { F = (D & B) | (~D & C); g = (5 * k + 1) & 15; }
+        else if (k < 48) { F = B ^ C ^ D; g = (3 * k + 5) & 15; }
+        else { F = C ^ (B | ~D); g = (7 * k) & 15; }
+        F = (F + A + MD5_K[k] + M[g]) | 0;
+        A = D; D = C; C = B;
+        B = (B + ((F << MD5_S[k]) | (F >>> (32 - MD5_S[k])))) | 0;
+      }
+      a0 = (a0 + A) | 0; b0 = (b0 + B) | 0; c0 = (c0 + C) | 0; d0 = (d0 + D) | 0;
+    }
+    var out = new Uint8Array(16), vals = [a0, b0, c0, d0];
+    for (var v = 0; v < 4; v++)
+      for (var w = 0; w < 4; w++) out[v * 4 + w] = (vals[v] >>> (8 * w)) & 0xff;
+    return out;
+  }
+
+  function rc4(key, data) {
+    var S = new Uint8Array(256), i, j = 0, t;
+    for (i = 0; i < 256; i++) S[i] = i;
+    for (i = 0; i < 256; i++) {
+      j = (j + S[i] + key[i % key.length]) & 255;
+      t = S[i]; S[i] = S[j]; S[j] = t;
+    }
+    var out = new Uint8Array(data.length);
+    i = 0; j = 0;
+    for (var k = 0; k < data.length; k++) {
+      i = (i + 1) & 255;
+      j = (j + S[i]) & 255;
+      t = S[i]; S[i] = S[j]; S[j] = t;
+      out[k] = data[k] ^ S[(S[i] + S[j]) & 255];
+    }
+    return out;
+  }
+
+  function juntarBytes(partes) {
+    var n = 0, i;
+    for (i = 0; i < partes.length; i++) n += partes[i].length;
+    var out = new Uint8Array(n), p = 0;
+    for (i = 0; i < partes.length; i++) { out.set(partes[i], p); p += partes[i].length; }
+    return out;
+  }
+
+  function erroCifra(msg, codigo) {
+    var e = new Error(msg);
+    e.code = codigo || "encrypted";
+    return e;
+  }
+
   /* ============ modelo de objetos PDF ============ */
   // Name  -> {__n:'Page'}     String -> {__s:'bytes'}
   // Ref   -> {__r:12,__g:0}   Dict   -> {__d:{...}}
@@ -698,7 +794,9 @@ var PDFText = (function () {
       var lex = new Lexer(this.s, m.index + m[0].length);
       var val;
       try { val = lex.object(); } catch (e) { continue; }
-      var rec = { val: val, streamStart: -1, dict: isDict(val) ? val.__d : null };
+      // num/gen são precisos para derivar a chave por objeto quando há cifra.
+      var rec = { val: val, streamStart: -1, dict: isDict(val) ? val.__d : null,
+                  num: parseInt(m[1], 10), gen: parseInt(m[2], 10) };
       lex.skip();
       if (this.s.substr(lex.p, 6) === "stream") {
         var q = lex.p + 6;
@@ -724,6 +822,145 @@ var PDFText = (function () {
     return this.resolve(dict[key]);
   };
 
+  /* Prepara a decifra. Chamar depois de scan(): precisa dos objetos indexados
+     para encontrar o dicionário /Encrypt. Sem cifra, não faz nada. */
+  Doc.prototype.setupCrypto = async function () {
+    this.cripto = null;
+
+    var ref = this.s.match(/\/Encrypt\s+(\d+)\s+(\d+)\s+R/);
+    var edict = null;
+    if (ref) {
+      var rec = this.objs[ref[1]];
+      if (rec && rec.dict) edict = rec.dict;
+    }
+    if (!edict) {
+      if (!/\/Encrypt\s*<</.test(this.s)) return;      // documento não cifrado
+      var inl = new Lexer(this.s, this.s.search(/\/Encrypt\s*<</) + this.s.match(/\/Encrypt\s*/)[0].length);
+      var v = inl.object();
+      if (isDict(v)) edict = v.__d;
+    }
+    if (!edict) throw erroCifra("Este PDF está cifrado e o cabeçalho de cifra não foi reconhecido.");
+
+    var filtro = this.get(edict, "Filter");
+    if (!isName(filtro, "Standard")) {
+      throw erroCifra("Este PDF usa um método de proteção que a aplicação não conhece.");
+    }
+
+    var V = num(this.get(edict, "V"), 0);
+    var R = num(this.get(edict, "R"), 0);
+    var P = num(this.get(edict, "P"), 0);
+    var bits = num(this.get(edict, "Length"), 40);
+    var O = this.get(edict, "O"), U = this.get(edict, "U");
+    O = (O && O.__s !== undefined) ? fromLatin1(O.__s) : null;
+    U = (U && U.__s !== undefined) ? fromLatin1(U.__s) : null;
+    if (!O || !U) throw erroCifra("Este PDF está cifrado e faltam-lhe os dados de verificação.");
+
+    if (V === 5 || R >= 5) {
+      throw erroCifra("Este PDF usa AES-256, que a aplicação ainda não abre. " +
+                      "Abra-o e volte a gravá-lo sem proteção.", "encrypted-aes256");
+    }
+
+    var cfm = "V2";
+    var metaCifrada = true;
+    if (V >= 4) {
+      var CF = this.get(edict, "CF");
+      var stmf = this.get(edict, "StmF");
+      var alvo = isName(stmf) ? stmf.__n : "StdCF";
+      if (isDict(CF)) {
+        var f = this.get(CF.__d, alvo);
+        if (isDict(f)) {
+          var cm = this.get(f.__d, "CFM");
+          if (isName(cm)) cfm = cm.__n;
+          var cl = num(this.get(f.__d, "Length"), 0);
+          if (cl) bits = cl <= 40 ? cl * 8 : cl;      // uns põem bytes, outros bits
+        }
+      }
+      if (this.get(edict, "EncryptMetadata") === false) metaCifrada = false;
+    }
+    if (cfm === "AESV3") {
+      throw erroCifra("Este PDF usa AES-256, que a aplicação ainda não abre. " +
+                      "Abra-o e volte a gravá-lo sem proteção.", "encrypted-aes256");
+    }
+
+    // primeiro elemento do /ID do trailer
+    var id0 = new Uint8Array(0);
+    var idm = this.s.match(/\/ID\s*\[\s*<([0-9A-Fa-f\s]*)>/);
+    if (idm) {
+      var hex = idm[1].replace(/\s+/g, "");
+      if (hex.length % 2) hex += "0";
+      id0 = new Uint8Array(hex.length / 2);
+      for (var h = 0; h < id0.length; h++) id0[h] = parseInt(hex.substr(h * 2, 2), 16);
+    }
+
+    // Algoritmo 2: chave a partir da palavra-passe de utilizador vazia
+    var n = (R === 2) ? 5 : Math.max(5, Math.min(16, bits >> 3));
+    var pbytes = new Uint8Array(4);
+    for (var b = 0; b < 4; b++) pbytes[b] = (P >>> (8 * b)) & 0xff;
+    var partes = [new Uint8Array(PAD_CIFRA), O.subarray(0, 32), pbytes, id0];
+    if (R >= 4 && !metaCifrada) partes.push(new Uint8Array([0xff, 0xff, 0xff, 0xff]));
+    var chave = md5(juntarBytes(partes)).subarray(0, n);
+    if (R >= 3) {
+      for (var it = 0; it < 50; it++) chave = md5(chave.subarray(0, n)).subarray(0, n);
+    }
+
+    // Confirma que a palavra-passe vazia serve (algoritmos 4 e 5).
+    var ok;
+    if (R === 2) {
+      var esperado = rc4(chave, new Uint8Array(PAD_CIFRA));
+      ok = true;
+      for (var i2 = 0; i2 < 32 && ok; i2++) if (esperado[i2] !== U[i2]) ok = false;
+    } else {
+      var vv = rc4(chave, md5(juntarBytes([new Uint8Array(PAD_CIFRA), id0])));
+      for (var r2 = 1; r2 <= 19; r2++) {
+        var k2 = new Uint8Array(n);
+        for (var q = 0; q < n; q++) k2[q] = chave[q] ^ r2;
+        vv = rc4(k2, vv);
+      }
+      ok = true;
+      for (var i3 = 0; i3 < 16 && ok; i3++) if (vv[i3] !== U[i3]) ok = false;
+    }
+    if (!ok) {
+      throw erroCifra("Este PDF pede uma palavra-passe para ser aberto.", "encrypted-password");
+    }
+
+    this.cripto = { chave: chave, n: n, cfm: (V >= 4 ? cfm : "V2"), R: R, P: P };
+  };
+
+  // Bandeira de permissões: consultiva, mas vale registá-la para quem quiser ver.
+  Doc.prototype.permissoes = function () {
+    if (!this.cripto) return null;
+    var P = this.cripto.P;
+    return {
+      imprimir: !!(P & 4),
+      modificar: !!(P & 8),
+      copiar: !!(P & 16),
+      extrairParaAcessibilidade: !!(P & 512)
+    };
+  };
+
+  Doc.prototype.decifrar = async function (dados, numObj, gen) {
+    var c = this.cripto;
+    if (!c || c.cfm === "Identity") return dados;
+    var aes = (c.cfm === "AESV2");
+    var buf = new Uint8Array(c.n + (aes ? 9 : 5));
+    buf.set(c.chave, 0);
+    buf[c.n] = numObj & 255;
+    buf[c.n + 1] = (numObj >> 8) & 255;
+    buf[c.n + 2] = (numObj >> 16) & 255;
+    buf[c.n + 3] = gen & 255;
+    buf[c.n + 4] = (gen >> 8) & 255;
+    if (aes) { buf[c.n + 5] = 0x73; buf[c.n + 6] = 0x41; buf[c.n + 7] = 0x6C; buf[c.n + 8] = 0x54; }
+    var chaveObj = md5(buf).subarray(0, Math.min(c.n + 5, 16));
+
+    if (!aes) return rc4(chaveObj, dados);
+
+    if (dados.length <= 16) return new Uint8Array(0);
+    var k = await crypto.subtle.importKey("raw", chaveObj, { name: "AES-CBC" }, false, ["decrypt"]);
+    var claro = await crypto.subtle.decrypt(
+      { name: "AES-CBC", iv: dados.subarray(0, 16) }, k, dados.subarray(16));
+    return new Uint8Array(claro);
+  };
+
   Doc.prototype.rawStream = function (rec) {
     if (rec.streamStart < 0) return null;
     var len = this.get(rec.dict, "Length");
@@ -745,6 +982,15 @@ var PDFText = (function () {
     if (rec.__data) return rec.__data;
     var data = this.rawStream(rec);
     if (!data) return null;
+
+    /* A decifra vem antes dos filtros: o que está no ficheiro é o texto
+       cifrado, e só depois de o abrir é que faz sentido descomprimir.
+       Fluxos de referência cruzada nunca são cifrados. */
+    if (this.cripto && rec.num !== undefined && !isName(this.get(rec.dict, "Type"), "XRef")) {
+      try { data = await this.decifrar(data, rec.num, rec.gen || 0); }
+      catch (e) { return null; }
+    }
+
     var filters = this.get(rec.dict, "Filter");
     var parms = this.get(rec.dict, "DecodeParms") || this.get(rec.dict, "DP");
     if (!filters) { rec.__data = data; return data; }
@@ -1343,8 +1589,32 @@ var PDFText = (function () {
 
   /* ============ montagem das linhas ============ */
 
+  /* Pontinhos de condução ("Título .............. 12", típicos de índices).
+
+     São enchimento visual sem informação. Pior: vêm partidos em vários
+     fragmentos sobrepostos entre si — num índice real cada linha trazia mais de
+     cem pontos em quatro fragmentos, quando o desenho só precisa de quarenta.
+     Isso gastava tokens e, por multiplicar os fragmentos da linha, fazia o
+     índice inteiro ser confundido com uma tabela.
+
+     Quatro pontos ou mais é o limite: reticências legítimas têm três. */
+  function limparPontilhado(t) {
+    return t.replace(/[ \t]*\.{4,}[ \t]*/g, " ");
+  }
+
   function assemble(items) {
     if (!items.length) return [];
+
+    var semPontos = [];
+    for (var z = 0; z < items.length; z++) {
+      var limpo = limparPontilhado(items[z].text);
+      if (!limpo.trim()) continue;               // fragmento só de pontos: fora
+      items[z].text = limpo;
+      semPontos.push(items[z]);
+    }
+    items = semPontos;
+    if (!items.length) return [];
+
     var seen = {}, uniq = [];                    // descarta sobre-impressão exata
     for (var u = 0; u < items.length; u++) {
       var it0 = items[u];
@@ -1372,17 +1642,32 @@ var PDFText = (function () {
     }
     return lines.map(function (l) {
       l.parts.sort(function (a, b) { return a.x - b.x; });
-      var text = "", end = null, cells = [], cur = null;
+      var text = "", end = null, cells = [], cur = null, tamAnterior = null;
       for (var j = 0; j < l.parts.length; j++) {
         var p = l.parts[j];
-        var newCell = false;
+        var newCell = false, colado = false;
         if (end !== null) {
           var g = p.x - end;
+
+          /* Versalete: a inicial é desenhada maior que o resto da palavra, o
+             que parte a palavra em fragmentos de tamanhos diferentes e alarga
+             a distância entre eles. Sem esta ressalva saía "L EI DE D ALTON"
+             em vez de "LEI DE DALTON".
+
+             A mudança de tamanho é a assinatura, e é por isso que a exceção
+             está presa a ela: entre fragmentos do mesmo tamanho um intervalo
+             destes é mesmo um espaço, e juntá-los daria "DOAR" por "DO AR". */
+          var mudouTamanho = tamAnterior !== null &&
+                             Math.abs(p.size - tamAnterior) > Math.max(0.6, tamAnterior * 0.06);
+          colado = mudouTamanho && g < p.size * 0.32;
+
           if (g > p.size * 0.9) { text += "  "; newCell = true; }   // salto grande: coluna
-          else if (g > p.size * 0.16 && !/\s$/.test(text) && !/^\s/.test(p.text)) text += " ";
+          else if (!colado && g > p.size * 0.16 &&
+                   !/\s$/.test(text) && !/^\s/.test(p.text)) text += " ";
         }
+        tamAnterior = p.size;
         if (!cur || newCell) { cur = { x: p.x, text: "" }; cells.push(cur); }
-        else if (cur.text && !/\s$/.test(cur.text) && !/^\s/.test(p.text)) cur.text += " ";
+        else if (!colado && cur.text && !/\s$/.test(cur.text) && !/^\s/.test(p.text)) cur.text += " ";
         cur.text += p.text;
         text += p.text;
         end = p.xEnd;
@@ -1400,12 +1685,8 @@ var PDFText = (function () {
   async function extract(bytes, opts) {
     opts = opts || {};
     var doc = new Doc(bytes);
-    if (/\/Encrypt\s+\d+\s+\d+\s+R/.test(doc.s) || /\/Encrypt\s*<</.test(doc.s)) {
-      var err = new Error("PDF protegido por criptografia");
-      err.code = "encrypted";
-      throw err;
-    }
     doc.scan();
+    await doc.setupCrypto();          // lança se pedir palavra-passe a sério
     await doc.expandObjStreams();
     await doc.harvestGlyphMaps();
 
@@ -2623,6 +2904,17 @@ var ReadZip = (function () {
       var paraZip=[];
       batchResults.forEach(function(r){
         var base=r.name.replace(/\.(txt|md)$/,'');
+        // Um PDF só de imagens não dá texto. Sem isto entrava no zip um
+        // ficheiro de 0 bytes, e depois não se percebia qual falhou nem porquê.
+        if(!r.text.trim()){
+          paraZip.push({name:r.name, text:
+            'Nenhum texto foi extraído de "'+base+'.pdf".\n\n'+
+            'O documento é provavelmente digitalizado: as páginas são imagens, '+
+            'não texto, e não há o que extrair. Para converter, passe-o antes '+
+            'por um OCR — abrir o arquivo com o Google Docs pelo Google Drive '+
+            'resolve na maioria dos casos.\n'});
+          return;
+        }
         var partes=dividirEmBlocos(r.text, alvo, base, ext);
         if(partes) paraZip=paraZip.concat(partes); else paraZip.push(r);
       });

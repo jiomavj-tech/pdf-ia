@@ -17,7 +17,7 @@
    apagadas no activate.
 */
 
-const VERSAO = 'pdf-ia-v7';
+const VERSAO = 'pdf-ia-v8';
 const ESSENCIAIS = [
   './',
   './index.html',
