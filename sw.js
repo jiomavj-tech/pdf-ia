@@ -19,7 +19,7 @@
 
 // Ao incrementar, atualizar também o número mostrado no rodapé do index.html
 // (elemento #versaoApp): é por ele que se vê qual a versão a correr.
-const VERSAO = 'pdf-ia-v9';
+const VERSAO = 'pdf-ia-v10';
 const ESSENCIAIS = [
   './',
   './index.html',

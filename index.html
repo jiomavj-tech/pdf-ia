@@ -67,11 +67,6 @@
   .acoes-topo{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
   .share-wrap{position:relative;display:inline-block}
 
-  .btn-instalar{display:inline-flex;align-items:center;gap:7px;
-    background:var(--ink);color:var(--sheet);border:1.5px solid var(--ink);
-    font-size:13.5px;font-weight:600;padding:8px 14px;box-shadow:3px 3px 0 var(--mark)}
-  .btn-instalar:hover{opacity:1;transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--mark)}
-  .btn-instalar svg{flex:none}
   .dica-instalar{margin:12px 0 0;font-size:13px;color:var(--muted);line-height:1.5;max-width:52ch}
   .dica-instalar b{color:var(--ink);font-weight:600}
   .btn-share{display:inline-flex;align-items:center;gap:7px;
@@ -302,19 +297,9 @@
       </div>
     </div>
 
-      <button type="button" class="btn-instalar" id="btnInstalar" hidden>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12 3v11"/><path d="M8 10.5l4 4 4-4"/><path d="M4 17.5v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/>
-        </svg>
-        <span id="btnInstalarTxt">Instalar aplicativo</span>
-      </button>
     </div>
 
-    <p class="dica-instalar" id="dicaIos" hidden>
-      Para instalar no iPhone: toque em <b>Partilhar</b> na barra do Safari e escolha
-      <span class="chave">Adicionar ao Ecrã Principal</span>.
-    </p>
+    <p class="dica-instalar" id="dicaInstalar" hidden></p>
   </header>
 
   <div class="escolha">
@@ -431,7 +416,7 @@
     <p>Este arquivo não faz nenhuma requisição de rede: o leitor de PDF está embutido nele. Funciona em modo avião, e os documentos nunca saem do seu computador.</p>
     <p>A estimativa de tokens usa a média de ~4 caracteres por token, para comparar tamanhos. PDFs escaneados não têm texto embutido e precisam de OCR antes.</p>
     <p class="direitos">© 2026 Jeovani · Todos os direitos reservados. Usar é livre; copiar, redistribuir, hospedar ou vender exige autorização.
-      <span class="versao">versão <b id="versaoApp">9</b><span id="versaoEstado"></span></span></p>
+      <span class="versao">versão <b id="versaoApp">10</b><span id="versaoEstado"></span></span></p>
   </footer>
 
   <div class="avisos" id="avisos" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -3037,18 +3022,20 @@ var ReadZip = (function () {
     });
   })();
 
-  // Instalar como aplicativo. O Chrome avisa por beforeinstallprompt e deixa
-  // guardar o pedido para o mostrar quando o utilizador quiser; o Safari do
-  // iPhone não tem esse evento e exige o passo manual, daí a dica.
-  (function(){
-    var btn=document.getElementById('btnInstalar');
-    var dica=document.getElementById('dicaIos');
-    var pedido=null;
+  /* Instalar como aplicativo.
 
-    // Dentro da janela da aplicação instalada não existe barra de endereço, e
-    // 'standalone' é o sinal disso. Alguns Chrome ainda disparam
-    // beforeinstallprompt lá dentro, o que fazia aparecer um botão "Instalar"
-    // dentro do próprio aplicativo já instalado — sem sentido, e sem efeito.
+     Havia aqui um botão «Instalar», ligado ao aviso beforeinstallprompt do
+     navegador. O aviso só existe quando há mesmo algo a instalar, por isso o
+     botão aparecia e desaparecia sozinho, e quando aparecia sem o aviso não
+     fazia nada. Confundiu duas vezes.
+
+     Ficou uma linha fixa a dizer o caminho pelo menu do navegador, que é o que
+     funciona sempre e não muda debaixo dos pés. Some quando a aplicação já
+     corre instalada, que é o único caso em que deixa de fazer sentido. */
+  (function(){
+    var dica=document.getElementById('dicaInstalar');
+    if(!dica || location.protocol==='file:') return;
+
     function jaInstalado(){
       if(navigator.standalone===true) return true;
       if(!window.matchMedia) return false;
@@ -3056,68 +3043,27 @@ var ReadZip = (function () {
         .some(function(m){ return window.matchMedia('(display-mode: '+m+')').matches; });
     }
 
-    function esconder(){
-      if(btn){ btn.hidden=true; btn.disabled=false; }
-      if(dica) dica.hidden=true;
+    function mostrar(){
+      if(jaInstalado()){ dica.hidden=true; return; }
+      var ios=/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+      dica.innerHTML = ios
+        ? 'Dá para usar como aplicativo: toque em <b>Partilhar</b> na barra do Safari e '+
+          'escolha <span class="chave">Adicionar ao Ecrã Principal</span>.'
+        : 'Dá para usar como aplicativo: no menu do navegador, escolha '+
+          '<span class="chave">Instalar</span>. Fica com ícone próprio e abre sem internet.';
+      dica.hidden=false;
     }
 
-    // Se já corre instalado, não há nada a oferecer: sai sem ligar nada.
-    if(jaInstalado()){ esconder(); return; }
-
-    // E se for instalado com a página aberta, o botão desaparece na hora.
+    mostrar();
+    // Se for instalado com a página aberta, a dica deixa de fazer sentido.
+    window.addEventListener('appinstalled',function(){ dica.hidden=true; });
     if(window.matchMedia){
       var mq=window.matchMedia('(display-mode: standalone)');
-      var aoMudar=function(e){ if(e.matches){ pedido=null; esconder(); } };
+      var aoMudar=function(e){ if(e.matches) dica.hidden=true; };
       if(mq.addEventListener) mq.addEventListener('change',aoMudar);
       else if(mq.addListener) mq.addListener(aoMudar);
     }
-
-    window.addEventListener('beforeinstallprompt',function(e){
-      e.preventDefault();
-      if(jaInstalado()){ esconder(); return; }
-      pedido=e;
-      if(btn) btn.hidden=false;
-      if(dica) dica.hidden=true;
-    });
-
-    window.addEventListener('appinstalled',function(){
-      pedido=null;
-      if(btn) btn.hidden=true;
-      if(dica) dica.hidden=true;
-    });
-
-    if(btn) btn.addEventListener('click',function(){
-      var rot=document.getElementById('btnInstalarTxt');
-      // Sem pedido guardado não há como abrir o diálogo do navegador. Antes
-      // isto era um return silencioso: o botão parecia estragado.
-      if(!pedido){
-        if(rot){
-          var antes=rot.textContent;
-          rot.textContent='Use o menu do navegador → Instalar';
-          setTimeout(function(){ rot.textContent=antes; },4000);
-        }
-        return;
-      }
-      btn.disabled=true;
-      try{
-        pedido.prompt();
-      }catch(e){
-        btn.disabled=false;
-        return;
-      }
-      pedido.userChoice.then(function(r){
-        pedido=null;
-        btn.disabled=false;
-        if(r && r.outcome==='accepted') btn.hidden=true;
-      },function(){
-        btn.disabled=false;
-      });
-    });
-
-    // iPhone e iPad: sem beforeinstallprompt, mostra-se o caminho manual.
-    var ios=/iPad|iPhone|iPod/.test(navigator.userAgent) ||
-            (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
-    if(ios && !jaInstalado() && location.protocol!=='file:' && dica) dica.hidden=false;
   })();
 
   // O service worker é o que faz a aplicação abrir sem rede depois de
