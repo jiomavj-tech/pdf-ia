@@ -186,6 +186,8 @@
   .estado[data-v=critico] .bolota{background:var(--critico)}
   .estado[aria-pressed=true]{border-color:var(--ink);color:var(--ink);background:var(--mark)}
 
+  .acoes-lista{display:flex;justify-content:center;margin:2px 0 18px}
+  .acoes-lista .btn{padding:11px 18px;font-size:14.5px}
   .fotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;margin-top:10px}
   .foto{position:relative;aspect-ratio:4/3;border:1.5px solid var(--line);border-radius:2px;
     overflow:hidden;background:var(--canvas)}
@@ -448,6 +450,16 @@
     </div>
 
     <div class="folha">
+      <p class="secao-titulo">Versão do aplicativo</p>
+      <p class="ajuda" style="margin-top:0">Está rodando a versão <b id="versaoAjustes">?</b>. O app fica
+        guardado no aparelho e só troca quando é fechado e reaberto de verdade. Se eu tiver publicado
+        uma correção, este botão busca na hora &mdash; seus relatórios não são tocados.</p>
+      <div class="item-acoes">
+        <button type="button" class="btn" id="btnAtualizar">Buscar versão nova</button>
+      </div>
+    </div>
+
+    <div class="folha">
       <p class="secao-titulo">Espaço usado</p>
       <p class="ajuda" id="infoEspaco">a calcular…</p>
     </div>
@@ -462,7 +474,7 @@
     <p>O ditado usa o reconhecimento de voz do próprio navegador e precisa de internet no momento da fala.
       Sem sinal, escreva no teclado: o resto do app funciona em modo avião.</p>
     <p>© 2026 Jeovani · Todos os direitos reservados. Usar é livre; copiar, redistribuir, hospedar ou vender exige autorização.
-      <span class="versao">versão <b id="versaoApp">4</b><span id="versaoEstado"></span></span></p>
+      <span class="versao">versão <b id="versaoApp">5</b><span id="versaoEstado"></span></span></p>
   </footer>
 
   <div class="avisos" id="avisos" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -850,8 +862,8 @@ function montarBarra(){
   galeria.setAttribute('aria-label','Escolher fotos da galeria');
   galeria.addEventListener('click', function(){ alvoFoto = null; $('entradaGaleria').click(); });
 
-  var semFoto = botao('','btn--leve', SVG_MAIS);
-  semFoto.setAttribute('aria-label','Item sem foto');
+  var semFoto = botao('Item','btn--leve', SVG_MAIS);
+  semFoto.title = 'Novo item sem foto';
   semFoto.addEventListener('click', function(){ adicionarItem([], true); });
 
   b.appendChild(voltar); b.appendChild(foto); b.appendChild(galeria); b.appendChild(semFoto);
@@ -1035,16 +1047,35 @@ function renderItens(){
   var caixa = $('listaItens');
   caixa.textContent = '';
   var itens = relAtual.itens || [];
+
   if(!itens.length){
     var v = el('div','folha');
     var d = el('div','vazio');
     d.appendChild(el('strong', null, 'Comece pela foto'));
     d.appendChild(el('div', null, 'O botão da câmera está aí embaixo. Depois da foto, aperte «Ditar» e fale — o que você disser vira o texto do item.'));
+    var ou = el('div', null, 'Ou crie um item sem foto:');
+    ou.style.margin = '16px 0 9px';
+    d.appendChild(ou);
+    d.appendChild(botaoNovoItem());
     v.appendChild(d);
     caixa.appendChild(v);
     return;
   }
+
   itens.forEach(function(it, i){ caixa.appendChild(cartaoItem(it, i)); });
+
+  /* Um relatório de vistoria tem dez, quinze itens: agora a câmera, agora o
+     quadro, agora o portão. O botão fica no fim da lista, que é onde a mão
+     está depois de escrever o item anterior. */
+  var fim = el('div','acoes-lista');
+  fim.appendChild(botaoNovoItem());
+  caixa.appendChild(fim);
+}
+
+function botaoNovoItem(){
+  var b = botao('Adicionar item','btn--forte', SVG_MAIS);
+  b.addEventListener('click', function(){ adicionarItem([], true); });
+  return b;
 }
 
 function cartaoItem(it, i){
@@ -1290,8 +1321,11 @@ function suportaDitado(){
   return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 }
 
+/* O texto ditado tem duas partes: `fixo`, que já não muda, e `aberta`, a
+   última frase — que o Android ainda pode reentregar maior. `lidos` conta
+   quantos resultados finais desta sessão de escuta já foram consumidos. */
 var dit = { rec:null, ligado:false, botao:null, painel:null, alvo:null, aplicar:null,
-            base:'', finais:[] };
+            fixo:'', aberta:'', lidos:0 };
 
 function alternarDitado(botaoDitar, painel, alvo, aplicar){
   if(dit.ligado && dit.botao === botaoDitar){ pararDitado(); return; }
@@ -1306,7 +1340,7 @@ function alternarDitado(botaoDitar, painel, alvo, aplicar){
 
   dit.rec = rec; dit.ligado = true; dit.botao = botaoDitar;
   dit.painel = painel; dit.alvo = alvo; dit.aplicar = aplicar;
-  dit.base = alvo.value || ''; dit.finais = [];
+  dit.fixo = alvo.value || ''; dit.aberta = ''; dit.lidos = 0;
 
   botaoDitar.setAttribute('aria-pressed','true');
   painel.hidden = false;
@@ -1323,19 +1357,23 @@ function alternarDitado(botaoDitar, painel, alvo, aplicar){
      por inteiro a cada evento: reentrega substitui, não acumula. `base`
      guarda o que já estava escrito antes desta escuta, para o ditado nunca
      comer o que o utilizador tinha digitado. */
-  rec.onstart = function(){
-    dit.base = (dit.alvo && dit.alvo.value) || '';
-    dit.finais = [];
-  };
+  // A sessão nova traz a sua própria contagem; o texto já ditado fica.
+  rec.onstart = function(){ dit.lidos = 0; };
 
   rec.onresult = function(ev){
     var parcial = '';
     for(var i = 0; i < ev.results.length; i++){
       var r = ev.results[i];
-      if(r.isFinal) dit.finais[i] = arrumarFrase(r[0].transcript);
-      else parcial += r[0].transcript;
+      if(!r.isFinal){ parcial += r[0].transcript; continue; }
+
+      if(i >= dit.lidos){                 // resultado que ainda não tinha chegado
+        receberFrase(r[0].transcript);
+        dit.lidos = i + 1;
+      }else if(i === dit.lidos - 1){      // o mais recente, reentregue já apurado
+        receberFrase(r[0].transcript);
+      }
+      // mais antigo do que isso já está fechado: ignora-se
     }
-    escreverDitado();
 
     painel.textContent = '';
     if(parcial){
@@ -1361,8 +1399,7 @@ function alternarDitado(botaoDitar, painel, alvo, aplicar){
     // lista de resultados, começada do zero — o que já foi escrito passa a
     // ser a base dela.
     if(dit.ligado && dit.rec === rec){
-      dit.base = (dit.alvo && dit.alvo.value) || '';
-      dit.finais = [];
+      dit.lidos = 0;
       try{ rec.start(); }catch(e){ pararDitado(); }
     }
   };
@@ -1380,12 +1417,47 @@ function arrumarFrase(trecho){
   return trecho;
 }
 
-// Reescreve o campo inteiro: o que já lá estava, mais as frases desta escuta.
+// Só letras e números, para comparar duas versões da mesma frase sem
+// tropeçar em pontuação, espaço ou maiúscula.
+function soLetras(s){
+  return (s || '').toLowerCase().replace(/[^0-9a-záàâãéêíóôõúüçñ]/gi, '');
+}
+
+/* Aqui está o remédio para a repetição do Android.
+
+   O reconhecimento do telemóvel vai entregando a MESMA fala à medida que a
+   apura: "sol já" -> "sol já nasceu lá" -> "sol já nasceu lá na fazendinha".
+   Às vezes reentrega na mesma posição, às vezes numa posição nova, às vezes
+   já noutra sessão de escuta — e somar tudo escrevia a frase cinco vezes.
+
+   A assinatura é sempre a mesma: a frase nova COMEÇA pela anterior. Quando
+   isso acontece, ela substitui; quando não, é fala nova e vai a seguir.
+
+   O preço, assumido: se alguém disser "o quadro" e, numa frase à parte,
+   "o quadro está solto", as duas viram uma só. Sai melhor do que a mesma
+   frase repetida cinco vezes. */
+function receberFrase(bruta){
+  var nova = (bruta || '').trim();
+  if(!nova) return;
+
+  var anterior = soLetras(dit.aberta), chegou = soLetras(nova);
+  if(anterior && chegou.indexOf(anterior) === 0){
+    dit.aberta = nova;                       // é a mesma, apurada
+  }else{
+    var fechada = arrumarFrase(dit.aberta);  // a anterior acabou de fechar
+    if(fechada) dit.fixo = dit.fixo ? (dit.fixo.replace(/\s+$/, '') + ' ' + fechada) : fechada;
+    dit.aberta = nova;
+  }
+  escreverDitado();
+}
+
 function escreverDitado(){
   if(!dit.alvo) return;
-  var frases = (dit.finais || []).filter(function(f){ return !!f; }).join(' ');
-  var base = (dit.base || '').replace(/\s+$/, '');
-  var novo = base ? (frases ? base + ' ' + frases : base) : frases;
+  var partes = [];
+  if(dit.fixo) partes.push(dit.fixo.replace(/\s+$/, ''));
+  var ultima = arrumarFrase(dit.aberta);
+  if(ultima) partes.push(ultima);
+  var novo = partes.join(' ');
   if(dit.alvo.value === novo) return;
   dit.alvo.value = novo;
   dit.alvo.scrollTop = dit.alvo.scrollHeight;
@@ -1400,7 +1472,7 @@ function pararDitado(){
   if(dit.botao) dit.botao.setAttribute('aria-pressed','false');
   if(dit.painel) dit.painel.hidden = true;
   dit.botao = null; dit.painel = null; dit.alvo = null; dit.aplicar = null;
-  dit.base = ''; dit.finais = [];
+  dit.fixo = ''; dit.aberta = ''; dit.lidos = 0;
   salvarJa();
 }
 
@@ -2945,7 +3017,33 @@ function ligarTudo(){
   document.addEventListener('visibilitychange', function(){ if(document.hidden) salvarJa(); });
 }
 
+/* Buscar versão nova à força: limpa a cache e larga o service worker, que
+   é o que segura a cópia antiga no aparelho. Os relatórios vivem na
+   IndexedDB e não são tocados por nada disto. */
+function atualizarApp(){
+  var c = cortina('A buscar a versão nova...', 'não feche o aplicativo');
+  Promise.resolve()
+    .then(function(){
+      if(!window.caches) return null;
+      return caches.keys().then(function(nomes){
+        return Promise.all(nomes.map(function(n){ return caches.delete(n); }));
+      });
+    })
+    .then(function(){
+      if(!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return null;
+      return navigator.serviceWorker.getRegistrations().then(function(regs){
+        return Promise.all(regs.map(function(r){ return r.unregister(); }));
+      });
+    })
+    .catch(function(){})
+    .then(function(){
+      // A marca no endereço obriga o navegador a ir buscar à rede.
+      location.replace(location.pathname + '?v=' + Date.now());
+    });
+}
+
 function abrirAjustes(){
+  $('versaoAjustes').textContent = $('versaoApp').textContent;
   $('aTecnico').value = ajustes.tecnico;
   $('aEmpresa').value = ajustes.empresa;
   $('aChave').value = ajustes.chave;
@@ -3050,6 +3148,7 @@ function ligarNuvemUI(){
     sincronizar(true);
   });
 
+  $('btnAtualizar').addEventListener('click', atualizarApp);
   $('btnExportar').addEventListener('click', exportarTudo);
   $('btnImportar').addEventListener('click', function(){ $('entradaBackup').click(); });
   $('entradaBackup').addEventListener('change', function(ev){
