@@ -370,7 +370,7 @@
       <p class="ajuda">Entram sozinhos em cada relatório novo.</p>
     </div>
 
-    <div class="folha">
+    <div class="folha" id="folhaIA">
       <p class="secao-titulo">Redação com IA (opcional)</p>
       <label class="campo"><span class="campo-nome">Chave da API da Anthropic</span>
         <input type="password" id="aChave" autocomplete="off" placeholder="sk-ant-..." spellcheck="false"></label>
@@ -462,7 +462,7 @@
     <p>O ditado usa o reconhecimento de voz do próprio navegador e precisa de internet no momento da fala.
       Sem sinal, escreva no teclado: o resto do app funciona em modo avião.</p>
     <p>© 2026 Jeovani · Todos os direitos reservados. Usar é livre; copiar, redistribuir, hospedar ou vender exige autorização.
-      <span class="versao">versão <b id="versaoApp">2</b><span id="versaoEstado"></span></span></p>
+      <span class="versao">versão <b id="versaoApp">3</b><span id="versaoEstado"></span></span></p>
   </footer>
 
   <div class="avisos" id="avisos" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -990,8 +990,8 @@ function renderEditor(){
   renderChipsArea();
   renderPlacar();
   renderItens();
-  $('btnRevisarIA').hidden = !temIA();
-  $('btnParecerIA').hidden = !temIA();
+  $('btnRevisarIA').hidden = false;
+  $('btnParecerIA').hidden = false;
   $('btnCompartilhar').hidden = !(navigator.canShare && navigator.share);
   $('btnDitarParecer').hidden = !suportaDitado();
 }
@@ -1145,27 +1145,34 @@ function cartaoItem(it, i){
   bFoto.addEventListener('click', function(){ alvoFoto = it.id; $('entradaCamera').click(); });
   acoes.appendChild(bFoto);
 
-  if(temIA()){
-    var bIA = botao(it.original ? 'Desfazer IA' : 'Melhorar com IA','btn--leve');
-    bIA.addEventListener('click', function(){
-      if(it.original){
-        it.texto = it.original; delete it.original;
-        texto.value = it.texto; salvarJa(); renderItens();
-        return;
-      }
-      if(!(it.texto||'').trim()){ aviso('Fale ou escreva algo primeiro'); return; }
-      bIA.disabled = true; bIA.textContent = 'a escrever…';
-      polirItem(it).then(function(novo){
-        it.original = it.texto; it.texto = novo; texto.value = novo;
-        salvarJa(); renderItens();
-        aviso('Texto reescrito pela IA','o botão «Desfazer IA» traz de volta o que você ditou');
-      }).catch(function(e){
-        aviso('A IA não respondeu', String(e && e.message || e), true);
-        bIA.disabled = false; bIA.textContent = 'Melhorar com IA';
-      });
+  /* O botão fica sempre à vista, item a item. O trabalho de campo faz-se
+     sem rede e sem IA nenhuma; depois, com sinal, o técnico decide em qual
+     observação vale a pena tocar — e paga só por essa. Esconder o botão
+     quando não há chave fazia a função parecer inexistente. */
+  var bIA = botao(it.original ? 'Desfazer IA' : 'Melhorar texto','btn--leve',
+    '<path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/>' +
+    '<path d="M18 15l.9 2.1 2.1.9-2.1.9L18 21l-.9-2.1-2.1-.9 2.1-.9z"/>');
+  bIA.addEventListener('click', function(){
+    if(it.original){
+      it.texto = it.original; delete it.original;
+      texto.value = it.texto; salvarJa(); renderItens();
+      aviso('Voltou o que você ditou');
+      return;
+    }
+    if(!(it.texto || '').trim()){ aviso('Fale ou escreva alguma coisa primeiro'); return; }
+    if(!podeUsarIA()) return;
+
+    bIA.disabled = true; bIA.textContent = 'a escrever...';
+    polirItem(it).then(function(novoTexto){
+      it.original = it.texto; it.texto = novoTexto; texto.value = novoTexto;
+      salvarJa(); renderItens();
+      aviso('Texto reescrito', 'o botão «Desfazer IA» traz de volta o que você ditou');
+    }).catch(function(e){
+      aviso('A IA não respondeu', String(e && e.message || e), true);
+      bIA.disabled = false; bIA.textContent = 'Melhorar texto';
     });
-    acoes.appendChild(bIA);
-  }
+  });
+  acoes.appendChild(bIA);
 
   var espaco = el('div','cresce');
   acoes.appendChild(espaco);
@@ -1452,8 +1459,30 @@ function gerarParecer(rel){
   return chamarIA(REGRAS, pedido, 1600);
 }
 
+/* Diz se a IA pode ser chamada agora e, se não puder, explica o que falta
+   em vez de falhar em silêncio. */
+function podeUsarIA(){
+  if(!temIA()){
+    aviso('A IA ainda não está configurada', 'toque para colar a chave da API nos ajustes', true);
+    telaAnterior = telaAtual === 'ajustes' ? telaAnterior : telaAtual;
+    abrirAjustes();
+    setTimeout(function(){
+      var f = $('folhaIA');
+      if(f) f.scrollIntoView({behavior:'smooth', block:'center'});
+      var c = $('aChave'); if(c) c.focus();
+    }, 120);
+    return false;
+  }
+  if(!navigator.onLine){
+    aviso('Sem internet', 'a IA precisa de sinal; o texto que você ditou está guardado e espera', true);
+    return false;
+  }
+  return true;
+}
+
 function revisarTudo(){
-  if(!relAtual || !temIA()) return;
+  if(!relAtual) return;
+  if(!podeUsarIA()) return;
   var pendentes = (relAtual.itens||[]).filter(function(it){
     return (it.texto||'').trim() && !it.original;
   });
@@ -2831,6 +2860,7 @@ function ligarTudo(){
 
   $('btnParecerIA').addEventListener('click', function(){
     if(!relAtual) return;
+    if(!podeUsarIA()) return;
     var b = $('btnParecerIA');
     b.disabled = true; b.textContent = 'a escrever…';
     gerarParecer(relAtual).then(function(t){

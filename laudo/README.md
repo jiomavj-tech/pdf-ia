@@ -55,13 +55,23 @@ No iPhone, se o ditado não estiver disponível, o microfone do próprio teclado
 
 ## Redação com IA (opcional, desligada)
 
-O app funciona inteiro sem isso. Se você colar uma **chave da API da Anthropic** nos ajustes,
-aparecem dois botões a mais:
+A ordem é essa: **primeiro o serviço, a IA só depois, e só onde você quiser.**
 
-- **Melhorar com IA**, em cada item: reescreve a fala solta em linguagem técnica. O que você
-  ditou fica guardado, e **Desfazer IA** traz de volta.
-- **Revisar tudo com IA**: passa por todos os itens e ainda escreve o parecer final, com as
-  recomendações em ordem de prioridade.
+Em campo, sem sinal nenhum, você tira as fotos e dita tudo. O botão **Melhorar texto** fica à
+vista em cada item desde sempre — não é preciso configurar nada para ele aparecer. Quando houver
+internet, você abre o relatório e toca nele **só nos itens que valem a pena**: aquele em que a
+fala saiu embolada, aquele que vai para o cliente mais exigente. Os outros ficam como você ditou.
+Assim a IA é um retoque item a item, não um pedágio para usar o app — e você paga só pelo que
+tocou.
+
+- **Melhorar texto**, em cada item: reescreve aquela observação em linguagem técnica. O que você
+  ditou fica guardado, e o botão vira **Desfazer IA** para trazer de volta.
+- **Revisar tudo com IA**, no fim: passa por todos os itens de uma vez e ainda escreve o parecer
+  final, com as recomendações em ordem de prioridade. Avisa quantas chamadas vai fazer antes.
+- **Escrever com IA**, dentro do parecer: só a conclusão, sem mexer nos itens.
+
+Sem chave configurada, o toque leva você ao campo da chave nos ajustes e explica o que falta.
+Sem internet, ele diz isso e não mexe em nada — o texto que você ditou continua onde estava.
 
 A instrução dada ao modelo proíbe inventar: nada de medidas, marcas, normas ou causas que você
 não tenha dito, e a gravidade não pode ser aumentada nem suavizada. Ainda assim, **releia antes
