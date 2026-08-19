@@ -83,6 +83,7 @@
   .btn--leve{border-color:var(--line);color:var(--muted);font-weight:500}
   .btn--leve:hover{border-color:var(--ink);color:var(--ink);opacity:1}
   .btn--perigo{border-color:var(--critico);color:var(--critico)}
+  .btn--alerta{border-color:var(--atencao);color:var(--atencao);font-weight:600}
   .btn:disabled{opacity:.45;cursor:default;transform:none;box-shadow:none}
   .dica-instalar{margin:11px 0 0;font-size:13px;color:var(--muted);max-width:52ch}
   .dica-instalar b{color:var(--ink);font-weight:600}
@@ -133,8 +134,21 @@
   details.dobra>summary::-webkit-details-marker{display:none}
   details.dobra>summary::after{content:"+";font-family:var(--mono);color:var(--muted);font-size:17px}
   details.dobra[open]>summary::after{content:"–"}
-  details.dobra>summary .resumo-sub{font-weight:400;font-size:12.5px;color:var(--muted)}
+  details.dobra>summary .resumo-sub{font-weight:400;font-size:12.5px;color:var(--muted);
+    text-align:right;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .dobra-corpo{padding:0 14px 15px}
+  .dobra .dobra{margin:12px 0 0;background:transparent;border-style:dashed}
+  .dobra .dobra>summary{font-size:13.5px;font-weight:600;padding:10px 12px}
+  .dobra .dobra .dobra-corpo{padding:0 12px 12px}
+
+  .linha-opcao{display:flex;gap:9px;align-items:flex-start;margin-top:12px;
+    font-size:13.5px;line-height:1.4;cursor:pointer}
+  .linha-opcao input{margin:2px 0 0;width:17px;height:17px;flex:none;accent-color:var(--ink)}
+  .passos{margin:0 0 12px;padding-left:20px;font-size:13px;color:var(--muted);line-height:1.55}
+  .passos li{margin-bottom:6px}
+  .passos b{color:var(--ink)}
+  .passos code{font-family:var(--mono);font-size:11.5px;background:var(--canvas);
+    padding:1px 4px;border-radius:2px;color:var(--ink);overflow-wrap:anywhere}
 
   /* ---------- barra de áreas ---------- */
   .chips{display:flex;flex-wrap:wrap;gap:7px}
@@ -250,6 +264,11 @@
           <path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M4 20h16"/></svg>
         Instalar aplicativo
       </button>
+      <button type="button" id="btnNuvem" class="btn btn--leve" title="Nuvem">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M7 19h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.6 3.9 3.9 0 0 0 7 19z"/>
+          <path d="M12 15V8.5"/><path d="M9.6 10.9L12 8.5l2.4 2.4"/></svg>Nuvem</button>
       <button type="button" id="btnAjustes" class="btn btn--leve">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -365,6 +384,69 @@
       </div>
     </div>
 
+    <details class="dobra" id="dobraNuvem">
+      <summary><span>Nuvem (Google Drive)</span><span class="resumo-sub" id="estadoNuvem"></span></summary>
+      <div class="dobra-corpo">
+        <p class="ajuda" style="margin-top:0">Com o Drive ligado, cada relatório sobe para uma pasta
+          <b>Laudo</b> dentro do <b>seu</b> Drive, e desce nos outros aparelhos onde você entrar com a
+          mesma conta Google. Não há servidor meu no meio: o app fala direto com o Google, com uma
+          credencial que é sua. O app só enxerga os arquivos que ele mesmo criou &mdash; o resto do seu
+          Drive continua invisível para ele.</p>
+
+        <label class="campo"><span class="campo-nome">ID do cliente OAuth</span>
+          <input type="text" id="aClientId" autocomplete="off" spellcheck="false"
+                 placeholder="000000-xxxx.apps.googleusercontent.com"></label>
+
+        <div class="item-acoes">
+          <button type="button" class="btn btn--forte" id="btnLigarDrive">Ligar o Google Drive</button>
+          <button type="button" class="btn" id="btnSincronizar">Sincronizar agora</button>
+          <button type="button" class="btn btn--leve" id="btnDesligarDrive">Desligar</button>
+        </div>
+
+        <label class="linha-opcao"><input type="checkbox" id="aAuto">
+          <span>Sincronizar sozinho: ao abrir o app, ao fechar um relatório e quando a internet voltar.</span></label>
+
+        <details class="dobra">
+          <summary>Como criar o ID do cliente &mdash; uma vez só</summary>
+          <div class="dobra-corpo">
+            <ol class="passos">
+              <li>Entre em <code>console.cloud.google.com</code> com a sua conta Google e crie um projeto
+                (o nome não importa).</li>
+              <li>Em <b>APIs e serviços → Biblioteca</b>, procure <b>Google Drive API</b> e ative.</li>
+              <li>Em <b>Tela de permissão OAuth</b>, escolha <b>Externo</b>, preencha nome do app e
+                e-mail, e publique. O acesso pedido aqui (<code>drive.file</code>) não é sensível, então
+                o Google não exige verificação.</li>
+              <li>Em <b>Credenciais → Criar credenciais → ID do cliente OAuth</b>, tipo
+                <b>Aplicativo da Web</b>.</li>
+              <li>Em <b>URIs de redirecionamento autorizados</b>, cole o endereço abaixo. Em
+                <b>Origens JavaScript autorizadas</b>, cole só a parte do domínio.</li>
+              <li>Copie o <b>ID do cliente</b> que aparece no fim e cole no campo acima.</li>
+            </ol>
+            <label class="campo"><span class="campo-nome">Endereço de retorno deste app</span>
+              <input type="text" id="aRetorno" readonly></label>
+            <div class="item-acoes">
+              <button type="button" class="btn btn--leve" id="btnCopiarRetorno">Copiar endereço</button>
+            </div>
+            <p class="ajuda">Se você abrir o app por outro endereço (por exemplo, direto do arquivo no
+              computador), o retorno muda e precisa ser cadastrado também.</p>
+          </div>
+        </details>
+      </div>
+    </details>
+
+    <div class="folha">
+      <p class="secao-titulo">Backup em arquivo</p>
+      <p class="ajuda" style="margin-top:0">Um <code>.zip</code> com todos os relatórios e todas as fotos.
+        Serve para levar de um aparelho para outro sem nuvem nenhuma, e para dormir tranquilo: se este
+        aparelho sumir, é este arquivo que salva o trabalho.</p>
+      <div class="item-acoes">
+        <button type="button" class="btn" id="btnExportar">Exportar tudo</button>
+        <button type="button" class="btn btn--leve" id="btnImportar">Importar arquivo</button>
+      </div>
+      <p class="ajuda">Ao importar, um relatório que já exista aqui entra como cópia &mdash; nada é
+        sobreposto sem você ver.</p>
+    </div>
+
     <div class="folha">
       <p class="secao-titulo">Espaço usado</p>
       <p class="ajuda" id="infoEspaco">a calcular…</p>
@@ -374,12 +456,13 @@
   </main>
 
   <footer>
-    <p>Os relatórios e as fotos ficam guardados <b>dentro deste aparelho</b>, no navegador. Nada é enviado
-      para nenhum servidor &mdash; a não ser que você ligue a revisão com IA nos ajustes.</p>
+    <p>Os relatórios e as fotos ficam guardados <b>dentro deste aparelho</b>, no navegador. Não existe
+      servidor deste app: o que sai daqui, sai porque você ligou &mdash; a sincronização com o
+      <b>seu</b> Google Drive, ou a revisão com IA, ambas nos ajustes e ambas desligadas de fábrica.</p>
     <p>O ditado usa o reconhecimento de voz do próprio navegador e precisa de internet no momento da fala.
       Sem sinal, escreva no teclado: o resto do app funciona em modo avião.</p>
     <p>© 2026 Jeovani · Todos os direitos reservados. Usar é livre; copiar, redistribuir, hospedar ou vender exige autorização.
-      <span class="versao">versão <b id="versaoApp">1</b><span id="versaoEstado"></span></span></p>
+      <span class="versao">versão <b id="versaoApp">2</b><span id="versaoEstado"></span></span></p>
   </footer>
 
   <div class="avisos" id="avisos" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -392,6 +475,7 @@
 
 <input type="file" id="entradaCamera" class="oculto" accept="image/*" capture="environment">
 <input type="file" id="entradaGaleria" class="oculto" accept="image/*" multiple>
+<input type="file" id="entradaBackup" class="oculto" accept=".zip,application/zip">
 
 <script>
 /* =====================================================================
@@ -478,8 +562,11 @@ function pedir(req){
   });
 }
 
-function guardarRelatorio(rel){
-  rel.atualizadoEm = Date.now();
+// `preservar` guarda sem mexer no atualizadoEm: é o que se quer quando o
+// relatório acabou de descer da nuvem — tocar na marca fazia-o parecer
+// alterado aqui e voltava a subir em ciclo.
+function guardarRelatorio(rel, preservar){
+  if(!preservar) rel.atualizadoEm = Date.now();
   return transacao(['relatorios'],'readwrite').then(function(t){
     return pedir(t.objectStore('relatorios').put(JSON.parse(JSON.stringify(rel))));
   });
@@ -512,7 +599,8 @@ function apagarFoto(id){
     return pedir(t.objectStore('fotos').delete(id));
   });
 }
-function apagarRelatorio(rel){
+function apagarRelatorio(rel, semLapide){
+  if(!semLapide) lapidar(rel.id);
   var ids = [];
   (rel.itens||[]).forEach(function(it){ (it.fotos||[]).forEach(function(f){ ids.push(f); }); });
   return transacao(['relatorios','fotos'],'readwrite').then(function(t){
@@ -847,6 +935,9 @@ function fecharEditor(){
   relAtual = null;
   renderLista();
   mostrarTela('lista');
+  // Fechar um relatório é o momento certo: o trabalho está gravado e o
+  // utilizador não está no meio de nada.
+  if(nuvem.auto && podeSincronizar() && temSenha()) sincronizar(false);
 }
 
 /* =====================================================================
@@ -1904,7 +1995,794 @@ function exportarPDF(rel, compartilhar){
 }
 
 /* =====================================================================
-   10. Ligação da interface
+   10. O pacote .zip
+
+   Um relatório fora daqui é sempre o mesmo pacote: um `laudo.json` com
+   os textos e uma pasta `fotos/` com os JPEG. É o que sai no backup e é
+   o que sobe para o Drive — um formato só, para o que desce da nuvem
+   entrar pelo mesmo caminho do que vem de um arquivo.
+
+   O ZIP é escrito à mão. As fotos entram sem compressão: JPEG já está
+   comprimido e passá-lo pelo deflate só gasta tempo para crescer meio
+   por cento. O JSON, esse sim, encolhe bem.
+   ===================================================================== */
+var TABELA_CRC = (function(){
+  var t = new Uint32Array(256);
+  for(var n = 0; n < 256; n++){
+    var c = n;
+    for(var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(bytes){
+  var c = 0xFFFFFFFF;
+  for(var i = 0; i < bytes.length; i++) c = TABELA_CRC[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function comprimir(bytes){
+  try{
+    var cs = new CompressionStream('deflate-raw');
+    return new Response(new Blob([bytes]).stream().pipeThrough(cs)).arrayBuffer()
+      .then(function(buf){
+        var saida = new Uint8Array(buf);
+        return saida.length < bytes.length ? {dados:saida, metodo:8} : {dados:bytes, metodo:0};
+      })
+      .catch(function(){ return {dados:bytes, metodo:0}; });
+  }catch(e){
+    return Promise.resolve({dados:bytes, metodo:0});   // sem compressão, mas ZIP válido
+  }
+}
+
+function descomprimir(bytes){
+  var ds = new DecompressionStream('deflate-raw');
+  return new Response(new Blob([bytes]).stream().pipeThrough(ds)).arrayBuffer()
+    .then(function(buf){ return new Uint8Array(buf); });
+}
+
+function dataDOS(d){
+  return {
+    hora: ((d.getHours() & 31) << 11) | ((d.getMinutes() & 63) << 5) | ((d.getSeconds() / 2) & 31),
+    dia:  (((d.getFullYear() - 1980) & 127) << 9) | (((d.getMonth() + 1) & 15) << 5) | (d.getDate() & 31)
+  };
+}
+
+// entradas: [{nome, dados:Uint8Array, comprimir:bool}]
+function zipCriar(entradas){
+  var cod = new TextEncoder();
+  var carimbo = dataDOS(new Date());
+  var pedacos = [], central = [], posicao = 0;
+
+  var cadeia = Promise.resolve();
+  entradas.forEach(function(ent){
+    cadeia = cadeia.then(function(){
+      var nome = cod.encode(ent.nome);
+      var cru = ent.dados;
+      var soma = crc32(cru);
+      return (ent.comprimir ? comprimir(cru) : Promise.resolve({dados:cru, metodo:0}))
+        .then(function(emp){
+          var local = new Uint8Array(30 + nome.length);
+          var lv = new DataView(local.buffer);
+          lv.setUint32(0, 0x04034b50, true);
+          lv.setUint16(4, 20, true);
+          lv.setUint16(6, 0x0800, true);              // nomes em UTF-8
+          lv.setUint16(8, emp.metodo, true);
+          lv.setUint16(10, carimbo.hora, true);
+          lv.setUint16(12, carimbo.dia, true);
+          lv.setUint32(14, soma, true);
+          lv.setUint32(18, emp.dados.length, true);
+          lv.setUint32(22, cru.length, true);
+          lv.setUint16(26, nome.length, true);
+          local.set(nome, 30);
+          pedacos.push(local, emp.dados);
+
+          var cen = new Uint8Array(46 + nome.length);
+          var cv = new DataView(cen.buffer);
+          cv.setUint32(0, 0x02014b50, true);
+          cv.setUint16(4, 20, true);
+          cv.setUint16(6, 20, true);
+          cv.setUint16(8, 0x0800, true);
+          cv.setUint16(10, emp.metodo, true);
+          cv.setUint16(12, carimbo.hora, true);
+          cv.setUint16(14, carimbo.dia, true);
+          cv.setUint32(16, soma, true);
+          cv.setUint32(20, emp.dados.length, true);
+          cv.setUint32(24, cru.length, true);
+          cv.setUint16(28, nome.length, true);
+          cv.setUint32(42, posicao, true);
+          cen.set(nome, 46);
+          central.push(cen);
+
+          posicao += local.length + emp.dados.length;
+        });
+    });
+  });
+
+  return cadeia.then(function(){
+    var tamCentral = central.reduce(function(n, c){ return n + c.length; }, 0);
+    var fim = new Uint8Array(22);
+    var fv = new DataView(fim.buffer);
+    fv.setUint32(0, 0x06054b50, true);
+    fv.setUint16(8, entradas.length, true);
+    fv.setUint16(10, entradas.length, true);
+    fv.setUint32(12, tamCentral, true);
+    fv.setUint32(16, posicao, true);
+    return new Blob(pedacos.concat(central, [fim]), {type:'application/zip'});
+  });
+}
+
+function zipLer(bytes){
+  var vista = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  function u16(o){ return vista.getUint16(o, true); }
+  function u32(o){ return vista.getUint32(o, true); }
+
+  // O fim do índice fica no fim do arquivo, depois de um comentário que
+  // pode ter até 64 KB — procura-se de trás para a frente.
+  var fim = -1;
+  for(var i = bytes.length - 22; i >= 0 && i >= bytes.length - 66000; i--){
+    if(u32(i) === 0x06054b50){ fim = i; break; }
+  }
+  if(fim < 0) throw new Error('não parece um pacote do Laudo (ZIP inválido)');
+
+  var total = u16(fim + 10), p = u32(fim + 16), itens = [];
+  for(var k = 0; k < total && p + 46 <= bytes.length; k++){
+    if(u32(p) !== 0x02014b50) break;
+    var metodo = u16(p + 10), empacotado = u32(p + 20), tamanho = u32(p + 24),
+        nLen = u16(p + 28), eLen = u16(p + 30), cLen = u16(p + 32), inicio = u32(p + 42);
+    var nome = new TextDecoder('utf-8').decode(bytes.subarray(p + 46, p + 46 + nLen));
+    itens.push({nome:nome, metodo:metodo, empacotado:empacotado, tamanho:tamanho, inicio:inicio});
+    p += 46 + nLen + eLen + cLen;
+  }
+
+  function extrair(item){
+    var lh = item.inicio;
+    if(u32(lh) !== 0x04034b50) return Promise.reject(new Error('cabeçalho local inválido'));
+    var ini = lh + 30 + u16(lh + 26) + u16(lh + 28);
+    var cru = bytes.subarray(ini, ini + item.empacotado);
+    if(item.metodo === 0) return Promise.resolve(cru.slice());
+    if(item.metodo === 8) return descomprimir(cru);
+    return Promise.reject(new Error('método de compressão ' + item.metodo + ' não suportado'));
+  }
+
+  return {itens:itens, extrair:extrair};
+}
+
+/* ---- o pacote em si ------------------------------------------------- */
+var FORMATO = 1;
+
+function pacote(rels){
+  var meta = { formato:FORMATO, app:'laudo', exportadoEm:Date.now(),
+               relatorios:JSON.parse(JSON.stringify(rels)), fotos:{} };
+  var entradas = [];
+  var ids = [];
+  rels.forEach(function(r){ (r.itens||[]).forEach(function(it){
+    (it.fotos||[]).forEach(function(f){ ids.push(f); });
+  }); });
+
+  var cadeia = Promise.resolve();
+  ids.forEach(function(id){
+    cadeia = cadeia.then(function(){
+      return lerFoto(id).then(function(reg){
+        if(!reg) return;
+        return reg.blob.arrayBuffer().then(function(buf){
+          meta.fotos[id] = { w:reg.w, h:reg.h, relId:reg.relId, em:reg.em || 0 };
+          entradas.push({ nome:'fotos/' + id + '.jpg', dados:new Uint8Array(buf), comprimir:false });
+        });
+      });
+    });
+  });
+
+  return cadeia.then(function(){
+    entradas.unshift({ nome:'laudo.json',
+                       dados:new TextEncoder().encode(JSON.stringify(meta)),
+                       comprimir:true });
+    return zipCriar(entradas);
+  });
+}
+
+// Lê o pacote e devolve o conteúdo, sem gravar nada ainda.
+function abrirPacote(bytes){
+  var zip = zipLer(bytes);
+  var oJson = zip.itens.filter(function(i){ return i.nome === 'laudo.json'; })[0];
+  if(!oJson) throw new Error('o pacote não tem laudo.json');
+  return zip.extrair(oJson).then(function(b){
+    var meta = JSON.parse(new TextDecoder('utf-8').decode(b));
+    if(meta.app !== 'laudo') throw new Error('este pacote não é do Laudo');
+    if((meta.formato || 0) > FORMATO){
+      throw new Error('o pacote foi feito por uma versão mais nova do app');
+    }
+    return { meta:meta, zip:zip };
+  });
+}
+
+// Grava na base o que veio do pacote. `substituir` diz o que fazer com
+// um relatório que já existe aqui: por cima (nuvem) ou como cópia nova.
+function gravarPacote(aberto, opcoes){
+  opcoes = opcoes || {};
+  var meta = aberto.meta, zip = aberto.zip;
+  var deId = {};
+  zip.itens.forEach(function(i){
+    var m = /^fotos\/(.+)\.jpg$/.exec(i.nome);
+    if(m) deId[m[1]] = i;
+  });
+
+  var cadeia = Promise.resolve(), gravados = [];
+
+  meta.relatorios.forEach(function(rel){
+    cadeia = cadeia.then(function(){
+      return lerRelatorio(rel.id).then(function(existente){
+        var destino = rel;
+        var trocaFoto = {};
+
+        if(existente && !opcoes.substituir){
+          // Vem de outro aparelho e já existe um relatório com este id:
+          // entra como cópia, com fotos próprias, para não haver dois
+          // relatórios a apontar para a mesma imagem — apagar um levaria
+          // as fotos do outro.
+          destino = JSON.parse(JSON.stringify(rel));
+          destino.id = novoId();
+          destino.cliente = (destino.cliente || nomeDoRelatorio(rel)) +
+                            ' (' + (opcoes.sufixo || 'cópia importada') + ')';
+          (destino.itens || []).forEach(function(it){
+            it.id = novoId();
+            it.fotos = (it.fotos || []).map(function(f){
+              var novo = novoId();
+              trocaFoto[novo] = f;
+              return novo;
+            });
+          });
+        }
+
+        var fotos = [];
+        (destino.itens || []).forEach(function(it){
+          (it.fotos || []).forEach(function(f){ fotos.push(f); });
+        });
+
+        var c2 = Promise.resolve();
+        fotos.forEach(function(idNovo){
+          var idNoPacote = trocaFoto[idNovo] || idNovo;
+          var item = deId[idNoPacote];
+          var info = meta.fotos && meta.fotos[idNoPacote];
+          if(!item || !info) return;
+          c2 = c2.then(function(){
+            return zip.extrair(item).then(function(b){
+              return guardarFoto({ id:idNovo, relId:destino.id,
+                                   blob:new Blob([b], {type:'image/jpeg'}),
+                                   w:info.w, h:info.h, em:info.em || Date.now() });
+            });
+          });
+        });
+
+        return c2.then(function(){
+          return guardarRelatorio(destino, true).then(function(){ gravados.push(destino); });
+        });
+      });
+    });
+  });
+
+  return cadeia.then(function(){ return gravados; });
+}
+
+function exportarTudo(){
+  var c = cortina('A montar o backup...', 'a juntar relatórios e fotos');
+  return lerRelatorios().then(function(lista){
+    if(!lista.length){ throw new Error('não há relatórios para exportar'); }
+    c.passo(lista.length + (lista.length === 1 ? ' relatório' : ' relatórios'));
+    return pacote(lista);
+  }).then(function(blob){
+    c.fim();
+    baixarBlob('laudo-backup-' + hojeISO() + '.zip', blob);
+  }).catch(function(e){
+    c.fim();
+    aviso('Não deu para exportar', String(e && e.message || e), true);
+  });
+}
+
+function importarArquivo(ficheiro){
+  var c = cortina('A ler o backup...', ficheiro.name);
+  return ficheiro.arrayBuffer().then(function(buf){
+    return abrirPacote(new Uint8Array(buf));
+  }).then(function(aberto){
+    c.passo((aberto.meta.relatorios || []).length + ' relatório(s) no pacote');
+    return gravarPacote(aberto, {substituir:false});
+  }).then(function(gravados){
+    c.fim();
+    aviso('Backup importado', gravados.length + (gravados.length === 1 ? ' relatório' : ' relatórios') +
+          ' · o que já existia aqui entrou como cópia');
+    renderLista();
+  }).catch(function(e){
+    c.fim();
+    aviso('Não deu para importar', String(e && e.message || e), true);
+  });
+}
+
+/* =====================================================================
+   11. Google Drive
+
+   Sem servidor no meio: o app fala direto com a API do Drive, com uma
+   credencial que é do próprio utilizador. O âmbito pedido é o `drive.file`,
+   o mais estreito que existe — dá acesso apenas aos ficheiros que este
+   app criou. Os outros documentos do Drive continuam invisíveis para ele,
+   e é por isso que o Google não exige verificação para publicar.
+
+   Sobre o modo de autenticação: uma página estática não tem onde guardar
+   um segredo, por isso não há refresh token. O que se recebe é uma senha
+   de acesso válida por uma hora. Quando expira, o app pede outra — em
+   silêncio no arranque, e por toque no meio do trabalho, porque um
+   redirecionamento inesperado com o relatório aberto seria hostil.
+   ===================================================================== */
+var ESCOPO_DRIVE = 'https://www.googleapis.com/auth/drive.file';
+var PASTA_DRIVE = 'Laudo';
+
+/* Os campos têm de estar todos declarados aqui: lerNuvem() só recupera as
+   chaves que existirem neste molde, e um campo em falta era silenciosamente
+   esquecido a cada recarga — foi o que fez o guarda do `ultimoSilencio`
+   nunca segurar, pondo o app a redirecionar em vaivém. */
+var nuvem = { clientId:'', ligado:false, auto:true, token:'', expiraEm:0,
+              pastaId:'', ultima:0, ultimoSilencio:0 };
+var sinc = { itens:{}, apagados:[] };
+
+function lerNuvem(){
+  try{
+    var a = JSON.parse(localStorage.getItem('laudo.nuvem') || 'null');
+    if(a) for(var k in nuvem) if(a[k] !== undefined) nuvem[k] = a[k];
+    var b = JSON.parse(localStorage.getItem('laudo.sinc') || 'null');
+    if(b){ sinc.itens = b.itens || {}; sinc.apagados = b.apagados || []; }
+  }catch(e){}
+}
+function guardarNuvem(){
+  try{ localStorage.setItem('laudo.nuvem', JSON.stringify(nuvem)); }catch(e){}
+}
+function guardarSinc(){
+  try{ localStorage.setItem('laudo.sinc', JSON.stringify(sinc)); }catch(e){}
+}
+
+function enderecoDeRetorno(){
+  return location.origin + location.pathname;
+}
+function temSenha(){
+  return !!(nuvem.token && nuvem.expiraEm > Date.now());
+}
+
+function ErroSenha(msg){ this.message = msg; this.senha = true; }
+ErroSenha.prototype = Object.create(Error.prototype);
+
+/* Pede a senha de acesso ao Google. `silencioso` usa prompt=none: só
+   devolve alguma coisa se a sessão do Google ainda estiver de pé, e
+   falha na hora se não estiver — serve para renovar sem incomodar. */
+function pedirSenha(silencioso){
+  if(!nuvem.clientId) return;
+  var marca = novoId();
+  try{
+    localStorage.setItem('laudo.oauth', JSON.stringify({
+      estado:marca, em:Date.now(), silencioso:!!silencioso
+    }));
+  }catch(e){}
+  salvarJa();
+  var p = new URLSearchParams({
+    client_id: nuvem.clientId,
+    redirect_uri: enderecoDeRetorno(),
+    response_type: 'token',
+    scope: ESCOPO_DRIVE,
+    include_granted_scopes: 'true',
+    state: marca,
+    prompt: silencioso ? 'none' : 'select_account'
+  });
+  location.assign('https://accounts.google.com/o/oauth2/v2/auth?' + p.toString());
+}
+
+/* Chamado no arranque: se voltámos do Google, a senha vem no fragmento
+   do endereço. É lida, guardada e apagada da barra de endereços. */
+function apanharRetorno(){
+  var frag = location.hash || '';
+  if(frag.indexOf('access_token=') < 0 && frag.indexOf('error=') < 0) return null;
+
+  var p = new URLSearchParams(frag.replace(/^#/, ''));
+  var pedido = null;
+  try{ pedido = JSON.parse(localStorage.getItem('laudo.oauth') || 'null'); }catch(e){}
+  localStorage.removeItem('laudo.oauth');
+  history.replaceState(null, '', location.pathname + location.search);
+
+  if(!pedido || p.get('state') !== pedido.estado){
+    aviso('Resposta do Google fora de sítio', 'a ligação não foi concluída; tente outra vez', true);
+    return null;
+  }
+  if(p.get('error')){
+    var erro = p.get('error');
+    if(pedido.silencioso){
+      // Renovar em silêncio falhou: a sessão do Google caiu. Não se
+      // insiste sozinho, senão o app entrava num vaivém de redirecionamentos.
+      nuvem.token = ''; guardarNuvem();
+      return {falhouSilencioso:true};
+    }
+    aviso('O Google recusou a ligação',
+          erro === 'access_denied' ? 'a autorização foi cancelada' : erro, true);
+    return null;
+  }
+
+  nuvem.token = p.get('access_token') || '';
+  nuvem.expiraEm = Date.now() + (parseInt(p.get('expires_in') || '3600', 10) - 90) * 1000;
+  nuvem.ligado = true;
+  guardarNuvem();
+  return {ligou:true, silencioso:!!pedido.silencioso};
+}
+
+function desligarNuvem(){
+  nuvem.ligado = false; nuvem.token = ''; nuvem.expiraEm = 0; nuvem.pastaId = '';
+  guardarNuvem();
+  aviso('Google Drive desligado', 'o que já subiu continua lá; nada mais sobe nem desce');
+  pintarNuvem();
+}
+
+/* ---- chamadas à API -------------------------------------------------- */
+function driveFetch(url, opcoes){
+  opcoes = opcoes || {};
+  var cab = {};
+  for(var k in (opcoes.headers || {})) cab[k] = opcoes.headers[k];
+  cab['Authorization'] = 'Bearer ' + nuvem.token;
+  opcoes.headers = cab;
+  return fetch(url, opcoes).then(function(r){
+    if(r.status === 401 || r.status === 403){
+      return r.text().then(function(t){
+        if(r.status === 401 || /insufficient|invalid_token|expired/i.test(t)){
+          nuvem.token = ''; nuvem.expiraEm = 0; guardarNuvem();
+          throw new ErroSenha('a ligação ao Drive expirou');
+        }
+        throw new Error(recadoDrive(r.status, t));
+      });
+    }
+    if(!r.ok) return r.text().then(function(t){ throw new Error(recadoDrive(r.status, t)); });
+    return r;
+  });
+}
+
+function recadoDrive(estado, corpo){
+  var m = '';
+  try{ m = (JSON.parse(corpo).error || {}).message || ''; }catch(e){}
+  if(estado === 403 && /quota|rate/i.test(m)) return 'o Drive pediu para abrandar; tente daqui a pouco';
+  if(estado === 404) return 'o arquivo já não está no Drive';
+  if(estado >= 500) return 'o Drive está com problema (' + estado + '); tente mais tarde';
+  return m || ('erro ' + estado + ' do Drive');
+}
+
+function garantirPasta(){
+  if(nuvem.pastaId) return Promise.resolve(nuvem.pastaId);
+  var q = "mimeType='application/vnd.google-apps.folder' and name='" + PASTA_DRIVE + "' and trashed=false";
+  return driveFetch('https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(q) +
+                    '&fields=files(id,name)&spaces=drive&pageSize=10')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.files && d.files.length){ nuvem.pastaId = d.files[0].id; guardarNuvem(); return nuvem.pastaId; }
+      return driveFetch('https://www.googleapis.com/drive/v3/files?fields=id', {
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body: JSON.stringify({ name:PASTA_DRIVE, mimeType:'application/vnd.google-apps.folder' })
+      }).then(function(r){ return r.json(); }).then(function(d2){
+        nuvem.pastaId = d2.id; guardarNuvem(); return nuvem.pastaId;
+      });
+    });
+}
+
+function listarRemotos(){
+  var q = "'" + nuvem.pastaId + "' in parents and trashed=false";
+  var achados = [];
+  function pagina(token){
+    var u = 'https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(q) +
+            '&fields=nextPageToken,files(id,name,modifiedTime,appProperties,size)&pageSize=200' +
+            (token ? '&pageToken=' + encodeURIComponent(token) : '');
+    return driveFetch(u).then(function(r){ return r.json(); }).then(function(d){
+      achados = achados.concat(d.files || []);
+      return d.nextPageToken ? pagina(d.nextPageToken) : achados;
+    });
+  }
+  return pagina('');
+}
+
+function corpoMultipart(meta, blob){
+  var b = 'laudo' + Math.random().toString(36).slice(2);
+  var cabeca = '--' + b + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' +
+               JSON.stringify(meta) + '\r\n' +
+               '--' + b + '\r\nContent-Type: application/zip\r\n\r\n';
+  var rabo = '\r\n--' + b + '--\r\n';
+  return { corpo:new Blob([cabeca, blob, rabo]), tipo:'multipart/related; boundary=' + b };
+}
+
+function nomeNoDrive(rel){
+  return nomeArquivo(rel).replace(/\.pdf$/, '') + '-' + rel.id + '.zip';
+}
+
+function enviarRelatorio(rel, driveId){
+  return pacote([rel]).then(function(blob){
+    var meta = {
+      name: nomeNoDrive(rel),
+      description: 'Relatório de avaliação técnica · ' + nomeDoRelatorio(rel),
+      appProperties: { relId: rel.id, atualizadoEm: String(rel.atualizadoEm || 0) }
+    };
+    if(!driveId) meta.parents = [nuvem.pastaId];
+    var m = corpoMultipart(meta, blob);
+    var u = 'https://www.googleapis.com/upload/drive/v3/files' +
+            (driveId ? '/' + driveId : '') +
+            '?uploadType=multipart&fields=id,appProperties';
+    return driveFetch(u, { method: driveId ? 'PATCH' : 'POST',
+                           headers:{'content-type':m.tipo}, body:m.corpo });
+  }).then(function(r){ return r.json(); });
+}
+
+function baixarRelatorio(f){
+  return driveFetch('https://www.googleapis.com/drive/v3/files/' + f.id + '?alt=media')
+    .then(function(r){ return r.arrayBuffer(); })
+    .then(function(buf){ return abrirPacote(new Uint8Array(buf)); });
+}
+
+function apagarRemoto(driveId){
+  return driveFetch('https://www.googleapis.com/drive/v3/files/' + driveId, {method:'DELETE'})
+    .then(function(){ return true; })
+    .catch(function(e){
+      if(e && e.senha) throw e;
+      return true;    // já não estava lá: para o nosso fim, está apagado
+    });
+}
+
+/* =====================================================================
+   12. Sincronização
+
+   Comparação por relatório, não por aparelho. De cada um guarda-se aqui
+   o `atualizadoEm` de quando ele foi sincronizado pela última vez; a
+   mesma marca vai no Drive, nas propriedades do arquivo. Com isso sabe-se
+   quem mudou desde então: só este aparelho, só o outro, os dois, ou
+   nenhum.
+
+   Quando mudaram os dois, nada é sobreposto: o que está aqui fica como
+   está e o que vem do Drive entra como cópia, com fotos próprias. Perder
+   trabalho de campo por causa de um relógio é inaceitável; um relatório
+   repetido, o técnico resolve num minuto.
+
+   Apagar também sincroniza. Sem isso, apagar num aparelho e sincronizar
+   traria o relatório de volta do Drive — por isso fica aqui uma lápide
+   com o id do que foi apagado, até o arquivo lá em cima ir embora.
+   ===================================================================== */
+var sincronizando = false;
+
+function marcaSinc(id){ return sinc.itens[id] || {}; }
+
+function lapidar(id){
+  sinc.apagados = (sinc.apagados || []).filter(function(t){ return t.id !== id; });
+  sinc.apagados.push({ id:id, em:Date.now() });
+  while(sinc.apagados.length > 300) sinc.apagados.shift();
+  delete sinc.itens[id];
+  guardarSinc();
+}
+function foiApagado(id){
+  return (sinc.apagados || []).some(function(t){ return t.id === id; });
+}
+function tirarLapide(id){
+  sinc.apagados = (sinc.apagados || []).filter(function(t){ return t.id !== id; });
+  guardarSinc();
+}
+
+function podeSincronizar(){
+  return !!(nuvem.ligado && nuvem.clientId);
+}
+
+function sincronizar(manual){
+  if(!podeSincronizar()) return Promise.resolve(null);
+  if(sincronizando) return Promise.resolve(null);
+
+  if(!navigator.onLine){
+    if(manual) aviso('Sem internet', 'a sincronização fica para quando houver sinal', true);
+    return Promise.resolve(null);
+  }
+  if(!temSenha()){
+    if(manual) pedirSenha(false);
+    else pintarNuvem();
+    return Promise.resolve(null);
+  }
+
+  sincronizando = true;
+  pintarNuvem();
+  var c = manual ? cortina('A sincronizar...', 'a ver o que mudou') : null;
+  var res = { enviados:0, baixados:0, conflitos:0, apagados:0, apagadosAqui:0 };
+
+  function passo(t){ if(c) c.passo(t); }
+
+  return garantirPasta()
+    .then(listarRemotos)
+    .then(function(remotos){
+      var porRel = {};
+      remotos.forEach(function(f){
+        var id = (f.appProperties || {}).relId;
+        if(id) porRel[id] = f;
+      });
+      return lerRelatorios().then(function(locais){ return {remotos:porRel, locais:locais}; });
+    })
+    .then(function(ctx){
+      var cadeia = Promise.resolve();
+
+      // 1. o que foi apagado aqui sai de lá
+      (sinc.apagados || []).slice().forEach(function(t){
+        cadeia = cadeia.then(function(){
+          var f = ctx.remotos[t.id];
+          if(!f){ tirarLapide(t.id); return; }
+          passo('a apagar do Drive');
+          return apagarRemoto(f.id).then(function(){
+            res.apagados++; tirarLapide(t.id); delete ctx.remotos[t.id];
+          });
+        });
+      });
+
+      // 2. cada relatório daqui
+      ctx.locais.forEach(function(rel){
+        cadeia = cadeia.then(function(){ return passoLocal(rel, ctx, res, passo); });
+      });
+
+      // 3. o que está lá e não está aqui
+      cadeia = cadeia.then(function(){
+        var soLa = Object.keys(ctx.remotos).filter(function(id){
+          return !ctx.locais.some(function(r){ return r.id === id; }) && !foiApagado(id);
+        });
+        var c2 = Promise.resolve();
+        soLa.forEach(function(id){
+          c2 = c2.then(function(){
+            passo('a trazer um relatório novo');
+            return baixarPorCima(ctx.remotos[id], res);
+          });
+        });
+        return c2;
+      });
+
+      return cadeia;
+    })
+    .then(function(){
+      nuvem.ultima = Date.now();
+      guardarNuvem(); guardarSinc();
+      sincronizando = false;
+      if(c) c.fim();
+      pintarNuvem();
+      if(manual || res.baixados || res.conflitos) aviso(resumoSinc(res), textoSinc(res));
+      if(res.baixados || res.conflitos){
+        if(relAtual) recarregarAberto();
+        else renderLista();
+      }
+      return res;
+    })
+    .catch(function(e){
+      sincronizando = false;
+      if(c) c.fim();
+      pintarNuvem();
+      if(e && e.senha){
+        if(manual) pedirSenha(false);
+        else aviso('A ligação ao Drive expirou', 'toque em «Nuvem» para religar', true);
+      }else if(manual || !/rede|network|Failed to fetch/i.test(String(e && e.message))){
+        aviso('A sincronização falhou', String(e && e.message || e), true);
+      }
+      return null;
+    });
+}
+
+function passoLocal(rel, ctx, res, passo){
+  var f = ctx.remotos[rel.id];
+  var marca = marcaSinc(rel.id);
+  var mudouAqui = (rel.atualizadoEm || 0) !== (marca.sincronizadoEm || 0);
+
+  if(!f){
+    // Nunca subiu, ou desapareceu de lá. Se desapareceu e nada mudou
+    // aqui desde a última sincronização, foi apagado no outro aparelho.
+    if(marca.driveId && !mudouAqui){
+      return apagarRelatorio(rel, true).then(function(){
+        delete sinc.itens[rel.id]; guardarSinc(); res.apagadosAqui++;
+      });
+    }
+    passo('a enviar «' + nomeDoRelatorio(rel) + '»');
+    return enviarRelatorio(rel, null).then(function(d){
+      sinc.itens[rel.id] = { driveId:d.id, sincronizadoEm:rel.atualizadoEm || 0,
+                             remotoEm:rel.atualizadoEm || 0 };
+      guardarSinc(); res.enviados++;
+    });
+  }
+
+  var remotoEm = parseInt((f.appProperties || {}).atualizadoEm || '0', 10);
+  var mudouLa = remotoEm !== (marca.remotoEm || 0);
+
+  if(mudouAqui && mudouLa){
+    passo('conflito em «' + nomeDoRelatorio(rel) + '»');
+    return baixarComoCopia(f, res).then(function(){
+      return enviarRelatorio(rel, f.id).then(function(){
+        sinc.itens[rel.id] = { driveId:f.id, sincronizadoEm:rel.atualizadoEm || 0,
+                               remotoEm:rel.atualizadoEm || 0 };
+        guardarSinc(); res.enviados++;
+      });
+    });
+  }
+  if(mudouAqui){
+    passo('a enviar «' + nomeDoRelatorio(rel) + '»');
+    return enviarRelatorio(rel, f.id).then(function(){
+      sinc.itens[rel.id] = { driveId:f.id, sincronizadoEm:rel.atualizadoEm || 0,
+                             remotoEm:rel.atualizadoEm || 0 };
+      guardarSinc(); res.enviados++;
+    });
+  }
+  if(mudouLa){
+    passo('a trazer «' + nomeDoRelatorio(rel) + '»');
+    return baixarPorCima(f, res);
+  }
+  return Promise.resolve();
+}
+
+function baixarPorCima(f, res){
+  return baixarRelatorio(f).then(function(aberto){
+    return gravarPacote(aberto, {substituir:true}).then(function(gravados){
+      gravados.forEach(function(rel){
+        sinc.itens[rel.id] = { driveId:f.id, sincronizadoEm:rel.atualizadoEm || 0,
+                               remotoEm:parseInt((f.appProperties||{}).atualizadoEm || '0', 10) };
+      });
+      guardarSinc(); res.baixados++;
+    });
+  });
+}
+
+function baixarComoCopia(f, res){
+  return baixarRelatorio(f).then(function(aberto){
+    return gravarPacote(aberto, {substituir:false, sufixo:'do outro aparelho'})
+      .then(function(gravados){
+        res.conflitos++;
+        /* A cópia sobe já, na mesma passagem. Se ficasse à espera da
+           próxima sincronização, a versão do outro aparelho existiria
+           só aqui — e um telemóvel perdido levava-a com ele. */
+        var c = Promise.resolve();
+        gravados.forEach(function(rel){
+          c = c.then(function(){
+            return enviarRelatorio(rel, null).then(function(d){
+              sinc.itens[rel.id] = { driveId:d.id, sincronizadoEm:rel.atualizadoEm || 0,
+                                     remotoEm:rel.atualizadoEm || 0 };
+              guardarSinc(); res.enviados++;
+            });
+          });
+        });
+        return c;
+      });
+  });
+}
+
+function resumoSinc(r){
+  if(!r.enviados && !r.baixados && !r.conflitos && !r.apagados && !r.apagadosAqui) return 'Tudo já estava sincronizado';
+  return 'Sincronizado com o Drive';
+}
+function textoSinc(r){
+  var p = [];
+  if(r.enviados) p.push(r.enviados + ' enviado' + (r.enviados === 1 ? '' : 's'));
+  if(r.baixados) p.push(r.baixados + ' recebido' + (r.baixados === 1 ? '' : 's'));
+  if(r.conflitos) p.push(r.conflitos + ' em conflito, guardado como cópia');
+  if(r.apagados) p.push(r.apagados + ' apagado' + (r.apagados === 1 ? '' : 's') + ' do Drive');
+  if(r.apagadosAqui) p.push(r.apagadosAqui + ' apagado' + (r.apagadosAqui === 1 ? '' : 's') + ' aqui');
+  return p.join(' · ') || 'nada mudou desde a última vez';
+}
+
+// Um relatório aberto que acabou de descer da nuvem tem de ser relido da
+// base, senão o ecrã continua a mostrar (e a gravar) a versão antiga.
+function recarregarAberto(){
+  if(!relAtual) return;
+  var id = relAtual.id;
+  lerRelatorio(id).then(function(r){
+    if(!r){ fecharEditor(); return; }
+    relAtual = r; soltarURLs(); renderEditor();
+  });
+}
+
+function quandoFoi(ms){
+  if(!ms) return 'nunca';
+  var s = Math.round((Date.now() - ms) / 1000);
+  if(s < 90) return 'agora mesmo';
+  var m = Math.round(s / 60);
+  if(m < 60) return 'há ' + m + ' min';
+  var h = Math.round(m / 60);
+  if(h < 24) return 'há ' + h + (h === 1 ? ' hora' : ' horas');
+  return 'em ' + new Date(ms).toLocaleDateString('pt-BR');
+}
+
+/* =====================================================================
+   13. Ligação da interface
    ===================================================================== */
 var telaAnterior = 'lista';
 
@@ -1967,11 +2845,7 @@ function ligarTudo(){
 
   $('btnAjustes').addEventListener('click', function(){
     telaAnterior = telaAtual === 'ajustes' ? telaAnterior : telaAtual;
-    $('aTecnico').value = ajustes.tecnico;
-    $('aEmpresa').value = ajustes.empresa;
-    $('aChave').value = ajustes.chave;
-    mostrarTela('ajustes');
-    medirEspaco();
+    abrirAjustes();
   });
 
   $('aTecnico').addEventListener('input', function(){ ajustes.tecnico = this.value; guardarAjustes(); });
@@ -2003,6 +2877,15 @@ function ligarTudo(){
   document.addEventListener('visibilitychange', function(){ if(document.hidden) salvarJa(); });
 }
 
+function abrirAjustes(){
+  $('aTecnico').value = ajustes.tecnico;
+  $('aEmpresa').value = ajustes.empresa;
+  $('aChave').value = ajustes.chave;
+  mostrarTela('ajustes');
+  pintarNuvem();
+  medirEspaco();
+}
+
 function medirEspaco(){
   var alvo = $('infoEspaco');
   lerRelatorios().then(function(lista){
@@ -2018,6 +2901,127 @@ function medirEspaco(){
       alvo.textContent = base + '.';
     }
   });
+}
+
+/* ---- estado visível da nuvem ---------------------------------------- */
+function pintarNuvem(){
+  var b = $('btnNuvem');
+  if(b){
+    var texto, titulo;
+    if(!nuvem.clientId){ texto = 'Nuvem'; titulo = 'Configurar o Google Drive'; }
+    else if(!nuvem.ligado){ texto = 'Ligar o Drive'; titulo = 'Ligar o Google Drive'; }
+    else if(sincronizando){ texto = 'a sincronizar...'; titulo = texto; }
+    else if(!temSenha()){ texto = 'Religar o Drive'; titulo = 'A ligação ao Drive expirou'; }
+    else { texto = 'Drive · ' + quandoFoi(nuvem.ultima); titulo = 'Sincronizar agora'; }
+    b.lastChild.nodeValue = texto;
+    b.title = titulo;
+    b.disabled = sincronizando;
+    b.classList.toggle('btn--alerta', !!(nuvem.ligado && !temSenha()));
+  }
+
+  var e = $('estadoNuvem');
+  if(e){
+    if(!nuvem.clientId) e.textContent = 'não configurada';
+    else if(!nuvem.ligado) e.textContent = 'configurada, desligada';
+    else if(!temSenha()) e.textContent = 'autorização expirada';
+    else e.textContent = 'ligada · ' + quandoFoi(nuvem.ultima);
+  }
+  var lig = $('btnLigarDrive'), des = $('btnDesligarDrive'), agora = $('btnSincronizar');
+  if(lig) lig.hidden = !(nuvem.clientId && (!nuvem.ligado || !temSenha()));
+  if(des) des.hidden = !nuvem.ligado;
+  if(agora) agora.hidden = !(nuvem.ligado && temSenha());
+  var auto = $('aAuto');
+  if(auto) auto.checked = !!nuvem.auto;
+}
+
+function ligarNuvemUI(){
+  $('aClientId').value = nuvem.clientId;
+  $('aClientId').addEventListener('input', function(){
+    nuvem.clientId = this.value.trim();
+    // Colar a linha inteira do Google Cloud não devia dar erro.
+    nuvem.clientId = nuvem.clientId.replace(/^\s*client[_ ]?id[:=]\s*/i, '');
+    guardarNuvem(); pintarNuvem();
+  });
+
+  var campoRetorno = $('aRetorno');
+  if(campoRetorno) campoRetorno.value = enderecoDeRetorno();
+  $('btnCopiarRetorno').addEventListener('click', function(){
+    var t = enderecoDeRetorno();
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(function(){ aviso('Endereço copiado'); },
+                                            function(){ selecionar(campoRetorno); });
+    }else selecionar(campoRetorno);
+  });
+  function selecionar(campo){
+    campo.removeAttribute('readonly'); campo.select(); campo.setAttribute('readonly','');
+    aviso('Copie o endereço selecionado');
+  }
+
+  $('btnLigarDrive').addEventListener('click', function(){
+    if(!nuvem.clientId){ aviso('Cole o ID do cliente primeiro', null, true); return; }
+    pedirSenha(false);
+  });
+  $('btnDesligarDrive').addEventListener('click', function(){
+    if(!confirm('Desligar o Google Drive?\nO que já subiu continua lá; este aparelho é que deixa de enviar e receber.')) return;
+    desligarNuvem();
+  });
+  $('btnSincronizar').addEventListener('click', function(){ sincronizar(true); });
+  $('aAuto').addEventListener('change', function(){
+    nuvem.auto = this.checked; guardarNuvem();
+  });
+
+  $('btnNuvem').addEventListener('click', function(){
+    if(!nuvem.clientId || !nuvem.ligado){
+      telaAnterior = telaAtual === 'ajustes' ? telaAnterior : telaAtual;
+      abrirAjustes();
+      var d = $('dobraNuvem');
+      if(d){ d.open = true; d.scrollIntoView({behavior:'smooth', block:'center'}); }
+      return;
+    }
+    if(!temSenha()){ pedirSenha(false); return; }
+    sincronizar(true);
+  });
+
+  $('btnExportar').addEventListener('click', exportarTudo);
+  $('btnImportar').addEventListener('click', function(){ $('entradaBackup').click(); });
+  $('entradaBackup').addEventListener('change', function(ev){
+    var f = ev.target.files && ev.target.files[0];
+    ev.target.value = '';
+    if(f) importarArquivo(f);
+  });
+
+  // O relógio do «há 3 min» tem de andar sozinho.
+  setInterval(function(){ if(!sincronizando) pintarNuvem(); }, 60000);
+  window.addEventListener('online', function(){
+    if(nuvem.auto && podeSincronizar() && temSenha()) sincronizar(false);
+  });
+}
+
+function arrancarNuvem(){
+  var volta = apanharRetorno();
+
+  if(volta && volta.ligou){
+    if(!volta.silencioso) aviso('Google Drive ligado', 'os relatórios deste aparelho vão subir agora');
+    sincronizar(false);
+    return;
+  }
+  if(volta && volta.falhouSilencioso){
+    aviso('O Drive precisa de ser religado', 'toque em «Religar o Drive» no topo', true);
+    return;
+  }
+  if(!nuvem.ligado || !nuvem.auto) return;
+
+  if(temSenha()){ sincronizar(false); return; }
+
+  /* Sem senha e com sincronização automática: pede-se uma em silêncio.
+     É um redirecionamento, e por isso só no arranque — nunca com um
+     relatório aberto. O intervalo de cinco minutos existe para que uma
+     sessão do Google já caída não ponha o app num vaivém. */
+  if(Date.now() - (nuvem.ultimoSilencio || 0) > 5 * 60 * 1000){
+    nuvem.ultimoSilencio = Date.now();
+    guardarNuvem();
+    pedirSenha(true);
+  }
 }
 
 /* ---- instalação e versão ---- */
@@ -2059,9 +3063,13 @@ function ligarServiceWorker(){
 
 /* ---- arranque ---- */
 lerAjustes();
+lerNuvem();
 ligarTudo();
+ligarNuvemUI();
 ligarInstalacao();
 ligarServiceWorker();
+pintarNuvem();
+arrancarNuvem();
 renderLista().catch(function(e){
   aviso('O navegador bloqueou o armazenamento', 'Sem ele não dá para guardar relatórios. ' +
         'Saia da navegação anónima ou libere os dados do site.', true);

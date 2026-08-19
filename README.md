@@ -164,7 +164,8 @@ celular (ou copia o link no computador), e dá para adicionar à tela de início
 [**Laudo**](laudo/) é o segundo aplicativo daqui — mesma ideia (um arquivo HTML, sem servidor,
 sem upload), outro problema. Monta relatórios de avaliação técnica de **elétrica, câmeras,
 portões e cerca elétrica** direto do celular: tira a foto, fala a observação, e sai um PDF com
-as imagens para mandar ao cliente. Os relatórios ficam guardados no aparelho.
+as imagens para mandar ao cliente. Os relatórios ficam guardados no aparelho, com backup em
+arquivo e sincronização opcional com o **seu** Google Drive — sem servidor nenhum no meio.
 
 Detalhes e limitações em [`laudo/README.md`](laudo/README.md).
 

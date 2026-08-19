@@ -71,13 +71,60 @@ A chave fica guardada só neste aparelho, no navegador, e só é enviada para `a
 Cada revisão é cobrada na sua conta da Anthropic. O botão **Testar a chave** confirma que ela
 funciona antes de você contar com ela em campo.
 
+## Nuvem e backup
+
+Os relatórios nascem e vivem dentro do aparelho. Sair de lá é escolha sua, e há dois caminhos.
+
+### Backup em arquivo (sem conta, sem nada)
+
+Nos ajustes, **Exportar tudo** baixa um `.zip` com todos os relatórios e todas as fotos.
+**Importar arquivo** faz o caminho de volta, em qualquer aparelho. É o backup que não depende de
+ninguém: guarde onde quiser — Drive, iCloud, pendrive, ou mandando para você mesmo no WhatsApp.
+
+Ao importar, um relatório que já exista ali entra como **cópia**, com fotos próprias. Nada é
+sobreposto sem você ver.
+
+### Sincronização com o Google Drive
+
+Ligada nos ajustes, cada relatório sobe para uma pasta **Laudo** dentro do **seu** Drive, e desce
+nos outros aparelhos onde você entrar com a mesma conta. Não existe servidor deste app no meio: a
+página fala direto com o Google, com uma credencial que é sua.
+
+O acesso pedido é o `drive.file` — o mais estreito que existe. O app enxerga **apenas os arquivos
+que ele mesmo criou**; o resto do seu Drive é invisível para ele. Como esse acesso não é
+classificado como sensível pelo Google, não há processo de verificação a cumprir.
+
+**Criar a credencial (uma vez só).** No `console.cloud.google.com`: crie um projeto, ative a
+**Google Drive API**, configure a **tela de permissão OAuth** como *Externo* e publique, e crie um
+**ID do cliente OAuth** do tipo *Aplicativo da Web*. Em **URIs de redirecionamento autorizados**,
+cole o endereço que o app mostra nos ajustes (há um botão para copiar). Copie o ID do cliente e
+cole no app. O passo a passo completo está dentro dos próprios ajustes, para consultar na hora.
+
+**O que o app faz sozinho:** sincroniza ao abrir, ao fechar um relatório e quando a internet
+volta. Também dá para forçar pelo botão **Nuvem**, no topo.
+
+**Quando os dois aparelhos mexem no mesmo relatório**, nada é sobreposto: a sua versão fica como
+está e a que veio do Drive entra como cópia, marcada *(do outro aparelho)*, com fotos próprias —
+e sobe na mesma hora, para não existir só num aparelho. Perder trabalho de campo por causa de um
+relógio seria inaceitável; um relatório repetido, você resolve num minuto.
+
+**Apagar também sincroniza.** Apagar num aparelho apaga no Drive e, na sincronização seguinte, no
+outro aparelho. Sem isso, o relatório apagado voltaria do céu na primeira sincronização.
+
+**Uma chatice honesta:** uma página estática não tem onde guardar segredo, então o Google só
+entrega uma autorização de **uma hora**. Passada a hora, o app pede outra — em silêncio quando
+você abre o aplicativo, e por toque quando você está no meio do trabalho (um redirecionamento
+inesperado com o relatório aberto seria pior). Se a sessão do Google tiver caído, o botão do topo
+passa a dizer **Religar o Drive** e espera por você; ele não fica tentando sozinho.
+
 ## Onde ficam os dados
 
 Na IndexedDB do navegador, dentro do aparelho: o texto do relatório de um lado, as fotos do
 outro — assim a lista de relatórios abre sem carregar imagem nenhuma.
 
-Isso tem uma consequência que convém saber: **limpar os dados do site apaga os relatórios**.
-O PDF gerado é a cópia que fica. Os ajustes mostram quanto espaço está ocupado.
+Isso tem uma consequência que convém saber: **limpar os dados do site apaga os relatórios**. Com
+o Drive ligado, eles voltam na sincronização seguinte; sem ele, o que fica é o PDF gerado e o
+arquivo de backup. Os ajustes mostram quanto espaço está ocupado.
 
 ## Instalar como aplicativo
 
@@ -109,8 +156,13 @@ primeiro faz a versão antiga continuar a aparecer depois de publicada uma corre
 - **O ditado não é perfeito.** Termo técnico, marca e número saem errados às vezes; o texto fica
   editável justamente por isso.
 - **Não guarda o áudio.** O que fica é o texto reconhecido, não a gravação.
-- **Um aparelho, um conjunto de relatórios.** Não há sincronização entre aparelhos nem backup na
-  nuvem — o PDF é o que sai daqui.
+- **A sincronização é sua para montar.** Precisa de uma credencial OAuth criada por você no
+  Google Cloud, uma vez. Sem servidor próprio não há como fugir disso — e é o que garante que
+  nenhum dado passa por mim.
+- **A autorização do Google dura uma hora.** É o limite de uma página sem servidor: não há como
+  guardar um segredo que permita renovar em silêncio para sempre.
+- **A sincronização é de relatório inteiro.** Um relatório alterado sobe por completo, não só a
+  diferença. Com as fotos comprimidas isso dá poucas centenas de KB, mas não é um Dropbox.
 - **Fórmula, tabela e desenho não entram** no PDF: o relatório é texto, foto e classificação.
 
 ## Licença
