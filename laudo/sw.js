@@ -21,7 +21,7 @@
 // index.html (elemento #versaoApp): é por ele que se vê a versão a
 // correr, e é ele que o app compara com este ficheiro para avisar que
 // há uma versão nova.
-const VERSAO = 'laudo-v3';
+const VERSAO = 'laudo-v4';
 const ESSENCIAIS = [
   './',
   './index.html',

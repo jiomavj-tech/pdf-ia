@@ -462,7 +462,7 @@
     <p>O ditado usa o reconhecimento de voz do próprio navegador e precisa de internet no momento da fala.
       Sem sinal, escreva no teclado: o resto do app funciona em modo avião.</p>
     <p>© 2026 Jeovani · Todos os direitos reservados. Usar é livre; copiar, redistribuir, hospedar ou vender exige autorização.
-      <span class="versao">versão <b id="versaoApp">3</b><span id="versaoEstado"></span></span></p>
+      <span class="versao">versão <b id="versaoApp">4</b><span id="versaoEstado"></span></span></p>
   </footer>
 
   <div class="avisos" id="avisos" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -1290,7 +1290,8 @@ function suportaDitado(){
   return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 }
 
-var dit = { rec:null, ligado:false, botao:null, painel:null, alvo:null, aplicar:null };
+var dit = { rec:null, ligado:false, botao:null, painel:null, alvo:null, aplicar:null,
+            base:'', finais:[] };
 
 function alternarDitado(botaoDitar, painel, alvo, aplicar){
   if(dit.ligado && dit.botao === botaoDitar){ pararDitado(); return; }
@@ -1305,22 +1306,44 @@ function alternarDitado(botaoDitar, painel, alvo, aplicar){
 
   dit.rec = rec; dit.ligado = true; dit.botao = botaoDitar;
   dit.painel = painel; dit.alvo = alvo; dit.aplicar = aplicar;
+  dit.base = alvo.value || ''; dit.finais = [];
 
   botaoDitar.setAttribute('aria-pressed','true');
   painel.hidden = false;
   painel.innerHTML = '<b>A ouvir…</b> fale normalmente; toque em «Ditar» outra vez para parar.';
 
+  /* Por que isto não usa `ev.resultIndex` nem vai somando frases:
+
+     no Android o reconhecimento reentrega o mesmo resultado várias vezes,
+     cada vez um pouco maior ("tomara que dê" -> "tomara que dê certo" ->
+     "tomara que dê certo tá funcionando"), e nem sempre mexe no
+     resultIndex. Somar o que chega escrevia a frase três, quatro vezes.
+
+     Aqui cada resultado é guardado pela sua posição e o campo é reescrito
+     por inteiro a cada evento: reentrega substitui, não acumula. `base`
+     guarda o que já estava escrito antes desta escuta, para o ditado nunca
+     comer o que o utilizador tinha digitado. */
+  rec.onstart = function(){
+    dit.base = (dit.alvo && dit.alvo.value) || '';
+    dit.finais = [];
+  };
+
   rec.onresult = function(ev){
     var parcial = '';
-    for(var i = ev.resultIndex; i < ev.results.length; i++){
+    for(var i = 0; i < ev.results.length; i++){
       var r = ev.results[i];
-      if(r.isFinal) juntarFala(r[0].transcript);
+      if(r.isFinal) dit.finais[i] = arrumarFrase(r[0].transcript);
       else parcial += r[0].transcript;
     }
+    escreverDitado();
+
+    painel.textContent = '';
     if(parcial){
-      painel.textContent = '';
       painel.appendChild(el('b', null, '… '));
       painel.appendChild(document.createTextNode(parcial));
+    }else{
+      painel.appendChild(el('b', null, 'A ouvir… '));
+      painel.appendChild(document.createTextNode('toque em «Ditar» outra vez para parar.'));
     }
   };
   rec.onerror = function(ev){
@@ -1334,8 +1357,12 @@ function alternarDitado(botaoDitar, painel, alvo, aplicar){
   };
   rec.onend = function(){
     // No celular a sessão fecha após um silêncio: religamos enquanto o
-    // utilizador não tiver mandado parar.
+    // utilizador não tiver mandado parar. A sessão nova traz a sua própria
+    // lista de resultados, começada do zero — o que já foi escrito passa a
+    // ser a base dela.
     if(dit.ligado && dit.rec === rec){
+      dit.base = (dit.alvo && dit.alvo.value) || '';
+      dit.finais = [];
       try{ rec.start(); }catch(e){ pararDitado(); }
     }
   };
@@ -1344,15 +1371,25 @@ function alternarDitado(botaoDitar, painel, alvo, aplicar){
   catch(e){ aviso('Não deu para ligar o microfone', String(e && e.message || e), true); pararDitado(); }
 }
 
-function juntarFala(trecho){
-  trecho = (trecho||'').trim();
-  if(!trecho || !dit.alvo) return;
+// Fala solta não traz maiúscula nem ponto; o relatório precisa dos dois.
+function arrumarFrase(trecho){
+  trecho = (trecho || '').trim();
+  if(!trecho) return '';
   trecho = trecho.charAt(0).toUpperCase() + trecho.slice(1);
-  if(!/[.!?…]$/.test(trecho)) trecho += '.';
-  var atual = dit.alvo.value || '';
-  dit.alvo.value = atual ? (atual.replace(/\s+$/,'') + ' ' + trecho) : trecho;
+  if(!/[.!?]$/.test(trecho)) trecho += '.';
+  return trecho;
+}
+
+// Reescreve o campo inteiro: o que já lá estava, mais as frases desta escuta.
+function escreverDitado(){
+  if(!dit.alvo) return;
+  var frases = (dit.finais || []).filter(function(f){ return !!f; }).join(' ');
+  var base = (dit.base || '').replace(/\s+$/, '');
+  var novo = base ? (frases ? base + ' ' + frases : base) : frases;
+  if(dit.alvo.value === novo) return;
+  dit.alvo.value = novo;
   dit.alvo.scrollTop = dit.alvo.scrollHeight;
-  if(dit.aplicar) dit.aplicar(dit.alvo.value);
+  if(dit.aplicar) dit.aplicar(novo);
 }
 
 function pararDitado(){
@@ -1363,6 +1400,7 @@ function pararDitado(){
   if(dit.botao) dit.botao.setAttribute('aria-pressed','false');
   if(dit.painel) dit.painel.hidden = true;
   dit.botao = null; dit.painel = null; dit.alvo = null; dit.aplicar = null;
+  dit.base = ''; dit.finais = [];
   salvarJa();
 }
 
