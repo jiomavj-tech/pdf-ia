@@ -159,6 +159,15 @@ Servida por HTTPS, ela ganha três coisas que o `file://` não permite: o botão
 usa a área de transferência moderna, o botão **Compartilhar** abre a folha de partilha do
 celular (ou copia o link no computador), e dá para adicionar à tela de início.
 
+## Também neste repositório: Laudo
+
+[**Laudo**](laudo/) é o segundo aplicativo daqui — mesma ideia (um arquivo HTML, sem servidor,
+sem upload), outro problema. Monta relatórios de avaliação técnica de **elétrica, câmeras,
+portões e cerca elétrica** direto do celular: tira a foto, fala a observação, e sai um PDF com
+as imagens para mandar ao cliente. Os relatórios ficam guardados no aparelho.
+
+Detalhes e limitações em [`laudo/README.md`](laudo/README.md).
+
 ## Licença
 
 **Todos os direitos reservados** — veja [LICENSE](LICENSE).
