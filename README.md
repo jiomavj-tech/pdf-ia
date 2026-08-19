@@ -163,15 +163,15 @@ Servida por HTTPS, ela ganha três coisas que o `file://` não permite: o botão
 usa a área de transferência moderna, o botão **Compartilhar** abre a folha de partilha do
 celular (ou copia o link no computador), e dá para adicionar à tela de início.
 
-## Também neste repositório: Laudo
+## Aplicativo irmão: Laudo
 
-[**Laudo**](laudo/) é o segundo aplicativo daqui — mesma ideia (um arquivo HTML, sem servidor,
-sem upload), outro problema. Monta relatórios de avaliação técnica de **elétrica, câmeras,
-portões e cerca elétrica** direto do celular: tira a foto, fala a observação, e sai um PDF com
-as imagens para mandar ao cliente. Os relatórios ficam guardados no aparelho, com backup em
-arquivo e sincronização opcional com o **seu** Google Drive — sem servidor nenhum no meio.
+[**Laudo**](https://github.com/jiomavj-tech/laudo) parte da mesma ideia — um arquivo HTML,
+sem servidor, sem upload — para outro problema: relatórios de avaliação técnica de elétrica,
+câmeras, portões e cerca elétrica, montados no celular a partir de foto e voz.
 
-Detalhes e limitações em [`laudo/README.md`](laudo/README.md).
+Esteve na pasta `laudo/` deste repositório e mudou-se para o seu próprio, em
+<https://jiomavj-tech.github.io/laudo/>. Dois aplicativos no mesmo sítio partilhavam sitemap,
+histórico e publicação, e cada alteração num obrigava a pensar no outro.
 
 ## Licença
 
