@@ -123,10 +123,14 @@ Ao publicar uma alteração, incrementar `VERSAO` no `sw.js` e o número em `#ve
 Servida por HTTPS, a página instala-se como um aplicativo de verdade — ícone próprio,
 janela sem barra de endereço, e abre **sem internet**.
 
-- **Android e computador (Chrome, Edge):** aparece o botão **Instalar aplicativo** no
-  topo da página.
-- **iPhone e iPad:** o Safari não tem esse botão. Toque em **Partilhar** e escolha
-  *Adicionar ao Ecrã Principal* — a página mostra essa dica sozinha quando deteta iOS.
+- **Android e computador (Chrome, Edge):** no menu do navegador, escolha *Instalar*.
+- **iPhone e iPad:** toque em **Partilhar** na barra do Safari e escolha
+  *Adicionar ao Ecrã Principal*.
+
+A página mostra o caminho certo sozinha, conforme o aparelho, e esconde-o quando já está
+instalada. Houve aqui um botão «Instalar aplicativo», retirado por depender do aviso
+`beforeinstallprompt`: aparecia e desaparecia sozinho, e quando aparecia sem o aviso não
+fazia nada. O menu do navegador faz o mesmo e está sempre no mesmo sítio.
 
 Depois de instalado, o app abre em modo avião: os arquivos ficam guardados no aparelho.
 
