@@ -90,10 +90,47 @@ service cloud.firestore {
       allow write: if ehAdmin();
     }
 
-    /* ── Chopeiras ──────────────────────────────────────────────── */
+    /* ── Chopeiras ────────────────────────────────────────────────
+       O cliente pode CRIAR, e só assim: marcada como provisória e com a
+       empresa dele. É o caso de abrir chamado de um equipamento que
+       ainda não estava cadastrado — o chamado não pode esperar o
+       cadastro ficar perfeito. Editar e apagar continuam sendo do
+       administrador, senão a ficha técnica viraria terra de ninguém. */
     match /chopeiras/{id} {
-      allow read:  if ehAdmin() || (liberado() && resource.data.clienteId == minhaEmpresa());
-      allow write: if ehAdmin();
+      allow read: if ehAdmin() || (liberado() && resource.data.clienteId == minhaEmpresa());
+
+      allow create: if ehAdmin() || (
+        liberado()
+        && request.resource.data.clienteId == minhaEmpresa()
+        && request.resource.data.provisorio == true
+      );
+
+      allow update, delete: if ehAdmin();
+    }
+
+    /* ── Ordens de serviço ────────────────────────────────────────
+       O cliente abre o chamado e nada mais. O status é do
+       administrador: se o cliente pudesse mexer, "entregue" deixaria
+       de querer dizer entregue. A única coisa que ele reescreve é o
+       próprio aviso de não lido, ao abrir a ordem. */
+    match /ordens/{id} {
+      allow read: if ehAdmin() || (liberado() && resource.data.clienteId == minhaEmpresa());
+
+      allow create: if ehAdmin() || (
+        liberado()
+        && request.resource.data.clienteId == minhaEmpresa()
+        && request.resource.data.status == 'aberto'
+        && request.resource.data.abertoPor.uid == request.auth.uid
+        && request.resource.data.naoLidoAdmin == true
+      );
+
+      allow update: if ehAdmin() || (
+        liberado()
+        && resource.data.clienteId == minhaEmpresa()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['naoLidoCliente'])
+      );
+
+      allow delete: if ehAdmin();
     }
 
     /* ── Fotos ──────────────────────────────────────────────────────

@@ -3,8 +3,8 @@
 Cadastro das chopeiras de cada cliente, com acesso controlado: o cliente entra com a conta Google
 dele e vê apenas os equipamentos da própria empresa. O Giba vê e mantém tudo.
 
-Esta é a **primeira das cinco entregas** planeadas. O que está aqui já dá para usar no serviço
-real; o que ainda não está vem listado no fim.
+Estão feitas as **duas primeiras das cinco entregas** planeadas: os cadastros e o fluxo do
+chamado. O que ainda não está vem listado no fim.
 
 ## O que já funciona
 
@@ -29,6 +29,19 @@ e aplicação. Mais uma foto, reduzida no próprio aparelho antes de subir.
 botões de aprovar e bloquear. Aprovar alguém sem empresa ligada dá aviso antes — essa pessoa
 entraria e não veria nada.
 
+**Chamado aberto pelo cliente.** Ele digita o número da etiqueta e o app busca no cadastro dele:
+se achar, mostra a ficha para confirmar; se não achar, deixa enviar assim mesmo e a chopeira entra
+como **provisória**, para o Giba completar depois — um chamado não pode esperar o cadastro ficar
+perfeito. Até três fotos, e o problema escrito ou **ditado**.
+
+**Status e linha do tempo.** Dez estados, de *chamado aberto* a *entregue*. Cada mudança guarda
+quem mudou, quando, e o recado escrito para o cliente — e os dois lados veem a mesma linha do
+tempo. Os encerrados saem da lista de abertos sem sumir: ficam atrás de um botão.
+
+**Aviso de duas vias.** Toda mudança acende um **sino** no cabeçalho do outro lado, que se apaga
+ao abrir o chamado. E o Giba tem o botão **Avisar no WhatsApp**, que abre a conversa com a
+mensagem já escrita — status, recado e número da OS.
+
 ## Como se usa
 
 Do lado do Giba: cadastra a empresa, escreve os e-mails de quem vai poder entrar, e lança as
@@ -40,7 +53,9 @@ equipamentos dele com a ficha completa de cada um.
 | | Cliente aprovado | Giba |
 |---|---|---|
 | A própria empresa | lê | lê e escreve todas |
-| Chopeiras | lê só as da empresa dele | tudo |
+| Chopeiras | lê só as da empresa dele; cria provisória ao abrir chamado | tudo |
+| Chamados | lê só os da empresa dele; abre novos | tudo |
+| Status do chamado | não move | é quem move |
 | Fotos | lê só as da empresa dele; pode criar | tudo |
 | O próprio acesso | não se aprova | aprova e bloqueia |
 | Empresa a que pertence | não escolhe | define |
@@ -72,24 +87,32 @@ Publicar: `firebase deploy --only hosting`.
 
 | Arquivo | Para que serve |
 |---|---|
-| `index.html` | O aplicativo inteiro: portão, cadastros, painel |
+| `index.html` | O aplicativo inteiro: portão, cadastros, chamados, painel |
 | `firestore.rules` | Quem vê o quê — conferido no servidor |
 | `firebase.json`, `.firebaserc` | Hospedagem e projeto |
 | `manifest.webmanifest` | Nome, cores e ícones para instalar no celular |
 | `sw.js` | Faz o app abrir sem rede depois de instalado |
+| `testes/` | As duas suítes e o Firestore de mentira |
 
 Ao publicar uma alteração, incrementar `VERSAO` no `sw.js` e o número em `#versaoApp` no
 `index.html`. O `sw.js` busca o HTML **pela rede primeiro** e só recorre à cache se não houver
 ligação: um service worker que serve a cache primeiro faz a versão antiga continuar a aparecer
 depois de publicada uma correção, e o sintoma é indistinguível de um erro no código.
 
+## Testes
+
+```
+node testes/rodar.js
+```
+
+Abre o aplicativo num Chromium de verdade, com um Firestore de mentira no lugar do Google, e
+percorre os dois fluxos inteiros — 39 verificações. Detalhe do que cobre e do que **não** cobre
+em [`testes/LEIAME.md`](testes/LEIAME.md).
+
 ## O que ainda não está aqui
 
-As quatro entregas seguintes, por ordem:
+As três entregas seguintes, por ordem:
 
-2. **Ordem de serviço e status.** Abertura de chamado pelo cliente (número da chopeira, foto,
-   problema por texto ou por voz), fila para o Giba, mudança de status, linha do tempo para o
-   cliente, aviso por WhatsApp e sino dentro do app.
 3. **Peças e orçamento.** Cadastro de peças com preço, orçamento com peças e serviço separados, e
    a aprovação do cliente registada com nome e data.
 4. **Laudo.** Texto montado a partir do que foi feito, PDF com as fotos, guardado junto da ordem.
@@ -97,9 +120,12 @@ As quatro entregas seguintes, por ordem:
 
 ## Limitações conhecidas
 
-- **Notificação push ainda não existe.** Na entrega 2 o aviso sai por WhatsApp, com a mensagem já
-  escrita. Push automático exige servidor — e, no iPhone, exige ainda que o cliente tenha o app na
-  tela inicial.
+- **Notificação push ainda não existe.** O aviso sai pelo sino dentro do app e pelo WhatsApp, com
+  a mensagem já escrita, mas é o Giba quem aperta o botão. Push automático exige servidor — e, no
+  iPhone, exige ainda que o cliente tenha o app na tela inicial. Fica para a entrega 5.
+- **O ditado precisa de internet no momento da fala.** O reconhecimento é do navegador, não do
+  app: no meio do salão sem sinal, não vai. O campo continua editável no teclado, e no iPhone o
+  microfone do próprio teclado faz o mesmo serviço.
 - **A foto vive dentro do banco**, num documento próprio, comprimida a 1280 px. Três a cinco fotos
   por equipamento é confortável; álbum, não.
 - **O cadastro é mantido pelo Giba.** O cliente lê e não corrige — de propósito, para não haver
