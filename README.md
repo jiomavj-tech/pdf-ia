@@ -123,10 +123,14 @@ Ao publicar uma alteração, incrementar `VERSAO` no `sw.js` e o número em `#ve
 Servida por HTTPS, a página instala-se como um aplicativo de verdade — ícone próprio,
 janela sem barra de endereço, e abre **sem internet**.
 
-- **Android e computador (Chrome, Edge):** aparece o botão **Instalar aplicativo** no
-  topo da página.
-- **iPhone e iPad:** o Safari não tem esse botão. Toque em **Partilhar** e escolha
-  *Adicionar ao Ecrã Principal* — a página mostra essa dica sozinha quando deteta iOS.
+- **Android e computador (Chrome, Edge):** no menu do navegador, escolha *Instalar*.
+- **iPhone e iPad:** toque em **Partilhar** na barra do Safari e escolha
+  *Adicionar ao Ecrã Principal*.
+
+A página mostra o caminho certo sozinha, conforme o aparelho, e esconde-o quando já está
+instalada. Houve aqui um botão «Instalar aplicativo», retirado por depender do aviso
+`beforeinstallprompt`: aparecia e desaparecia sozinho, e quando aparecia sem o aviso não
+fazia nada. O menu do navegador faz o mesmo e está sempre no mesmo sítio.
 
 Depois de instalado, o app abre em modo avião: os arquivos ficam guardados no aparelho.
 
@@ -158,6 +162,16 @@ pasta `/root`). Em poucos minutos a página fica no ar e você compartilha o lin
 Servida por HTTPS, ela ganha três coisas que o `file://` não permite: o botão de copiar
 usa a área de transferência moderna, o botão **Compartilhar** abre a folha de partilha do
 celular (ou copia o link no computador), e dá para adicionar à tela de início.
+
+## Aplicativo irmão: Laudo
+
+[**Laudo**](https://github.com/jiomavj-tech/laudo) parte da mesma ideia — um arquivo HTML,
+sem servidor, sem upload — para outro problema: relatórios de avaliação técnica de elétrica,
+câmeras, portões e cerca elétrica, montados no celular a partir de foto e voz.
+
+Esteve na pasta `laudo/` deste repositório e mudou-se para o seu próprio, em
+<https://jiomavj-tech.github.io/laudo/>. Dois aplicativos no mesmo sítio partilhavam sitemap,
+histórico e publicação, e cada alteração num obrigava a pensar no outro.
 
 ## Licença
 
