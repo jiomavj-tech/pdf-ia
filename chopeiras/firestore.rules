@@ -1,0 +1,109 @@
+rules_version = '2';
+
+/* ═══════════════════════════════════════════════════════════════════
+   Quem vê o quê, no app de chopeiras.
+
+   Isto não é conferido dentro da página — é conferido no servidor do
+   Google, antes de gravar. Mesmo que alguém abra o console do
+   navegador e tente escrever direto no banco, estas regras recusam.
+
+   A regra de ouro: o cliente lê só o que é da empresa dele, e a única
+   coisa que ele escreve é o próprio chamado. Status e valores são do
+   administrador, e ninguém se autoaprova.
+   ═══════════════════════════════════════════════════════════════════ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function autenticado(){
+      return request.auth != null;
+    }
+
+    function meuEmail(){
+      return request.auth.token.email.lower();
+    }
+
+    function ehAdmin(){
+      return autenticado() && meuEmail() == 'gibasolucoes@gmail.com';
+    }
+
+    function eu(){
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    /* Liberado = o administrador, ou alguém que ele aprovou. */
+    function liberado(){
+      return ehAdmin() || (autenticado() && eu().ativo == true);
+    }
+
+    function minhaEmpresa(){
+      return eu().clienteId;
+    }
+
+    /* ── Convites ─────────────────────────────────────────────────
+       Um documento por e-mail, criado pelo administrador ao cadastrar
+       a empresa. Só o dono daquele e-mail consegue ler o seu — é o que
+       permite a pessoa entrar já ligada à empresa certa, sem ter de
+       ler a lista de clientes (que ela não pode ver).             */
+    match /convites/{email} {
+      allow read:  if autenticado() && email == meuEmail();
+      allow write: if ehAdmin();
+    }
+
+    /* ── Usuários ───────────────────────────────────────────────── */
+    match /usuarios/{uid} {
+      allow read: if autenticado() && (request.auth.uid == uid || ehAdmin());
+
+      /* No primeiro acesso a pessoa cria o próprio documento. Ele nasce
+         pendente — a não ser que exista convite para aquele e-mail, e
+         então nasce ligado exatamente à empresa que o convite diz.
+         Em nenhum caso ela escolhe a empresa ou o papel por conta. */
+      allow create: if autenticado()
+        && request.auth.uid == uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.papel == 'cliente'
+        && (
+          request.resource.data.ativo == false
+          || (
+            exists(/databases/$(database)/documents/convites/$(meuEmail()))
+            && request.resource.data.ativo == true
+            && request.resource.data.clienteId ==
+               get(/databases/$(database)/documents/convites/$(meuEmail())).data.clienteId
+          )
+        );
+
+      /* A pessoa atualiza o próprio "ultimoAcesso" e o nome, e mais nada:
+         acesso, papel e empresa são do administrador. */
+      allow update: if ehAdmin() || (
+        autenticado()
+        && request.auth.uid == uid
+        && !request.resource.data.diff(resource.data).affectedKeys()
+             .hasAny(['ativo', 'papel', 'clienteId', 'email'])
+      );
+
+      allow delete: if ehAdmin();
+    }
+
+    /* ── Empresas clientes ──────────────────────────────────────── */
+    match /clientes/{clienteId} {
+      allow read:  if ehAdmin() || (liberado() && clienteId == minhaEmpresa());
+      allow write: if ehAdmin();
+    }
+
+    /* ── Chopeiras ──────────────────────────────────────────────── */
+    match /chopeiras/{id} {
+      allow read:  if ehAdmin() || (liberado() && resource.data.clienteId == minhaEmpresa());
+      allow write: if ehAdmin();
+    }
+
+    /* ── Fotos ──────────────────────────────────────────────────────
+       Guardadas fora do documento a que pertencem, para a lista abrir
+       sem carregar imagem nenhuma. O cliente pode criar (vai precisar,
+       ao abrir chamado com foto), mas só marcada com a empresa dele. */
+    match /fotos/{id} {
+      allow read:   if ehAdmin() || (liberado() && resource.data.clienteId == minhaEmpresa());
+      allow create: if ehAdmin() || (liberado() && request.resource.data.clienteId == minhaEmpresa());
+      allow update, delete: if ehAdmin();
+    }
+  }
+}
