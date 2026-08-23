@@ -3,8 +3,8 @@
 Cadastro das chopeiras de cada cliente, com acesso controlado: o cliente entra com a conta Google
 dele e vê apenas os equipamentos da própria empresa. O Giba vê e mantém tudo.
 
-Estão feitas as **duas primeiras das cinco entregas** planeadas: os cadastros e o fluxo do
-chamado. O que ainda não está vem listado no fim.
+Estão feitas as **três primeiras das cinco entregas** planeadas: os cadastros, o fluxo do chamado
+e o orçamento. O que ainda não está vem listado no fim.
 
 ## O que já funciona
 
@@ -40,7 +40,22 @@ tempo. Os encerrados saem da lista de abertos sem sumir: ficam atrás de um bot�
 
 **Aviso de duas vias.** Toda mudança acende um **sino** no cabeçalho do outro lado, que se apaga
 ao abrir o chamado. E o Giba tem o botão **Avisar no WhatsApp**, que abre a conversa com a
-mensagem já escrita — status, recado e número da OS.
+mensagem já escrita — status, recado, número da OS e, quando é orçamento, o total.
+
+**Cadastro de peças.** Código, descrição, unidade, preço de venda e onde serve. A descrição sugere
+as peças de chopeira do app de compressores — pressostato KP1, relé voltimétrico, capacitor de
+partida, protetor térmico — mas aceita qualquer outra. O preço entra sozinho no orçamento e pode
+ser mudado ali sem mexer no cadastro.
+
+**Orçamento com peças e serviço separados.** Peça vem do cadastro com um toque, ou escrita na mão;
+serviço é sempre escrito. Cada grupo tem o seu subtotal, e o total soma os dois — é assim que o
+cliente decide, porque ele aceita pagar a peça e discute a mão de obra, ou o contrário. O valor
+total é recalculado enquanto se digita.
+
+**Aprovação do cliente, por escrito.** Quando o orçamento é enviado, aparecem no aplicativo dele os
+botões de **aprovar** e **não aprovar** — este último pedindo o motivo. A resposta fica gravada com
+o nome de quem respondeu e a data, e entra na linha do tempo. Depois de respondido, os botões dão
+lugar ao registro: responde-se uma vez.
 
 ## Como se usa
 
@@ -56,6 +71,9 @@ equipamentos dele com a ficha completa de cada um.
 | Chopeiras | lê só as da empresa dele; cria provisória ao abrir chamado | tudo |
 | Chamados | lê só os da empresa dele; abre novos | tudo |
 | Status do chamado | não move | é quem move |
+| Cadastro de peças e preços | não vê | tudo |
+| Valores do orçamento | vê os da ordem dele; não altera | é quem lança |
+| Aprovar ou não aprovar | responde uma vez, só com orçamento na mesa | pode registrar por ele |
 | Fotos | lê só as da empresa dele; pode criar | tudo |
 | O próprio acesso | não se aprova | aprova e bloqueia |
 | Empresa a que pertence | não escolhe | define |
@@ -92,7 +110,7 @@ Publicar: `firebase deploy --only hosting`.
 | `firebase.json`, `.firebaserc` | Hospedagem e projeto |
 | `manifest.webmanifest` | Nome, cores e ícones para instalar no celular |
 | `sw.js` | Faz o app abrir sem rede depois de instalado |
-| `testes/` | As duas suítes e o Firestore de mentira |
+| `testes/` | As três suítes e o Firestore de mentira |
 
 Ao publicar uma alteração, incrementar `VERSAO` no `sw.js` e o número em `#versaoApp` no
 `index.html`. O `sw.js` busca o HTML **pela rede primeiro** e só recorre à cache se não houver
@@ -106,15 +124,13 @@ node testes/rodar.js
 ```
 
 Abre o aplicativo num Chromium de verdade, com um Firestore de mentira no lugar do Google, e
-percorre os dois fluxos inteiros — 39 verificações. Detalhe do que cobre e do que **não** cobre
+percorre os três fluxos inteiros — 56 verificações. Detalhe do que cobre e do que **não** cobre
 em [`testes/LEIAME.md`](testes/LEIAME.md).
 
 ## O que ainda não está aqui
 
-As três entregas seguintes, por ordem:
+As duas entregas seguintes, por ordem:
 
-3. **Peças e orçamento.** Cadastro de peças com preço, orçamento com peças e serviço separados, e
-   a aprovação do cliente registada com nome e data.
 4. **Laudo.** Texto montado a partir do que foi feito, PDF com as fotos, guardado junto da ordem.
 5. **Avisos e agenda.** Notificação push, agendamento de recolha e entrega, visão da semana.
 
@@ -130,6 +146,8 @@ As três entregas seguintes, por ordem:
   por equipamento é confortável; álbum, não.
 - **O cadastro é mantido pelo Giba.** O cliente lê e não corrige — de propósito, para não haver
   duas versões da mesma empresa.
+- **O orçamento não calcula imposto nem desconto.** É soma de linhas: quantidade × valor, em dois
+  grupos. Desconto, por enquanto, é uma linha de serviço com valor negativo.
 
 ## Licença
 

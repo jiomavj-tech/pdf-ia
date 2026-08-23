@@ -127,10 +127,37 @@ service cloud.firestore {
       allow update: if ehAdmin() || (
         liberado()
         && resource.data.clienteId == minhaEmpresa()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['naoLidoCliente'])
+        && (
+          /* abrir a ordem apaga o próprio aviso */
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['naoLidoCliente'])
+
+          /* ou responder ao orçamento — e só isso. O hasOnly abaixo é o
+             que impede a resposta de vir junto com um valor alterado: os
+             campos do orçamento não estão na lista, então continuam como
+             o administrador os deixou. E só vale enquanto houver
+             orçamento na mesa: depois de respondido, o status já não é
+             'orcamento_enviado' e a mesma regra fecha a porta. */
+          || (
+            resource.data.status == 'orcamento_enviado'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+                 ['status', 'decisaoCliente', 'historico',
+                  'naoLidoAdmin', 'naoLidoCliente', 'atualizadoEm'])
+            && request.resource.data.status in ['orcamento_aprovado', 'orcamento_reprovado']
+            && request.resource.data.decisaoCliente.porUid == request.auth.uid
+            && request.resource.data.naoLidoAdmin == true
+          )
+        )
       );
 
       allow delete: if ehAdmin();
+    }
+
+    /* ── Peças ────────────────────────────────────────────────────
+       A tabela de preços não é do cliente. O que ele vê do orçamento é
+       a cópia dentro da ordem, com a descrição e o valor daquele
+       serviço — não a sua margem em cada peça. */
+    match /pecas/{id} {
+      allow read, write: if ehAdmin();
     }
 
     /* ── Fotos ──────────────────────────────────────────────────────
