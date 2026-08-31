@@ -69,6 +69,27 @@ ler. Sai um `.zip` com as partes.
 
 ## Como usar — YouTube
 
+Três passos, e o primeiro só se faz uma vez:
+
+1. **Instale o atalho.** Arraste o botão amarelo para a barra de favoritos.
+2. **Abra o vídeo e clique no favorito.** Cole o link no campo e aperte *Abrir*; na página que
+   abrir, clique no favorito. Ele baixa um ficheiro com a legenda.
+3. **Traga o ficheiro para cá** e escolha `.txt` ou `.md`.
+
+`.txt` é o padrão porque o destino habitual é alimentar outra IA, e aí cada token conta. Num
+vídeo de 20 minutos: 117 KB de legenda em bruto, 52 mil caracteres de fala, e a saída em
+`.txt` fica em 17,8 mil — **85% menor que a legenda original**, e 13% menor que o `.md`. O
+`.md` vale a pena quando o ficheiro vai ser catalogado, porque leva o cabeçalho YAML e as
+secções por peixe, local e técnica.
+
+**Colar o link não chega, e isto é uma regra do navegador.** O YouTube proíbe esta página de
+baixar a legenda; o atalho consegue porque roda dentro do YouTube. O campo de link serve para
+abrir o vídeo — não para buscar nada.
+
+### Detalhes
+
+
+
 Cole o link do vídeo (ou da playlist, ou vários links de uma vez, um por linha), depois cole
 a transcrição de cada um. No YouTube ela sai em **…mais → Mostrar transcrição**, selecionar
 tudo e copiar. Também aceita ficheiros de legenda largados na página: `.srt`, `.vtt`,
