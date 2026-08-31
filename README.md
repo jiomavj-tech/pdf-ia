@@ -69,6 +69,36 @@ ler. Sai um `.zip` com as partes.
 
 ## Como usar — YouTube
 
+Três passos, e o caminho muda conforme o aparelho — o app deteta sozinho.
+
+**No computador:**
+
+1. **Instale o atalho.** Arraste o botão amarelo para a barra de favoritos. Só a primeira vez.
+2. **Abra o vídeo e clique no favorito.** Cole o link no campo e aperte *Abrir*; na página que
+   abrir, clique no favorito. Ele baixa um ficheiro com a legenda.
+3. **Traga o ficheiro para cá** e escolha `.txt` ou `.md`.
+
+**No telemóvel** não há barra de favoritos nem como arrastar, por isso o atalho sai da frente:
+
+1. **Copie a transcrição no YouTube.** Toque na descrição, role até *Mostrar transcrição*,
+   segure no texto, selecione tudo e copie.
+2. **Cole na caixa.**
+3. **Escolha `.txt` ou `.md` e converta.**
+
+`.txt` é o padrão porque o destino habitual é alimentar outra IA, e aí cada token conta. Num
+vídeo de 20 minutos: 117 KB de legenda em bruto, 52 mil caracteres de fala, e a saída em
+`.txt` fica em 17,8 mil — **85% menor que a legenda original**, e 13% menor que o `.md`. O
+`.md` vale a pena quando o ficheiro vai ser catalogado, porque leva o cabeçalho YAML e as
+secções por peixe, local e técnica.
+
+**Colar o link não chega, e isto é uma regra do navegador.** O YouTube proíbe esta página de
+baixar a legenda; o atalho consegue porque roda dentro do YouTube. O campo de link serve para
+abrir o vídeo — não para buscar nada.
+
+### Detalhes
+
+
+
 Cole o link do vídeo (ou da playlist, ou vários links de uma vez, um por linha), depois cole
 a transcrição de cada um. No YouTube ela sai em **…mais → Mostrar transcrição**, selecionar
 tudo e copiar. Também aceita ficheiros de legenda largados na página: `.srt`, `.vtt`,
@@ -92,6 +122,15 @@ quem está a ver, que é precisamente o que falta ao servidor.
 
 O ficheiro sai com o identificador no nome (`… [bdh0XH21QBs].pt.json3`), e é daí que o
 conversor tira sozinho o endereço do vídeo e os carimbos de tempo clicáveis.
+
+**Numa playlist** o atalho percorre os vídeos, um de cada vez, e guarda tudo num ficheiro
+`.lote.json` — largado no conversor, volta a abrir-se em itens separados, cada um com o seu
+título, canal e duração. Vai num ficheiro só de propósito: com um download por vídeo, o
+navegador bloqueia ao terceiro. Um vídeo sem legenda é saltado e contado no fim, em vez de
+parar a playlist. O teto é de 60 vídeos por vez, com uma pausa entre pedidos: em paralelo o
+YouTube corta com 429 e perde-se a playlist inteira em vez de um vídeo.
+
+Estando a ver um vídeo que pertence a uma playlist, ele pergunta qual dos dois quer.
 
 A fonte do atalho é [`repetidor/bookmarklet.js`](repetidor/bookmarklet.js). A página não
 guarda uma cópia minificada: monta o endereço do favorito a partir dessa mesma fonte, para

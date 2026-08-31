@@ -377,6 +377,31 @@
   .bm ol{margin:14px 0 0;padding-left:20px;font-size:13px;color:#C9CDDC;line-height:1.7}
   .bm ol b{color:var(--sheet);font-weight:600}
   .bm .nota{margin:12px 0 0;font-size:12px;color:#98A1BC}
+
+  /* passos numerados do separador YouTube */
+  .passos{list-style:none;margin:0 0 18px;padding:0;counter-reset:passo}
+  .passo{display:flex;gap:14px;background:var(--sheet);border:1.5px solid var(--line);
+         border-radius:2px;padding:16px 18px;margin-bottom:12px}
+  .passo-n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--sheet);
+    font-family:var(--mono);font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .passo-corpo{flex:1;min-width:0}
+  .passo-corpo>h3{margin:2px 0 6px;font-size:17px;letter-spacing:-.02em;display:flex;
+    align-items:center;gap:8px;flex-wrap:wrap}
+  .passo-tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+    background:var(--mark);color:var(--ink);border:1px solid var(--ink);border-radius:2px;padding:2px 6px}
+  .passo-corpo>p{margin:0 0 12px;font-size:13.5px;color:var(--muted);line-height:1.55;max-width:62ch}
+  .passo-corpo>p b{color:var(--ink);font-weight:600}
+  .passo-nota{margin:12px 0 0!important;font-size:12.5px;padding:10px 12px;background:var(--canvas);
+    border-left:3px solid var(--line);border-radius:0 2px 2px 0}
+  .passo .yt-tile{margin-top:0}
+  .fmt--yt{margin:16px 0 0}
+  .yt-outras{background:var(--sheet);border:1.5px solid var(--line);border-radius:2px;margin-bottom:18px}
+  .yt-outras>summary{cursor:pointer;padding:13px 18px;font-weight:600;font-size:14px;list-style:none}
+  .yt-outras>summary::-webkit-details-marker{display:none}
+  .yt-outras>summary::before{content:"▸ ";color:var(--muted)}
+  .yt-outras[open]>summary::before{content:"▾ "}
+  .yt-outras>summary:hover{background:var(--canvas)}
+  .yt-outras-corpo{padding:4px 18px 18px;border-top:1.5px solid var(--line)}
 </style>
 </head>
 <body>
@@ -569,72 +594,126 @@
 
   <div class="painel" id="painel-yt" role="tabpanel" aria-labelledby="aba-yt" hidden>
 
-  <div class="bm">
-      <p class="eyebrow">Sem instalar nada · sem conta · sem servidor</p>
-      <h3>Pegar do YouTube</h3>
-      <p>Arraste o botão amarelo para a barra de favoritos do navegador. Depois, em qualquer
-         vídeo do YouTube, clique nele: a legenda é guardada num ficheiro e copiada, prontas
-         para trazer para cá.</p>
-      <div class="bm-linha">
-        <a class="bm-atalho" id="bmAtalho" href="#" title="Arraste-me para a barra de favoritos">🎣 Pegar do YouTube</a>
-        <button type="button" class="bm-copiar" id="bmCopiar">Copiar o atalho</button>
+  <ol class="passos">
+
+    <!-- No telemóvel não há barra de favoritos para arrastar o atalho, por isso
+         o caminho principal é outro: copiar a transcrição do próprio YouTube.
+         O JS mostra um dos dois conjuntos. -->
+    <div id="passosCel" hidden>
+      <li class="passo">
+        <div class="passo-n">1</div>
+        <div class="passo-corpo">
+          <h3>Copie a transcrição no YouTube</h3>
+          <p>Cole o link e aperte <b>Abrir</b>. No YouTube: toque na <b>descrição</b> do vídeo,
+             role até <span class="chave">Mostrar transcrição</span>, segure no texto,
+             <b>selecionar tudo</b> e copiar.</p>
+          <div class="yt-linha">
+            <input type="url" id="ytUrlCel" placeholder="https://youtu.be/…"
+                   autocomplete="off" spellcheck="false">
+            <button type="button" id="ytAbrirCel">Abrir</button>
+          </div>
+          <p class="passo-nota"><b>Por que o app não baixa sozinho?</b> O YouTube proíbe
+             qualquer página de fazer isso — é regra do navegador, não falta do app.</p>
+        </div>
+      </li>
+
+      <li class="passo">
+        <div class="passo-n">2</div>
+        <div class="passo-corpo">
+          <h3>Cole aqui</h3>
+          <div id="celCola"></div>
+        </div>
+      </li>
+    </div>
+
+    <div id="passosPc">
+      <li class="passo">
+        <div class="passo-n">1</div>
+        <div class="passo-corpo">
+          <h3>Instale o atalho <span class="passo-tag">só a primeira vez</span></h3>
+          <p>Arraste o botão amarelo para a <b>barra de favoritos</b> do navegador.
+             Fica lá para sempre.</p>
+          <div class="bm-linha">
+            <a class="bm-atalho" id="bmAtalho" href="#" title="Arraste-me para a barra de favoritos">🎣 Pegar do YouTube</a>
+            <button type="button" class="ghost" id="bmCopiar">Copiar o endereço</button>
+          </div>
+          <p class="passo-nota"><b>Por que não basta colar o link aqui?</b> O YouTube proíbe
+             esta página de baixar a legenda — é uma regra do navegador, não uma falta do app.
+             O atalho consegue porque roda <b>dentro</b> do YouTube, onde é permitido.</p>
+        </div>
+      </li>
+
+      <li class="passo">
+        <div class="passo-n">2</div>
+        <div class="passo-corpo">
+          <h3>Abra o vídeo e clique no favorito</h3>
+          <p>Cole o link aqui e aperte <b>Abrir</b>. Na página que abrir, clique no favorito
+             <b>🎣 Pegar do YouTube</b> — ele baixa um arquivo com a legenda.</p>
+          <div class="yt-linha">
+            <input type="url" id="ytUrl" placeholder="https://youtu.be/…  ou  …/playlist?list=PL…"
+                   autocomplete="off" spellcheck="false">
+            <button type="button" id="ytColar" class="ghost">Colar</button>
+            <button type="button" id="ytAbrir">Abrir</button>
+          </div>
+          <p class="passo-nota">Numa <b>playlist</b>, o atalho percorre os vídeos e junta tudo
+             num arquivo só.</p>
+        </div>
+      </li>
+    </div>
+
+    <li class="passo">
+      <div class="passo-n">3</div>
+      <div class="passo-corpo">
+        <h3 id="tit3">Traga o arquivo para cá</h3>
+        <label class="yt-tile" id="ytDz">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 16V4"/><path d="M8 8l4-4 4 4"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/>
+          </svg>
+          <span class="tile-title">Arraste o arquivo aqui, ou clique para escolher</span>
+          <span class="tile-sub">O que o atalho baixou — ou qualquer .srt, .vtt, .json3</span>
+          <input type="file" id="ytFile" accept=".srt,.vtt,.json3,.srv3,.ttml,.xml,.txt,.sbv,.json" multiple>
+        </label>
+
+        <fieldset class="fmt fmt--yt">
+          <legend>O que você quer receber</legend>
+          <label><input type="radio" name="ytFmt" value="txt" checked> <b>.txt</b>
+            <span>texto puro, o mais barato em tokens</span></label>
+          <label><input type="radio" name="ytFmt" value="md"> <b>.md</b>
+            <span>com etiquetas e títulos, para catalogar</span></label>
+        </fieldset>
       </div>
-      <ol>
-        <li>Arraste o botão para a <b>barra de favoritos</b> (ou copie e crie um favorito com esse endereço).</li>
-        <li>Abra o vídeo no YouTube e <b>clique no favorito</b>.</li>
-        <li>Largue o ficheiro aqui embaixo, ou cole com <b>Ctrl+V</b> na caixa da transcrição.</li>
-      </ol>
-      <p class="nota">Funciona porque corre dentro da página do YouTube, com a sua própria sessão —
-         é o que o conversor não pode fazer sozinho. No telemóvel dá mais trabalho: a barra de
-         favoritos não existe, e é preciso criar o favorito à mão.</p>
-    </div>
+    </li>
+  </ol>
 
-    <div class="yt-topo">
-      <label class="yt-rotulo" for="ytUrl">Link do vídeo ou da playlist</label>
-      <div class="yt-linha">
-        <input type="url" id="ytUrl" placeholder="https://youtu.be/…  ou  …/playlist?list=PL…"
-               autocomplete="off" spellcheck="false">
-        <button type="button" id="ytColar" class="ghost">Colar</button>
-        <button type="button" id="ytAdd">Adicionar</button>
-      </div>
-      <p class="yt-ajuda">
-        Aceita vários de uma vez: cole a lista inteira de links, um por linha. Um endereço de
-        <b>playlist</b> entra como um item por vídeo assim que você colar as legendas —
-        o navegador não consegue abrir a playlist sozinho.
-      </p>
-    </div>
+  <details class="yt-outras">
+    <summary>Outras formas de trazer a legenda</summary>
+    <div class="yt-outras-corpo">
 
-    <div class="yt-passos">
-      <span class="titulo">De onde vem a legenda</span>
-      <ol>
-        <li>Abra o vídeo no YouTube e clique em <span class="chave">…mais</span> → <span class="chave">Mostrar transcrição</span>.</li>
-        <li>No painel da transcrição, selecione tudo (<span class="chave">Ctrl+A</span>) e copie.</li>
-        <li>Cole aqui embaixo, ou solte um arquivo <code>.srt</code> / <code>.vtt</code> se já tiver.</li>
-      </ol>
-    </div>
+      <p class="passo-nota" style="margin-top:0">Só precisa disto se o atalho não servir —
+         por exemplo no telemóvel, onde não há barra de favoritos.</p>
 
-    <div style="margin-top:14px">
-      <label class="yt-rotulo" for="ytCola">Transcrição colada</label>
+      <label class="yt-rotulo" for="ytCola">Colar a transcrição à mão</label>
+      <p class="passo-nota" style="margin:0 0 8px">No YouTube: <span class="chave">…mais</span> →
+         <span class="chave">Mostrar transcrição</span>, selecionar tudo e copiar.</p>
       <textarea class="yt-cola" id="ytCola" spellcheck="false"
-        placeholder="0:00&#10;fala galera hoje a gente vai pescar tilápia&#10;0:04&#10;na represa aqui de casa&#10;&#10;— ou cole o conteúdo de um .srt / .vtt / .json3 —"></textarea>
+        placeholder="0:00&#10;fala galera hoje a gente vai pescar tilápia&#10;0:04&#10;na represa aqui de casa"></textarea>
       <div class="yt-linha" style="margin-top:10px">
         <button type="button" id="ytUsarCola">Usar esta transcrição</button>
         <button type="button" id="ytLimparCola" class="ghost">Limpar</button>
       </div>
+
+      <label class="yt-rotulo" for="ytUrl2" style="margin-top:18px">Buscar pelo repetidor</label>
+      <p class="passo-nota" style="margin:0 0 8px">Exige um repetidor configurado no separador
+         <b>Nível profissional</b>. Sem ele, este botão só põe o vídeo na lista à espera da legenda.</p>
+      <div class="yt-linha">
+        <input type="url" id="ytUrl2" placeholder="https://youtu.be/…" autocomplete="off" spellcheck="false">
+        <button type="button" id="ytAdd">Pôr na lista</button>
+      </div>
     </div>
+  </details>
 
-    <label class="yt-tile" id="ytDz">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M12 16V4"/><path d="M8 8l4-4 4 4"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/>
-      </svg>
-      <span class="tile-eyebrow">Arquivos de legenda</span>
-      <span class="tile-title">Escolher .srt, .vtt, .json3</span>
-      <span class="tile-sub">Vários de uma vez — um arquivo vira um vídeo da playlist</span>
-      <input type="file" id="ytFile" accept=".srt,.vtt,.json3,.srv3,.ttml,.xml,.txt,.sbv" multiple>
-    </label>
-
-    <section class="yt-lote" id="ytLote" hidden>
+  <section class="yt-lote" id="ytLote" hidden>
       <div class="fila-topo">
         <span id="ytResumo">0 vídeos</span>
         <span class="fila-acoes">
@@ -644,7 +723,7 @@
       </div>
       <div id="ytLista"></div>
       <div class="fila-rodape">
-        <button type="button" class="btn-converter" id="ytConverter">Converter em Markdown</button>
+        <button type="button" class="btn-converter" id="ytConverter">Converter</button>
         <span class="fila-aviso" id="ytAviso" hidden></span>
       </div>
     </section>
@@ -773,7 +852,7 @@
     <p>O leitor de PDF e o de legendas estão embutidos neste arquivo: PDFs e transcrições coladas nunca saem do seu computador, e tudo funciona em modo avião. A única exceção é o repetidor do separador profissional — enquanto estiver vazio, e vem vazio, não há requisição de rede nenhuma.</p>
     <p>A estimativa de tokens usa a média de ~4 caracteres por token, para comparar tamanhos. PDFs escaneados não têm texto embutido e precisam de OCR antes.</p>
     <p class="direitos">© 2026 Jeovani · Todos os direitos reservados. Usar é livre; copiar, redistribuir, hospedar ou vender exige autorização.
-      <span class="versao">versão <b id="versaoApp">14</b><span id="versaoEstado"></span></span></p>
+      <span class="versao">versão <b id="versaoApp">17</b><span id="versaoEstado"></span></span></p>
   </footer>
 
   <div class="avisos" id="avisos" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -2624,11 +2703,14 @@ var ReadZip = (function () {
    youtube.com — não há CORS pelo meio — e leva a sessão da própria pessoa,
    que é exatamente o que falta ao servidor. Zero infraestrutura, zero conta.
 
-   Corre na página do vídeo, tira a legenda do ytInitialPlayerResponse que já
-   está ali, grava um ficheiro e copia o conteúdo. Depois é largar no
-   conversor ou colar. */
+   Num vídeo, tira a legenda e grava um ficheiro .json3.
+   Numa playlist, percorre os vídeos e grava um ficheiro .lote.json com todos,
+   que o conversor abre como uma lista. */
 (function () {
   'use strict';
+
+  var MAX_VIDEOS = 60;      // trava: uma playlist de centenas irrita o YouTube
+  var PAUSA_MS = 350;       // respiro entre vídeos, para não levar 429
 
   function aviso(texto, erro) {
     var id = 'pdfia-aviso', velho = document.getElementById(id);
@@ -2640,24 +2722,78 @@ var ReadZip = (function () {
       + 'padding:13px 18px;border-radius:3px;box-shadow:0 6px 24px rgba(0,0,0,.35);max-width:min(90vw,520px)';
     d.textContent = texto;
     document.body.appendChild(d);
-    setTimeout(function () { if (d.parentNode) d.remove(); }, erro ? 9000 : 6000);
+    if (erro !== 'fica') setTimeout(function () { if (d.parentNode) d.remove(); }, erro ? 9000 : 6000);
+    return d;
   }
 
-  /* A resposta do player está na variável global; quando a navegação interna
-     do YouTube a deixa desatualizada, procura-se no HTML. */
-  function respostaDoPlayer() {
-    if (window.ytInitialPlayerResponse && window.ytInitialPlayerResponse.videoDetails) {
-      return window.ytInitialPlayerResponse;
-    }
+  function guardar(nome, texto, tipo) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([texto], { type: tipo || 'application/json' }));
+    a.download = nome;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  }
+
+  function limpo(t, tam) {
+    return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+      .toLowerCase().slice(0, tam || 60);
+  }
+
+  /* ---------- ler o que a página já traz ---------- */
+
+  function doHtml(nome) {
     var html = document.documentElement.innerHTML;
-    var m = html.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\})\s*;\s*(?:var |window\.|<\/script>)/);
-    if (!m) m = html.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\})\s*;/);
+    // o fecho de script vai partido: inteiro, terminaria a tag que embute esta fonte
+    var fim = '</scr' + 'ipt>';
+    var m = html.match(new RegExp(nome + '\\s*=\\s*(\\{.+?\\})\\s*;\\s*(?:var |window\\.|' + fim + ')'));
+    if (!m) m = html.match(new RegExp(nome + '\\s*=\\s*(\\{.+?\\})\\s*;'));
     if (m) { try { return JSON.parse(m[1]); } catch (e) {} }
     return null;
   }
 
-  /* Preferir português, e dentro dele a legenda escrita à mão: a automática
-     erra nomes de peixe («roubalo» por robalo). */
+  function respostaDoPlayer() {
+    var p = window.ytInitialPlayerResponse;
+    return (p && p.videoDetails) ? p : doHtml('ytInitialPlayerResponse');
+  }
+
+  function dadosDaPagina() { return window.ytInitialData || doHtml('ytInitialData'); }
+
+  /* A configuração da própria página é o que deixa chamar a API interna sem
+     inventar chave nenhuma: reutiliza-se o contexto que o YouTube já montou. */
+  function config() {
+    var chave = null, ctx = null;
+    try {
+      if (window.ytcfg && window.ytcfg.get) {
+        chave = window.ytcfg.get('INNERTUBE_API_KEY');
+        ctx = window.ytcfg.get('INNERTUBE_CONTEXT');
+      }
+    } catch (e) {}
+    if (!chave) {
+      var m = document.documentElement.innerHTML.match(/"INNERTUBE_API_KEY":"([^"]+)"/);
+      if (m) chave = m[1];
+    }
+    if (!ctx) {
+      var c = document.documentElement.innerHTML.match(/"INNERTUBE_CONTEXT":(\{.+?\}),"INNERTUBE_CONTEXT_CLIENT_NAME"/);
+      if (c) { try { ctx = JSON.parse(c[1]); } catch (e) {} }
+    }
+    return { chave: chave, ctx: ctx || { client: { clientName: 'WEB', clientVersion: '2.0' } } };
+  }
+
+  function api(endpoint, corpo) {
+    var cfg = config();
+    return fetch('/youtubei/v1/' + endpoint + (cfg.chave ? '?key=' + cfg.chave : ''), {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(Object.assign({ context: cfg.ctx }, corpo))
+    }).then(function (r) {
+      if (!r.ok) throw new Error('a API do YouTube respondeu ' + r.status);
+      return r.json();
+    });
+  }
+
+  /* ---------- legenda de um vídeo ---------- */
+
   function escolher(faixas, idioma) {
     var alvo = (idioma || 'pt').toLowerCase();
     var doIdioma = faixas.filter(function (f) {
@@ -2669,61 +2805,179 @@ var ReadZip = (function () {
         || faixas[0];
   }
 
-  function nomeDoFicheiro(det, faixa) {
-    var base = String(det.title || 'transcricao')
-      .normalize('NFD').replace(/[̀-ͯ]/g, '')
-      .replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-      .toLowerCase().slice(0, 60) || 'transcricao';
-    return base + ' [' + det.videoId + '].' + (faixa.languageCode || 'pt') + '.json3';
+  function legendaDe(pr) {
+    var faixas = (pr && pr.captions && pr.captions.playerCaptionsTracklistRenderer
+                  && pr.captions.playerCaptionsTracklistRenderer.captionTracks) || [];
+    if (!faixas.length) return Promise.reject(new Error('sem legenda publicada'));
+    var faixa = escolher(faixas, 'pt');
+    var u = new URL(faixa.baseUrl, location.origin);
+    u.searchParams.set('fmt', 'json3');     // o formato que o conversor lê melhor
+    return fetch(u.toString(), { credentials: 'same-origin' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('a legenda respondeu ' + r.status);
+        return r.text();
+      })
+      .then(function (texto) {
+        if (!texto.trim()) throw new Error('a legenda veio vazia');
+        return { texto: texto, faixa: faixa };
+      });
   }
 
-  var pr = respostaDoPlayer();
-  if (!pr || !pr.videoDetails) {
-    aviso('Abra um vídeo do YouTube e clique de novo neste atalho.', true);
-    return;
+  /* ---------- vídeos de uma playlist ---------- */
+
+  function colher(no, saida, vistos) {
+    if (!no || typeof no !== 'object') return saida;
+    if (Array.isArray(no)) { no.forEach(function (x) { colher(x, saida, vistos); }); return saida; }
+    var r = no.playlistVideoRenderer;
+    if (r && r.videoId && !vistos[r.videoId]) {
+      vistos[r.videoId] = 1;
+      saida.push({
+        videoId: r.videoId,
+        titulo: (r.title && (r.title.simpleText || (r.title.runs && r.title.runs[0] && r.title.runs[0].text))) || '',
+        duracao: r.lengthSeconds ? Number(r.lengthSeconds) : null
+      });
+    }
+    for (var k in no) colher(no[k], saida, vistos);
+    return saida;
   }
-  var faixas = (pr.captions && pr.captions.playerCaptionsTracklistRenderer
-                && pr.captions.playerCaptionsTracklistRenderer.captionTracks) || [];
-  if (!faixas.length) {
-    aviso('Este vídeo não tem legenda publicada — não há transcrição para tirar.', true);
-    return;
+
+  function token(o) {
+    var m = JSON.stringify(o).match(/"continuationCommand":\{"token":"([^"]+)"/);
+    return m ? m[1] : null;
   }
 
-  var faixa = escolher(faixas, 'pt');
-  var u = new URL(faixa.baseUrl);
-  u.searchParams.set('fmt', 'json3');          // o formato que o conversor lê melhor
-  aviso('A buscar a legenda (' + (faixa.languageCode || '?')
-        + (faixa.kind === 'asr' ? ', automática' : '') + ')…');
+  function listaDaPlaylist(dados) {
+    var vistos = {}, videos = colher(dados, [], vistos);
+    var seguinte = token(dados), voltas = 0;
 
-  fetch(u.toString(), { credentials: 'same-origin' })
-    .then(function (r) {
-      if (!r.ok) throw new Error('o YouTube respondeu ' + r.status);
-      return r.text();
-    })
-    .then(function (texto) {
-      if (!texto.trim()) throw new Error('veio vazia');
-      var nome = nomeDoFicheiro(pr.videoDetails, faixa);
+    function mais() {
+      if (!seguinte || videos.length >= MAX_VIDEOS || voltas >= 8) return Promise.resolve(videos);
+      voltas++;
+      return api('browse', { continuation: seguinte }).then(function (j) {
+        var antes = videos.length;
+        colher(j, videos, vistos);
+        if (videos.length === antes) return videos;
+        seguinte = token(j);
+        aviso('A ler a playlist… ' + videos.length + ' vídeos');
+        return mais();
+      }).catch(function () { return videos; });   // parou de dar: fica o que já há
+    }
+    return mais();
+  }
 
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([texto], { type: 'application/json' }));
-      a.download = nome;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  /* ---------- os dois caminhos ---------- */
 
-      // copiar também: quem preferir colar não precisa de procurar o ficheiro
+  function umVideo(pr) {
+    aviso('A buscar a legenda…');
+    return legendaDe(pr).then(function (r) {
+      var d = pr.videoDetails;
+      var nome = limpo(d.title) + ' [' + d.videoId + '].' + (r.faixa.languageCode || 'pt') + '.json3';
+      guardar(nome, r.texto);
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(texto).then(function () {
+        return navigator.clipboard.writeText(r.texto).then(function () {
           aviso('Pronto. Ficheiro guardado e legenda copiada — largue no PDF → IA ou cole lá.');
         }, function () {
           aviso('Pronto: ' + nome + ' guardado nos downloads. Largue-o no PDF → IA.');
         });
-      } else {
-        aviso('Pronto: ' + nome + ' guardado nos downloads. Largue-o no PDF → IA.');
       }
-    })
-    .catch(function (e) {
-      aviso('Não deu para tirar a legenda: ' + (e && e.message || 'erro desconhecido'), true);
+      aviso('Pronto: ' + nome + ' guardado nos downloads. Largue-o no PDF → IA.');
     });
+  }
+
+  function playlistInteira(dados, idLista) {
+    var titulo = '';
+    try {
+      titulo = (dados.header && dados.header.playlistHeaderRenderer
+                && dados.header.playlistHeaderRenderer.title
+                && dados.header.playlistHeaderRenderer.title.simpleText) || '';
+    } catch (e) {}
+
+    return listaDaPlaylist(dados).then(function (videos) {
+      if (!videos.length) throw new Error('não encontrei vídeos nesta playlist');
+      if (videos.length > MAX_VIDEOS) videos = videos.slice(0, MAX_VIDEOS);
+
+      if (!confirm('Esta playlist tem ' + videos.length + ' vídeo(s).\n\n'
+                 + 'Vou buscar a legenda de cada um, um de cada vez — leva cerca de '
+                 + Math.ceil(videos.length * 1.2 / 60) + ' minuto(s).\n\nContinuar?')) {
+        throw new Error('cancelado por si');
+      }
+
+      var caixa = aviso('A começar…', 'fica');
+      var saida = [], falhas = [];
+
+      /* Em série e com pausa: em paralelo o YouTube corta com 429 e perde-se a
+         playlist inteira em vez de um vídeo. */
+      function passo(i) {
+        if (i >= videos.length) return Promise.resolve();
+        var v = videos[i];
+        caixa.textContent = 'Vídeo ' + (i + 1) + ' de ' + videos.length
+          + (saida.length ? ' · ' + saida.length + ' ok' : '')
+          + (falhas.length ? ' · ' + falhas.length + ' sem legenda' : '');
+        return api('player', { videoId: v.videoId })
+          .then(function (pr) {
+            return legendaDe(pr).then(function (r) {
+              var d = pr.videoDetails || {};
+              saida.push({
+                videoId: v.videoId,
+                titulo: d.title || v.titulo || '',
+                canal: d.author || '',
+                duracao: d.lengthSeconds ? Number(d.lengthSeconds) : v.duracao,
+                idioma: r.faixa.languageCode || '',
+                automatica: r.faixa.kind === 'asr',
+                formato: 'json3',
+                legenda: r.texto
+              });
+            });
+          })
+          .catch(function (e) { falhas.push((v.titulo || v.videoId) + ': ' + (e && e.message || 'erro')); })
+          .then(function () {
+            return new Promise(function (r) { setTimeout(r, PAUSA_MS); }).then(function () { return passo(i + 1); });
+          });
+      }
+
+      return passo(0).then(function () {
+        if (caixa.parentNode) caixa.remove();
+        if (!saida.length) throw new Error('nenhum dos vídeos tinha legenda');
+        var lote = { tipo: 'lote', playlist: idLista || '', titulo: titulo, videos: saida };
+        var nome = (limpo(titulo || 'playlist', 40) || 'playlist') + '-' + saida.length + '-videos.lote.json';
+        guardar(nome, JSON.stringify(lote));
+        aviso(saida.length + ' legenda(s) num ficheiro só: ' + nome
+              + (falhas.length ? ' · ' + falhas.length + ' sem legenda' : '')
+              + '. Largue-o no PDF → IA.');
+      });
+    });
+  }
+
+  /* ---------- decidir onde estamos ---------- */
+
+  var idLista = (location.search.match(/[?&]list=([A-Za-z0-9_-]{12,})/) || [])[1] || '';
+  var pr = respostaDoPlayer();
+  var naPlaylist = /\/playlist/.test(location.pathname);
+
+  var trabalho;
+  if (pr && pr.videoDetails && !naPlaylist) {
+    // a ver um vídeo: se ele está dentro de uma playlist, perguntar qual dos dois
+    if (idLista && confirm('Este vídeo está numa playlist.\n\nOK = pegar a playlist inteira\n'
+                         + 'Cancelar = pegar só este vídeo')) {
+      trabalho = api('browse', { browseId: 'VL' + idLista })
+        .then(function (j) { return playlistInteira(j, idLista); });
+    } else {
+      trabalho = umVideo(pr);
+    }
+  } else if (naPlaylist || idLista) {
+    var dados = dadosDaPagina();
+    if (!dados) { aviso('Não consegui ler esta playlist. Recarregue a página e tente outra vez.', true); return; }
+    trabalho = playlistInteira(dados, idLista);
+  } else {
+    aviso('Abra um vídeo ou uma playlist do YouTube e clique de novo neste atalho.', true);
+    return;
+  }
+
+  trabalho.catch(function (e) {
+    var caixa = document.getElementById('pdfia-aviso');
+    if (caixa) caixa.remove();
+    aviso('Não deu: ' + (e && e.message || 'erro desconhecido'), true);
+  });
 })();
 </script>
 
@@ -3748,6 +4002,48 @@ var Tubo = (function () {
     return partes.join('\n\n').replace(/\n{4,}/g, '\n\n\n').trim() + '\n';
   }
 
+  /* Texto puro. Serve quando o destino é uma IA e cada token conta: sem YAML,
+     sem cabeçalhos, sem links de markdown — só o que se lê. As etiquetas, se
+     ligadas, vão numa linha compacta em vez de seis secções. */
+  function texto(meta, limpo, tags, opts, P) {
+    opts = opts || {};
+    var l = [];
+    if (meta.titulo) l.push(meta.titulo);
+    var cab = [];
+    if (meta.canal) cab.push(meta.canal);
+    // sozinha, a duração numa linha só lê-se como um tempo perdido no meio do texto
+    if (meta.duracao) cab.push(cab.length || meta.url ? meta.duracao : 'duração ' + meta.duracao);
+    if (meta.url) cab.push(meta.url);
+    if (cab.length) l.push(cab.join(' · '));
+
+    if (opts.seccoes !== false || opts.frontMatter !== false) {
+      var linhas = [];
+      Object.keys(P.ROTULOS).forEach(function (g) {
+        var itens = tags[g];
+        if (itens && itens.length) {
+          linhas.push(P.ROTULOS[g] + ': ' + itens.map(function (i) { return i.termo; }).join(', '));
+        }
+      });
+      linhas.push('Dificuldade: ' + tags.dificuldade);
+      if (linhas.length) l.push('', linhas.join('\n'));
+    }
+
+    l.push('', limpo.paragrafos.map(function (p) {
+      return (opts.marcarTempo && p.ini != null ? '[' + hms(p.ini) + '] ' : '') + p.texto;
+    }).join('\n\n'));
+
+    if (opts.auditoria) {
+      var r = limpo.relatorio;
+      l.push('', '--- o que foi retirado ---',
+        'palavras na legenda: ' + r.palavrasBrutas,
+        'repetidas pela legenda automática: ' + r.repetidas,
+        'vícios de linguagem: ' + r.muletas,
+        'frases de canal/patrocínio: ' + r.ctaRemovidas.length,
+        'palavras no texto final: ' + r.palavrasFinais);
+    }
+    return l.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';
+  }
+
   function hms(s) {
     s = Math.max(0, Math.floor(s || 0));
     var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = s % 60;
@@ -3755,19 +4051,19 @@ var Tubo = (function () {
   }
 
   /* Nome de ficheiro previsível: o app do outro lado vai importar por nome. */
-  function nomeArquivo(meta) {
+  function nomeArquivo(meta, ext) {
     var base = (meta.titulo || meta.videoId || 'transcricao')
       .normalize('NFD').replace(/[̀-ͯ]/g, '')
       .replace(/[^A-Za-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '').toLowerCase().slice(0, 60) || 'transcricao';
-    return base + (meta.videoId ? '-' + meta.videoId : '') + '.md';
+    return base + (meta.videoId ? '-' + meta.videoId : '') + (ext || '.md');
   }
 
   return {
     idDoVideo: idDoVideo, idDaLista: idDaLista, ehPlaylist: ehPlaylist,
     urlDoVideo: urlDoVideo, urlDaLista: urlDaLista, acharEnderecos: acharEnderecos,
     repetidor: repetidor, guardarRepetidor: guardarRepetidor, viaRepetidor: viaRepetidor,
-    buscar: buscar, markdown: markdown, nomeArquivo: nomeArquivo, hms: hms
+    buscar: buscar, markdown: markdown, texto: texto, nomeArquivo: nomeArquivo, hms: hms
   };
 })();
 </script>
@@ -5040,8 +5336,8 @@ var Tubo = (function () {
     var btn = $('ytConverter');
     btn.disabled = prontos === 0 || ytARodar;
     btn.textContent = prontos
-      ? 'Converter ' + prontos + ' em Markdown'
-      : 'Falta colar a transcrição';
+      ? 'Converter ' + prontos + ' em ' + (formatoYT() === 'txt' ? '.txt' : '.md')
+      : 'Traga o arquivo do atalho (passo 3)';
 
     var tudo = $('ytBuscarTudo');
     var buscaveis = ytLote.filter(function (i) {
@@ -5099,34 +5395,151 @@ var Tubo = (function () {
     return novos;
   }
 
+  /* ---------- telemóvel ou computador ----------
+     No telemóvel não há barra de favoritos, e arrastar não existe: empurrar o
+     atalho como caminho principal ali foi o erro que fez alguém carregar no
+     botão amarelo e receber «isto é para arrastar». Então o aparelho decide
+     qual dos dois conjuntos de passos aparece. */
+  function noTelemovel() {
+    try {
+      if (window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches) return false;
+    } catch (e) {}
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')
+        || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  }
+
   (function () {
-    var campo = $('ytUrl'), add = $('ytAdd'), colar = $('ytColar');
+    var cel = $('passosCel'), pc = $('passosPc');
+    if (!cel || !pc) return;
+    var movel = noTelemovel();
+    cel.hidden = !movel;
+    pc.hidden = movel;
+
+    if (movel) {
+      // a caixa de colar deixa de estar escondida em «outras formas» e sobe
+      // para o passo 2, que no telemóvel é o caminho que funciona
+      var destino = $('celCola'), rot = $('ytCola');
+      if (destino && rot) {
+        var linha = rot.nextElementSibling;      // os botões «Usar» e «Limpar»
+        destino.appendChild(rot);
+        if (linha) destino.appendChild(linha);
+      }
+      var t3 = $('tit3');
+      if (t3) t3.textContent = 'Escolha o formato e converta';
+      var dz = $('ytDz');
+      if (dz) {
+        var sub = dz.querySelector('.tile-sub');
+        if (sub) sub.textContent = 'Só se você já tiver o arquivo da legenda guardado';
+        dz.style.opacity = '.75';
+      }
+      // o atalho continua disponível, mas fora do caminho principal
+      var det = document.querySelector('.yt-outras');
+      if (det) {
+        var res = document.createElement('div');
+        res.className = 'yt-outras-corpo';
+        res.style.borderTop = '1.5px solid var(--line)';
+        res.innerHTML = '<p class="passo-nota" style="margin-top:0"><b>No computador</b> há um '
+          + 'atalho que baixa a legenda com um clique, sem copiar e colar. Abra este site '
+          + 'no computador para o instalar.</p>';
+        det.appendChild(res);
+      }
+    }
+  })();
+
+  /* Campo de link do telemóvel: abre o vídeo, tal como no computador. */
+  (function () {
+    var campo = $('ytUrlCel'), abrir = $('ytAbrirCel');
+    if (!campo || !abrir) return;
+    function irPara() {
+      var v = campo.value.trim();
+      if (!v) { aviso('Cole o link do vídeo primeiro', '', true); campo.focus(); return; }
+      var achados = Tubo.acharEnderecos(v);
+      if (!achados.length) { aviso('Não reconheci um link do YouTube', '', true); return; }
+      window.open(achados[0].url, '_blank', 'noopener');
+      aviso('Vídeo aberto', 'Toque na descrição, procure «Mostrar transcrição», copie tudo e volte.');
+    }
+    abrir.addEventListener('click', irPara);
+    campo.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); irPara(); } });
+  })();
+
+  /* Passo 2: o campo de link abre o vídeo. É a única coisa que ele pode fazer
+     de útil — a página não consegue baixar a legenda, e um campo que aceita o
+     link e não faz nada foi exatamente o que confundiu quem usou. */
+  (function () {
+    var campo = $('ytUrl'), abrir = $('ytAbrir'), colar = $('ytColar');
     if (!campo) return;
 
-    function submeter() {
+    function irPara() {
       var v = campo.value.trim();
-      if (!v) return;
-      var n = adicionarEnderecos(v);
-      if (n) { campo.value = ''; aviso(n + ' vídeo(s) na lista', 'Agora cole a transcrição de cada um.'); }
-      else aviso('Nenhum link do YouTube reconhecido',
-                 'Aceita youtu.be, /watch?v=, /shorts/, /live/ e /playlist?list=.', true);
+      if (!v) { aviso('Cole o link do vídeo primeiro', '', true); campo.focus(); return; }
+      var achados = Tubo.acharEnderecos(v);
+      if (!achados.length) {
+        aviso('Não reconheci um link do YouTube',
+              'Aceita youtu.be, /watch?v=, /shorts/, /live/ e /playlist?list=.', true);
+        return;
+      }
+      window.open(achados[0].url, '_blank', 'noopener');
+      aviso('Vídeo aberto noutro separador',
+            'Lá, clique no favorito «🎣 Pegar do YouTube» e volte com o ficheiro.');
     }
-    add.addEventListener('click', submeter);
-    campo.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); submeter(); } });
+    abrir.addEventListener('click', irPara);
+    campo.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); irPara(); } });
 
     colar.addEventListener('click', async function () {
       try {
         var t = await navigator.clipboard.readText();
-        if (!t) throw new Error('vazio');
+        if (!t || !t.trim()) throw new Error('vazio');
         campo.value = t.trim().split('\n')[0].trim();
-        if (!adicionarEnderecos(t)) aviso('Nada reconhecido no que estava copiado', '', true);
-        else campo.value = '';
+        campo.focus();
       } catch (e) {
         aviso('O navegador não deixou ler a área de transferência',
-              'Cole no campo com Ctrl+V e carregue em Adicionar.', true);
+              'Cole no campo com Ctrl+V.', true);
         campo.focus();
       }
     });
+  })();
+
+  /* «Outras formas»: pôr o vídeo na lista à espera da legenda, que é o que o
+     repetidor depois preenche. */
+  (function () {
+    var campo = $('ytUrl2'), add = $('ytAdd');
+    if (!campo || !add) return;
+    function submeter() {
+      var v = campo.value.trim();
+      if (!v) return;
+      var n = adicionarEnderecos(v);
+      if (n) {
+        campo.value = '';
+        aviso(n + ' vídeo(s) na lista',
+              Tubo.repetidor() ? 'Use «Buscar todas pelo repetidor».' : 'Falta a legenda de cada um.');
+      } else {
+        aviso('Nenhum link do YouTube reconhecido',
+              'Aceita youtu.be, /watch?v=, /shorts/, /live/ e /playlist?list=.', true);
+      }
+    }
+    add.addEventListener('click', submeter);
+    campo.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); submeter(); } });
+  })();
+
+  /* Formato de saída do separador. .txt é o padrão porque o destino habitual é
+     alimentar outra IA, e aí cada token conta. */
+  function formatoYT() {
+    var r = document.querySelector('input[name=ytFmt]:checked');
+    return r ? r.value : 'txt';
+  }
+  (function () {
+    Array.prototype.forEach.call(document.querySelectorAll('input[name=ytFmt]'), function (el) {
+      el.addEventListener('change', function () {
+        try { localStorage.setItem('pdfia.ytfmt', formatoYT()); } catch (e) {}
+        desenharLote();
+      });
+    });
+    var guardado = null;
+    try { guardado = localStorage.getItem('pdfia.ytfmt'); } catch (e) {}
+    if (guardado) {
+      var r = document.querySelector('input[name=ytFmt][value="' + guardado + '"]');
+      if (r) r.checked = true;
+    }
   })();
 
   (function () {
@@ -5163,20 +5576,47 @@ var Tubo = (function () {
 
     async function receber(lista) {
       var arquivos = Array.prototype.slice.call(lista).filter(function (f) {
-        return /\.(srt|vtt|json3|srv3|ttml|xml|txt|sbv)$/i.test(f.name);
+        return /\.(srt|vtt|json3|srv3|ttml|xml|txt|sbv|json)$/i.test(f.name);
       });
       if (!arquivos.length) {
         aviso('Nenhum arquivo de legenda no que você escolheu',
-              'Aceita .srt, .vtt, .json3, .srv3, .ttml, .xml, .sbv e .txt.', true);
+              'Aceita .srt, .vtt, .json3, .srv3, .ttml, .xml, .sbv, .txt e o .lote.json do atalho.', true);
         return;
       }
       arquivos.sort(function (a, b) {
         return a.name.localeCompare(b.name, 'pt', { numeric: true, sensitivity: 'base' });
       });
+      var entraram = 0;
       for (var i = 0; i < arquivos.length; i++) {
         var f = arquivos[i];
         var texto = await f.text();
         if (!texto.trim()) continue;
+
+        /* O atalho «Pegar do YouTube» junta uma playlist inteira num ficheiro
+           só: são muitos vídeos, e um download por vídeo o navegador bloqueia
+           ao terceiro. Aqui volta a abrir-se em itens separados. */
+        var lote = null;
+        if (/^\s*\{/.test(texto)) {
+          try {
+            var j = JSON.parse(texto);
+            if (j && j.tipo === 'lote' && Array.isArray(j.videos)) lote = j;
+          } catch (e) {}
+        }
+        if (lote) {
+          lote.videos.forEach(function (v) {
+            if (!v || !v.legenda) return;
+            novoItem({
+              legenda: v.legenda, origem: 'playlist',
+              videoId: v.videoId || '', url: v.videoId ? Tubo.urlDoVideo(v.videoId) : '',
+              titulo: v.titulo || '', canal: v.canal || '',
+              duracao: v.duracao == null ? null : v.duracao,
+              playlist: lote.playlist || ''
+            });
+            entraram++;
+          });
+          continue;
+        }
+
         // muito extrator grava o id do vídeo no nome do ficheiro
         var base = f.name.replace(/\.[^.]+$/, '');
         var id = Tubo.idDoVideo(base) || (base.match(/\[([A-Za-z0-9_-]{11})\]/) || [])[1] || null;
@@ -5185,9 +5625,10 @@ var Tubo = (function () {
           videoId: id, url: id ? Tubo.urlDoVideo(id) : '',
           titulo: tituloDoNome(base)
         });
+        entraram++;
       }
       desenharLote();
-      aviso(arquivos.length + ' legenda(s) na lista', 'Prontas para converter.');
+      aviso(entraram + ' legenda(s) na lista', 'Prontas para converter.');
     }
 
     input.addEventListener('change', function () { receber(input.files); input.value = ''; });
@@ -5273,13 +5714,17 @@ var Tubo = (function () {
       playlist: it.playlist || '', duracao: dur != null ? Tubo.hms(dur) : ''
     };
 
-    var md = Tubo.markdown(meta, limpo, tags, {
+    var op = {
       marcarTempo: pro.proTempo, auditoria: pro.proAuditoria,
       seccoes: pro.proSeccoes, frontMatter: pro.proFront
-    }, Pescaria);
+    };
+    var ehTxt = formatoYT() === 'txt';
+    var md = ehTxt ? Tubo.texto(meta, limpo, tags, op, Pescaria)
+                   : Tubo.markdown(meta, limpo, tags, op, Pescaria);
 
     return { md: md, meta: meta, tags: tags, relatorio: limpo.relatorio,
-             nome: Tubo.nomeArquivo(meta), formato: lido.formato };
+             ext: ehTxt ? '.txt' : '.md',
+             nome: Tubo.nomeArquivo(meta, ehTxt ? '.txt' : '.md'), formato: lido.formato };
   }
 
   function cartaoVideo(r) {
@@ -5332,13 +5777,16 @@ var Tubo = (function () {
     } else { pre.textContent = r.md; el.appendChild(pre); }
 
     var actions = document.createElement('div'); actions.className = 'actions';
-    var base = r.nome.replace(/\.md$/, '');
-    var blocos = dividirEmBlocos(r.md, blocoAlvoAtual(), base, '.md');
+    var base = r.nome.replace(/\.(md|txt)$/, '');
+    var blocos = dividirEmBlocos(r.md, blocoAlvoAtual(), base, r.ext);
 
     var dl = document.createElement('button');
     dl.textContent = blocos ? ('Baixar ' + blocos.length + ' blocos (.zip)') : ('Baixar ' + r.nome);
     dl.addEventListener('click', async function () {
-      if (!blocos) { download(r.nome, r.md, 'text/markdown;charset=utf-8'); return; }
+      if (!blocos) {
+        download(r.nome, r.md, r.ext === '.txt' ? 'text/plain;charset=utf-8' : 'text/markdown;charset=utf-8');
+        return;
+      }
       var rot = dl.textContent; dl.disabled = true; dl.textContent = 'A compactar…';
       try {
         var blob = await MakeZip.makeZip(blocos);
@@ -5347,16 +5795,17 @@ var Tubo = (function () {
       dl.textContent = rot; dl.disabled = false;
     });
 
-    var cp = document.createElement('button'); cp.className = 'ghost'; cp.textContent = 'Copiar Markdown';
+    var rotuloCopiar = r.ext === '.txt' ? 'Copiar texto' : 'Copiar Markdown';
+    var cp = document.createElement('button'); cp.className = 'ghost'; cp.textContent = rotuloCopiar;
     cp.addEventListener('click', function () {
       copyText(r.md).then(function () {
         cp.textContent = 'Copiado';
-        setTimeout(function () { cp.textContent = 'Copiar Markdown'; }, 1600);
-        aviso('Markdown copiado: ' + r.nome, fmtNum(r.md.length) + ' caracteres');
+        setTimeout(function () { cp.textContent = rotuloCopiar; }, 1600);
+        aviso('Copiado: ' + r.nome, fmtNum(r.md.length) + ' caracteres');
       }, function () {
         var deu = selectPreview(pre);
         cp.textContent = deu ? 'Selecionado — carregue Ctrl+C' : 'O navegador bloqueou a cópia';
-        setTimeout(function () { cp.textContent = 'Copiar Markdown'; }, 4000);
+        setTimeout(function () { cp.textContent = rotuloCopiar; }, 4000);
       });
     });
 
@@ -5369,7 +5818,7 @@ var Tubo = (function () {
     if (ytResultados.length < 2) { bar.hidden = true; return; }
     var chars = ytResultados.reduce(function (n, r) { return n + r.text.length; }, 0);
     $('ytBatchCount').textContent =
-      ytResultados.length + ' ficheiros convertidos · ' + fmtBytesShort(chars) + ' de Markdown';
+      ytResultados.length + ' ficheiros convertidos · ' + fmtBytesShort(chars) + ' de texto';
     bar.hidden = false;
   }
 
@@ -5411,10 +5860,10 @@ var Tubo = (function () {
     var b = this; if (!ytResultados.length) return;
     var rot = b.textContent; b.disabled = true; b.textContent = 'A compactar…';
     try {
-      var alvo = blocoAlvoAtual(), paraZip = [];
+      var alvo = blocoAlvoAtual(), ext = formatoYT() === 'txt' ? '.txt' : '.md', paraZip = [];
       ytResultados.forEach(function (r) {
-        var base = r.name.replace(/\.md$/, '');
-        var partes = dividirEmBlocos(r.text, alvo, base, '.md');
+        var base = r.name.replace(/\.(md|txt)$/, '');
+        var partes = dividirEmBlocos(r.text, alvo, base, ext);
         if (partes) paraZip = paraZip.concat(partes); else paraZip.push(r);
       });
       var blob = await MakeZip.makeZip(paraZip, function (feito, total) {
@@ -5441,8 +5890,13 @@ var Tubo = (function () {
       ' vídeos · gerado em ' + new Date().toISOString().slice(0, 10) + '_\n\n';
     juntos = cabeca + juntos;
 
-    var partes = dividirEmBlocos(juntos, blocoAlvoAtual(), 'playlist', '.md');
-    if (!partes) { download('playlist.md', juntos, 'text/markdown;charset=utf-8'); return; }
+    var ext = formatoYT() === 'txt' ? '.txt' : '.md';
+    var partes = dividirEmBlocos(juntos, blocoAlvoAtual(), 'playlist', ext);
+    if (!partes) {
+      download('playlist' + ext, juntos,
+               ext === '.txt' ? 'text/plain;charset=utf-8' : 'text/markdown;charset=utf-8');
+      return;
+    }
     var b = this, rot = b.textContent; b.disabled = true; b.textContent = 'A compactar…';
     try {
       var blob = await MakeZip.makeZip(partes);
