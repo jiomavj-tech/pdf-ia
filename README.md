@@ -11,7 +11,7 @@ Três separadores:
 | Separador | O que faz |
 |---|---|
 | **PDF** | Um ou muitos PDFs, uma pasta ou um `.zip` viram `.txt` ou `.md` |
-| **YouTube** | Legenda de vídeo ou de playlist vira Markdown limpo e etiquetado |
+| **YouTube** | Legenda de vídeo ou de playlist vira Markdown limpo e etiquetado, com um atalho que a vai buscar |
 | **Nível profissional** | Regula a limpeza da fala e a estruturação da saída |
 
 ## Para que serve
@@ -78,6 +78,27 @@ inteira de uma vez.
 Cada vídeo sai num `.md` próprio, com nome previsível (`titulo-do-video-ID.md`). Vários
 saem num `.zip`, ou juntos num ficheiro só — e aí os cabeçalhos YAML de cada um dão lugar
 a secções, porque num ficheiro só o primeiro cabeçalho seria lido.
+
+### O atalho «Pegar do YouTube» — o caminho sem instalar nada
+
+No separador do YouTube há um botão amarelo para arrastar até à barra de favoritos. Depois,
+em qualquer vídeo, um clique nesse favorito guarda a legenda num ficheiro e copia-a.
+
+É o caminho recomendado, e resolve os dois problemas de uma vez. O conversor não pode falar
+com o YouTube por causa do CORS; um repetidor em servidor pode, mas apanha «faça login para
+confirmar que você não é um bot» porque vem de datacenter. O atalho corre **dentro da página
+do vídeo**: está na origem `youtube.com`, por isso não há CORS pelo meio, e leva a sessão de
+quem está a ver, que é precisamente o que falta ao servidor.
+
+O ficheiro sai com o identificador no nome (`… [bdh0XH21QBs].pt.json3`), e é daí que o
+conversor tira sozinho o endereço do vídeo e os carimbos de tempo clicáveis.
+
+A fonte do atalho é [`repetidor/bookmarklet.js`](repetidor/bookmarklet.js). A página não
+guarda uma cópia minificada: monta o endereço do favorito a partir dessa mesma fonte, para
+não haver duas versões a divergir.
+
+No telemóvel dá mais trabalho — não há barra de favoritos, e é preciso criar o favorito à
+mão e colar o endereço.
 
 ### Colar a legenda, ou deixar o repetidor buscá-la
 
@@ -202,8 +223,9 @@ com 0,2% de caracteres sem tradução.
 - **PDFs com palavra-passe a sério** continuam a precisar de ser abertos e gravados sem
   proteção antes. O mesmo para **AES-256**, que ainda não está implementado — em ambos os
   casos o app diz qual é o caso, em vez de devolver texto errado.
-- **Sem repetidor, a legenda tem de ser colada ou trazida em ficheiro**, e um endereço de
-  playlist não se expande sozinho. O navegador não consegue buscar nada — ver acima.
+- **A legenda tem de entrar por uma das três portas**: o atalho «Pegar do YouTube», um
+  ficheiro largado na página, ou colada à mão. A página, sozinha, não consegue buscar nada.
+  Expandir um endereço de playlist em vídeos continua a exigir o repetidor.
 - **Com repetidor, o YouTube recusa parte dos pedidos** por virem de datacenter. Não há
   volta a dar do lado do código; há mitigação (vários clientes, cache, cookie opcional) e
   há a saída de o correr em casa.
