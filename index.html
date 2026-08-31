@@ -250,6 +250,116 @@
   @keyframes aviso-entra{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){.aviso{animation:none}}
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+  /* ===================== separadores ===================== */
+  .abas{display:flex;gap:0;margin:0 0 -2px;padding:0;list-style:none;
+        border-bottom:2px solid var(--ink);flex-wrap:wrap}
+  .aba{appearance:none;background:var(--canvas);color:var(--muted);
+       border:2px solid var(--line);border-bottom:none;border-radius:3px 3px 0 0;
+       font-family:var(--sans);font-size:14px;font-weight:700;letter-spacing:-.01em;
+       padding:10px 16px;margin-right:6px;cursor:pointer;position:relative;top:2px;
+       display:inline-flex;align-items:center;gap:7px;transition:background .12s ease}
+  .aba:hover{background:var(--sheet);color:var(--ink)}
+  .aba[aria-selected=true]{background:var(--sheet);color:var(--ink);
+       border-color:var(--ink);top:0;padding-bottom:12px}
+  .aba[aria-selected=true]::after{content:"";position:absolute;left:0;right:0;bottom:-2px;
+       height:3px;background:var(--sheet)}
+  .aba svg{flex:none}
+  .aba .selo{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
+       text-transform:uppercase;background:var(--mark);color:var(--ink);
+       border:1px solid var(--ink);border-radius:2px;padding:1px 5px}
+  .painel[hidden]{display:none}
+  .painel{padding-top:26px}
+
+  /* ===================== painel do YouTube ===================== */
+  .yt-topo{background:var(--sheet);border:2px solid var(--ink);border-radius:2px;
+           box-shadow:5px 5px 0 var(--ink);padding:18px 18px 16px}
+  .yt-rotulo{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;
+             text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .yt-linha{display:flex;gap:10px;flex-wrap:wrap}
+  .yt-linha input[type=url],.yt-linha input[type=text]{flex:1 1 260px;min-width:0;
+    font-family:var(--mono);font-size:13.5px;padding:11px 12px;
+    border:1.5px solid var(--line);border-radius:2px;background:var(--canvas);color:var(--ink)}
+  .yt-linha input:focus{outline:none;border-color:var(--ink);background:var(--sheet)}
+  .yt-linha button{flex:none}
+  .yt-ajuda{margin:10px 0 0;font-size:12.5px;color:var(--muted);line-height:1.5}
+  .yt-ajuda b{color:var(--ink);font-weight:600}
+
+  .yt-passos{margin:16px 0 0;padding:14px 16px;background:var(--canvas);
+             border:1.5px dashed var(--line);border-radius:2px}
+  .yt-passos ol{margin:8px 0 0;padding-left:20px;font-size:13.5px;line-height:1.65}
+  .yt-passos li{margin-bottom:4px}
+  .yt-passos .titulo{font-weight:700;font-size:13.5px}
+
+  textarea.yt-cola{width:100%;min-height:150px;resize:vertical;
+    font-family:var(--mono);font-size:12.5px;line-height:1.5;padding:12px;
+    border:1.5px solid var(--line);border-radius:2px;background:var(--canvas);color:var(--ink)}
+  textarea.yt-cola:focus{outline:none;border-color:var(--ink);background:var(--sheet)}
+
+  .yt-tile{position:relative;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;text-align:center;padding:22px 18px;border-radius:2px;
+    background:var(--sheet);border:2px dashed var(--line);cursor:pointer;margin-top:14px}
+  .yt-tile:hover,.yt-tile.dragging{border-color:var(--ink);border-style:solid}
+  .yt-tile input{position:absolute;opacity:0;width:1px;height:1px}
+  .yt-tile:focus-within{outline:3px solid var(--ink);outline-offset:3px}
+
+  .yt-lote{margin-top:18px}
+  .yt-item{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;background:var(--sheet);
+    border:1.5px solid var(--line);border-radius:2px;margin-bottom:8px}
+  .yt-item.pronto{border-color:var(--ink)}
+  .yt-item.falta{border-color:var(--warn);background:#FFF6EC}
+  .yt-item-num{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:18px;
+    padding-top:2px}
+  .yt-item-corpo{flex:1;min-width:0}
+  .yt-item-tit{font-weight:600;font-size:14px;word-break:break-word}
+  .yt-item-sub{font-size:12px;color:var(--muted);margin-top:2px;font-family:var(--mono);
+    word-break:break-all}
+  .yt-item-x{background:none;border:none;color:var(--muted);font-size:20px;line-height:1;
+    cursor:pointer;padding:0 4px}
+  .yt-item-x:hover{color:var(--ink)}
+  .yt-item-cola{width:100%;margin-top:8px;min-height:74px;resize:vertical;
+    font-family:var(--mono);font-size:12px;padding:9px;border:1.5px solid var(--line);
+    border-radius:2px;background:var(--canvas);color:var(--ink)}
+
+  /* ===================== painel profissional ===================== */
+  .pro-cab{background:var(--ink);color:var(--sheet);border-radius:2px;padding:18px 20px;
+           margin-bottom:22px}
+  .pro-cab .eyebrow{color:var(--mark);margin-bottom:6px}
+  .pro-cab h2{margin:0 0 6px;font-size:22px;letter-spacing:-.02em}
+  .pro-cab p{margin:0;font-size:13.5px;color:#C9CDDC;max-width:62ch;line-height:1.55}
+
+  .pro-grupo{background:var(--sheet);border:1.5px solid var(--line);border-radius:2px;
+             padding:16px 18px;margin-bottom:14px}
+  .pro-grupo>h3{margin:0 0 4px;font-size:15px;letter-spacing:-.01em}
+  .pro-grupo>.sub{margin:0 0 14px;font-size:12.5px;color:var(--muted);line-height:1.5;max-width:64ch}
+  .pro-grupo .opt{margin-bottom:10px}
+
+  .pro-niveis{display:grid;gap:8px}
+  @media (min-width:620px){ .pro-niveis{grid-template-columns:repeat(4,1fr)} }
+  .pro-nivel{display:block;background:var(--canvas);border:1.5px solid var(--line);
+    border-radius:2px;padding:10px 12px;cursor:pointer}
+  .pro-nivel:hover{border-color:var(--ink)}
+  .pro-nivel input{margin-right:6px}
+  .pro-nivel b{display:block;font-size:13.5px;margin-bottom:2px}
+  .pro-nivel small{display:block;color:var(--muted);font-size:11.5px;line-height:1.4}
+  .pro-nivel:has(input:checked){background:var(--sheet);border-color:var(--ink);
+    box-shadow:3px 3px 0 var(--ink)}
+
+  .pro-vocab{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+  .pro-tag{font-family:var(--mono);font-size:11px;background:var(--canvas);
+    border:1px solid var(--line);border-radius:2px;padding:2px 7px;color:var(--muted)}
+  .pro-vocab-grupo{margin-bottom:12px}
+  .pro-vocab-grupo>b{font-size:12.5px}
+  .pro-conta{font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+  .pro-modelo{width:100%;min-height:120px;resize:vertical;font-family:var(--mono);
+    font-size:12px;line-height:1.5;padding:11px;border:1.5px solid var(--line);
+    border-radius:2px;background:var(--canvas);color:var(--ink)}
+  .pro-aviso{margin:0 0 12px;padding:11px 13px;background:#FFF6EC;
+    border:1.5px solid var(--warn);border-radius:2px;font-size:12.5px;
+    color:var(--warn);line-height:1.5}
+  .pro-aviso b{color:var(--warn)}
+  .pro-guardado{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:8px}
 </style>
 </head>
 <body>
@@ -301,6 +411,33 @@
 
     <p class="dica-instalar" id="dicaInstalar" hidden></p>
   </header>
+
+  <div class="abas" role="tablist" aria-label="O que você quer converter">
+    <button type="button" class="aba" id="aba-pdf" role="tab" aria-selected="true" aria-controls="painel-pdf">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M7 3h6l4 4v11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M13 3v4h4"/>
+      </svg>
+      PDF
+    </button>
+    <button type="button" class="aba" id="aba-yt" role="tab" aria-selected="false" aria-controls="painel-yt" tabindex="-1">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="2.5" y="5" width="19" height="14" rx="3.5"/><path d="M10 9l5.5 3-5.5 3z"/>
+      </svg>
+      YouTube
+    </button>
+    <button type="button" class="aba" id="aba-pro" role="tab" aria-selected="false" aria-controls="painel-pro" tabindex="-1">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M4 20v-5M12 20V9M20 20v-8"/><circle cx="4" cy="12" r="2"/>
+        <circle cx="12" cy="6" r="2"/><circle cx="20" cy="9" r="2"/>
+      </svg>
+      Nível profissional <span class="selo">pro</span>
+    </button>
+  </div>
+
+  <div class="painel" id="painel-pdf" role="tabpanel" aria-labelledby="aba-pdf">
 
   <div class="escolha">
     <label class="tile tile--folhas" id="dz">
@@ -411,12 +548,194 @@
   </div>
 
   <div class="results" id="results"></div>
+  </div><!-- /painel-pdf -->
+
+  <div class="painel" id="painel-yt" role="tabpanel" aria-labelledby="aba-yt" hidden>
+
+    <div class="yt-topo">
+      <label class="yt-rotulo" for="ytUrl">Link do vídeo ou da playlist</label>
+      <div class="yt-linha">
+        <input type="url" id="ytUrl" placeholder="https://youtu.be/…  ou  …/playlist?list=PL…"
+               autocomplete="off" spellcheck="false">
+        <button type="button" id="ytColar" class="ghost">Colar</button>
+        <button type="button" id="ytAdd">Adicionar</button>
+      </div>
+      <p class="yt-ajuda">
+        Aceita vários de uma vez: cole a lista inteira de links, um por linha. Um endereço de
+        <b>playlist</b> entra como um item por vídeo assim que você colar as legendas —
+        o navegador não consegue abrir a playlist sozinho.
+      </p>
+    </div>
+
+    <div class="yt-passos">
+      <span class="titulo">De onde vem a legenda</span>
+      <ol>
+        <li>Abra o vídeo no YouTube e clique em <span class="chave">…mais</span> → <span class="chave">Mostrar transcrição</span>.</li>
+        <li>No painel da transcrição, selecione tudo (<span class="chave">Ctrl+A</span>) e copie.</li>
+        <li>Cole aqui embaixo, ou solte um arquivo <code>.srt</code> / <code>.vtt</code> se já tiver.</li>
+      </ol>
+    </div>
+
+    <div style="margin-top:14px">
+      <label class="yt-rotulo" for="ytCola">Transcrição colada</label>
+      <textarea class="yt-cola" id="ytCola" spellcheck="false"
+        placeholder="0:00&#10;fala galera hoje a gente vai pescar tilápia&#10;0:04&#10;na represa aqui de casa&#10;&#10;— ou cole o conteúdo de um .srt / .vtt / .json3 —"></textarea>
+      <div class="yt-linha" style="margin-top:10px">
+        <button type="button" id="ytUsarCola">Usar esta transcrição</button>
+        <button type="button" id="ytLimparCola" class="ghost">Limpar</button>
+      </div>
+    </div>
+
+    <label class="yt-tile" id="ytDz">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 16V4"/><path d="M8 8l4-4 4 4"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/>
+      </svg>
+      <span class="tile-eyebrow">Arquivos de legenda</span>
+      <span class="tile-title">Escolher .srt, .vtt, .json3</span>
+      <span class="tile-sub">Vários de uma vez — um arquivo vira um vídeo da playlist</span>
+      <input type="file" id="ytFile" accept=".srt,.vtt,.json3,.srv3,.ttml,.xml,.txt,.sbv" multiple>
+    </label>
+
+    <section class="yt-lote" id="ytLote" hidden>
+      <div class="fila-topo">
+        <span id="ytResumo">0 vídeos</span>
+        <span class="fila-acoes">
+          <button type="button" id="ytLimparLote">Limpar</button>
+        </span>
+      </div>
+      <div id="ytLista"></div>
+      <div class="fila-rodape">
+        <button type="button" class="btn-converter" id="ytConverter">Converter em Markdown</button>
+        <span class="fila-aviso" id="ytAviso" hidden></span>
+      </div>
+    </section>
+
+    <div class="progress" id="ytProgress" hidden>
+      <span id="ytProgressText">A limpar…</span>
+      <div class="bar"><i id="ytProgressBar"></i></div>
+    </div>
+
+    <div class="batch" id="ytBatch" hidden>
+      <span class="batch-count" id="ytBatchCount"></span>
+      <div class="batch-btns">
+        <button id="ytZip">Baixar todos (.zip)</button>
+        <button id="ytJoin" class="ghost">Juntar num ficheiro só</button>
+      </div>
+    </div>
+
+    <div class="results" id="ytResults"></div>
+  </div><!-- /painel-yt -->
+
+  <div class="painel" id="painel-pro" role="tabpanel" aria-labelledby="aba-pro" hidden>
+
+    <div class="pro-cab">
+      <p class="eyebrow">Saída pronta para cadastro</p>
+      <h2>Nível profissional</h2>
+      <p>Estes ajustes valem para o separador do YouTube. Em vez de despejar a transcrição
+         crua, o arquivo sai com o cabeçalho YAML, as secções por tipo de peixe, local e
+         técnica, e sem o «se inscreve no canal». Tudo por dicionário e regra fixa: corre
+         offline e devolve sempre o mesmo resultado para a mesma entrada.</p>
+    </div>
+
+    <div class="pro-grupo">
+      <h3>Limpeza de vícios de linguagem</h3>
+      <p class="sub">Fala não é texto escrito. Quanto mais alto o nível, mais se apaga — e maior
+         a hipótese de levar junto alguma coisa que era conteúdo.</p>
+      <div class="pro-niveis">
+        <label class="pro-nivel"><input type="radio" name="proMuleta" value="0"><b>Nenhuma</b>
+          <small>Só junta as repetições da legenda automática.</small></label>
+        <label class="pro-nivel"><input type="radio" name="proMuleta" value="1"><b>Segura</b>
+          <small>«né», «tipo assim», hesitações, palavra dobrada.</small></label>
+        <label class="pro-nivel"><input type="radio" name="proMuleta" value="2" checked><b>Padrão</b>
+          <small>Mais «cara», «sabe», «beleza» quando isolados por vírgula.</small></label>
+        <label class="pro-nivel"><input type="radio" name="proMuleta" value="3"><b>Agressiva</b>
+          <small>Apaga essas muletas em qualquer posição. Releia o resultado.</small></label>
+      </div>
+    </div>
+
+    <div class="pro-grupo">
+      <h3>Chamadas de canal e patrocínio</h3>
+      <p class="sub">Uma frase apanhada por um destes padrões mas que fala de pesca não é
+         deitada fora: apara-se só o pedido e o resto fica. É o que impede o conversor de
+         cortar «amarra o anzol» a achar que era enrolação.</p>
+      <label class="opt">
+        <input type="checkbox" id="proCTA" checked>
+        <span>Remover «se inscreve», «deixa o like», «link na descrição», patrocínio e despedida
+          <small>São <b id="proCtaConta">0</b> padrões reconhecidos, incluindo as grafias sem acento
+            que a legenda automática produz.</small></span>
+      </label>
+      <label class="opt">
+        <input type="checkbox" id="proAuditoria" checked>
+        <span>Anexar ao arquivo a lista do que foi retirado
+          <small>Uma secção no fim do Markdown com a contagem e as frases removidas, para
+            conferir antes de importar. Sem isto a limpeza é invisível.</small></span>
+      </label>
+    </div>
+
+    <div class="pro-grupo">
+      <h3>Estruturação para o Fish Tank</h3>
+      <p class="sub">O que faz o arquivo entrar no app sem passagem manual.</p>
+      <label class="opt">
+        <input type="checkbox" id="proFront" checked>
+        <span>Cabeçalho YAML com as etiquetas
+          <small><code>peixes:</code>, <code>locais:</code>, <code>tecnicas:</code>, <code>iscas:</code>,
+            <code>equipamento:</code>, <code>seguranca:</code>, <code>dificuldade:</code>.</small></span>
+      </label>
+      <label class="opt">
+        <input type="checkbox" id="proSeccoes" checked>
+        <span>Secções <code># Tipo de Peixe</code>, <code># Local</code>, <code># Técnica</code>…
+          <small>Com a contagem de vezes que cada termo aparece, para separar o assunto do vídeo
+            do que foi só citação de passagem.</small></span>
+      </label>
+      <label class="opt">
+        <input type="checkbox" id="proTempo" checked>
+        <span>Marcar o tempo de cada parágrafo
+          <small>Vira um link que abre o vídeo no minuto certo — serve para conferir a fonte
+            de uma dica antes de publicar no app.</small></span>
+      </label>
+      <label class="opt">
+        <input type="checkbox" id="proTitulo" checked>
+        <span>Adivinhar o título pela primeira frase quando não for informado
+          <small>Sem isto o arquivo sai como «transcrição sem título» e some no meio dos outros.</small></span>
+      </label>
+    </div>
+
+    <div class="pro-grupo">
+      <h3>Vocabulário controlado</h3>
+      <p class="sub">«tilapia», «Tilápias» e «TILÁPIA» viram sempre <b>Tilápia</b>. Etiqueta escrita
+         de três maneiras diferentes parte a importação, por isso a lista é fechada.
+         <span class="pro-conta" id="proVocabConta"></span></p>
+      <div id="proVocab"></div>
+    </div>
+
+    <div class="pro-grupo">
+      <h3>Buscar a legenda sozinho <span class="pro-conta">(opcional, exige rede)</span></h3>
+      <p class="pro-aviso">
+        <b>Isto quebra o modo avião.</b> O YouTube não deixa esta página pedir a legenda
+        diretamente — a página do vídeo não devolve cabeçalho CORS e o endereço antigo de
+        legendas responde vazio. A única saída é um repetidor seu, e o que você mandar para lá
+        sai do aparelho. Deixe vazio para continuar 100% offline: colar a transcrição sempre funciona.
+      </p>
+      <label class="yt-rotulo" for="proRepetidor">Endereço do repetidor</label>
+      <div class="yt-linha">
+        <input type="text" id="proRepetidor" spellcheck="false" autocomplete="off"
+               placeholder="https://meu-worker.exemplo.dev/?url={url}">
+        <button type="button" id="proGuardar">Guardar</button>
+        <button type="button" id="proApagar" class="ghost">Apagar</button>
+      </div>
+      <p class="yt-ajuda"><code>{url}</code> é trocado pelo endereço do vídeo. O repetidor tem de
+        devolver o texto da legenda em <code>.srt</code>, <code>.vtt</code> ou <code>json3</code>.
+        <span class="pro-guardado" id="proEstado"></span></p>
+    </div>
+
+  </div><!-- /painel-pro -->
 
   <footer>
-    <p>Este arquivo não faz nenhuma requisição de rede: o leitor de PDF está embutido nele. Funciona em modo avião, e os documentos nunca saem do seu computador.</p>
+    <p>O leitor de PDF e o de legendas estão embutidos neste arquivo: PDFs e transcrições coladas nunca saem do seu computador, e tudo funciona em modo avião. A única exceção é o repetidor do separador profissional — enquanto estiver vazio, e vem vazio, não há requisição de rede nenhuma.</p>
     <p>A estimativa de tokens usa a média de ~4 caracteres por token, para comparar tamanhos. PDFs escaneados não têm texto embutido e precisam de OCR antes.</p>
     <p class="direitos">© 2026 Jeovani · Todos os direitos reservados. Usar é livre; copiar, redistribuir, hospedar ou vender exige autorização.
-      <span class="versao">versão <b id="versaoApp">10</b><span id="versaoEstado"></span></span></p>
+      <span class="versao">versão <b id="versaoApp">11</b><span id="versaoEstado"></span></span></p>
   </footer>
 
   <div class="avisos" id="avisos" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -2256,6 +2575,1002 @@ var ReadZip = (function () {
 </script>
 
 <script>
+/* legendas.js — lê legendas de vídeo em qualquer formato comum e devolve
+   uma lista de falas com tempo. Sem dependências, sem rede.
+
+   Formatos aceites:
+     .srt              contador + 00:00:01,000 --> 00:00:04,000
+     .vtt              WEBVTT + 00:00:01.000 --> 00:00:04.000 (com tags <c>)
+     .json3 / .srv3    resposta json do próprio YouTube
+     .ttml / .xml      <p begin="1s" end="4s">
+     colagem do YouTube  "0:04\ntexto" ou "0:04 texto" (painel «Mostrar transcrição»)
+     texto solto       sem tempos — entra como um bloco só
+
+   Legendas.ler(texto) -> { formato, falas:[{ini, fim, texto}] }
+   ini/fim em segundos; fim pode ser null quando o formato não o diz. */
+var Legendas = (function () {
+  "use strict";
+
+  /* ---------- tempos ---------- */
+
+  // "01:02:03,450" | "02:03.450" | "78.5s" | "78" -> segundos
+  function seg(txt) {
+    var s = String(txt || '').trim();
+    if (!s) return null;
+    var m = s.match(/^(?:(\d+):)?(\d{1,2}):(\d{1,2})(?:[.,](\d{1,3}))?$/);
+    if (m) {
+      return (+(m[1] || 0)) * 3600 + (+m[2]) * 60 + (+m[3]) + (m[4] ? +('0.' + m[4]) : 0);
+    }
+    m = s.match(/^(\d+(?:\.\d+)?)m?s?$/);
+    return m ? +m[1] : null;
+  }
+
+  function hms(s) {
+    if (s == null || !isFinite(s)) return '';
+    s = Math.max(0, Math.floor(s));
+    var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = s % 60;
+    var mm = (h ? String(m).padStart(2, '0') : String(m));
+    return (h ? h + ':' : '') + mm + ':' + String(r).padStart(2, '0');
+  }
+
+  /* ---------- limpeza comum a todos os formatos ---------- */
+
+  /* As legendas automáticas do YouTube trazem marcação de karaoke:
+     <00:00:03.520><c>palavra</c>. Para texto é ruído puro. */
+  function limparTags(t) {
+    return String(t || '')
+      .replace(/<\d{2}:\d{2}:\d{2}[.,]\d{3}>/g, '')
+      .replace(/<\/?c[^>]*>/g, '')
+      .replace(/<\/?[biu]>/g, '')
+      .replace(/\{\\an?\d+\}/g, '')          // marcação de posição do .ass
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
+      .replace(/[ \t ]+/g, ' ')
+      .trim();
+  }
+
+  /* ---------- SRT e VTT ---------- */
+
+  var SETA = /(\d{1,2}:\d{1,2}:\d{1,2}[.,]\d{1,3}|\d{1,2}:\d{1,2}[.,]\d{1,3})\s*-->\s*(\d{1,2}:\d{1,2}:\d{1,2}[.,]\d{1,3}|\d{1,2}:\d{1,2}[.,]\d{1,3})/;
+
+  function lerCues(texto) {
+    var linhas = String(texto).replace(/\r/g, '').split('\n');
+    var falas = [], i = 0;
+    while (i < linhas.length) {
+      var m = linhas[i].match(SETA);
+      if (!m) { i++; continue; }
+      var ini = seg(m[1]), fim = seg(m[2]);
+      i++;
+      var corpo = [];
+      while (i < linhas.length && linhas[i].trim() !== '' && !SETA.test(linhas[i])) {
+        // o contador do .srt aparece sozinho antes do próximo tempo
+        if (/^\d+$/.test(linhas[i].trim()) && i + 1 < linhas.length && SETA.test(linhas[i + 1])) break;
+        corpo.push(linhas[i]); i++;
+      }
+      var t = limparTags(corpo.join(' '));
+      if (t) falas.push({ ini: ini, fim: fim, texto: t });
+    }
+    return falas;
+  }
+
+  /* ---------- json3 (formato nativo do YouTube) ---------- */
+
+  function lerJson3(texto) {
+    var dados;
+    try { dados = JSON.parse(texto); } catch (e) { return null; }
+    var ev = dados && dados.events;
+    if (!Array.isArray(ev)) return null;
+    var falas = [];
+    ev.forEach(function (e) {
+      if (!e.segs) return;
+      var t = limparTags(e.segs.map(function (s) { return s.utf8 || ''; }).join(''));
+      if (!t) return;
+      var ini = (e.tStartMs || 0) / 1000;
+      falas.push({ ini: ini, fim: e.dDurationMs ? ini + e.dDurationMs / 1000 : null, texto: t });
+    });
+    return falas.length ? falas : null;
+  }
+
+  /* ---------- TTML / XML ---------- */
+
+  function lerXml(texto) {
+    var falas = [], re = /<p\b([^>]*)>([\s\S]*?)<\/p>/gi, m;
+    while ((m = re.exec(texto))) {
+      var attrs = m[1];
+      var a = /\bbegin\s*=\s*"([^"]*)"/i.exec(attrs);
+      var b = /\bend\s*=\s*"([^"]*)"/i.exec(attrs);
+      var d = /\bdur\s*=\s*"([^"]*)"/i.exec(attrs);
+      var ini = a ? seg(a[1]) : null;
+      var fim = b ? seg(b[1]) : (d && ini != null ? ini + (seg(d[1]) || 0) : null);
+      var t = limparTags(m[2].replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, ''));
+      if (t) falas.push({ ini: ini, fim: fim, texto: t });
+    }
+    return falas.length ? falas : null;
+  }
+
+  /* ---------- colagem do painel «Mostrar transcrição» ----------
+     O YouTube copia como "0:04" e a frase, ora na mesma linha ora na
+     seguinte. Aceitamos os dois, e o formato com hora para vídeos longos. */
+
+  var SO_TEMPO = /^(?:(\d+):)?(\d{1,2}):(\d{2})$/;
+  var TEMPO_NA_FRENTE = /^(?:(?:\d+:)?\d{1,2}:\d{2})\s+(.*\S.*)$/;
+
+  function lerColagem(texto) {
+    var linhas = String(texto).replace(/\r/g, '').split('\n');
+    var falas = [], pendente = null, achouTempo = false;
+
+    linhas.forEach(function (bruta) {
+      var l = bruta.trim();
+      if (!l) return;
+
+      if (SO_TEMPO.test(l)) {                      // tempo sozinho: abre uma fala
+        achouTempo = true;
+        if (pendente && pendente.texto) falas.push(pendente);
+        pendente = { ini: seg(l), fim: null, texto: '' };
+        return;
+      }
+      var m = l.match(TEMPO_NA_FRENTE);
+      if (m) {                                     // tempo + frase na mesma linha
+        achouTempo = true;
+        if (pendente && pendente.texto) falas.push(pendente);
+        pendente = { ini: seg(l.split(/\s+/)[0]), fim: null, texto: limparTags(m[1]) };
+        return;
+      }
+      var t = limparTags(l);
+      if (!t) return;
+      if (pendente) pendente.texto = pendente.texto ? pendente.texto + ' ' + t : t;
+      else pendente = { ini: null, fim: null, texto: t };
+    });
+    if (pendente && pendente.texto) falas.push(pendente);
+
+    return { achouTempo: achouTempo, falas: falas };
+  }
+
+  /* ---------- entrada única ---------- */
+
+  function ler(texto) {
+    var bruto = String(texto || '');
+    if (!bruto.trim()) return { formato: 'vazio', falas: [] };
+
+    var j = lerJson3(bruto);
+    if (j) return { formato: 'json3', falas: j };
+
+    if (/<(tt|p)\b/i.test(bruto)) {
+      var x = lerXml(bruto);
+      if (x) return { formato: /WEBVTT/.test(bruto) ? 'vtt' : 'ttml', falas: x };
+    }
+
+    if (SETA.test(bruto)) {
+      var cues = lerCues(bruto);
+      if (cues.length) return { formato: /^﻿?WEBVTT/.test(bruto.trim()) ? 'vtt' : 'srt', falas: cues };
+    }
+
+    var c = lerColagem(bruto);
+    return { formato: c.achouTempo ? 'colagem' : 'texto', falas: c.falas };
+  }
+
+  return { ler: ler, hms: hms, seg: seg, limparTags: limparTags };
+})();
+
+
+/* limparfala.js — tira de uma transcrição o que não é conhecimento.
+
+   Legenda falada não é texto escrito: repete-se, não tem pontuação, e vem
+   embrulhada em pedidos de like e saudações ao canal. Este módulo desfaz as
+   quatro coisas, por esta ordem:
+
+     1. sobreposição   as legendas automáticas repetem o fim da fala anterior
+     2. pontuação      corta parágrafos pelas pausas do próprio vídeo
+     3. CTA            «se inscreve», «link na descrição», «patrocinado por»
+     4. vícios         «né», «tipo assim», «cara», hesitações, palavra dobrada
+
+   A regra que manda em tudo: só se apaga o que se sabe que é ruído. Uma frase
+   apanhada por um padrão de CTA mas que fala de pesca não é deitada fora —
+   apara-se só o pedaço do CTA e o resto fica. Cortar «amarra o anzol» a achar
+   que é enrolação é pior do que deixar passar um «deixa o like». */
+var LimparFala = (function () {
+  "use strict";
+
+  /* ---------- 1. sobreposição das legendas automáticas ----------
+     O YouTube entrega as falas em rolo: cada bloco repete o fim do anterior.
+     Comparar palavra a palavra (e não carácter) evita colar «pesca» + «r». */
+
+  function palavras(t) { return String(t || '').trim().split(/\s+/).filter(Boolean); }
+  function chave(p) { return p.toLowerCase().replace(/[^0-9a-zà-ÿ]/gi, ''); }
+
+  function juntarSemRepetir(falas) {
+    var saida = [];
+    falas.forEach(function (f) {
+      var novas = palavras(f.texto);
+      if (!novas.length) return;
+      if (!saida.length) { saida.push({ ini: f.ini, fim: f.fim, palavras: novas }); return; }
+
+      var ant = saida[saida.length - 1].palavras;
+      var max = Math.min(ant.length, novas.length);
+      var corte = 0;
+      for (var k = max; k >= 1; k--) {
+        var bate = true;
+        for (var i = 0; i < k; i++) {
+          if (chave(ant[ant.length - k + i]) !== chave(novas[i])) { bate = false; break; }
+        }
+        if (bate) { corte = k; break; }
+      }
+      var resto = novas.slice(corte);
+      if (!resto.length) {                       // bloco inteiro repetido
+        saida[saida.length - 1].fim = f.fim;
+        return;
+      }
+      saida.push({ ini: f.ini, fim: f.fim, palavras: resto });
+    });
+    return saida;
+  }
+
+  /* ---------- 2. parágrafos pela pausa ----------
+     Sem pontuação, o único sinal de fronteira que a legenda dá é o silêncio.
+     Uma pausa longa entre blocos é quase sempre fim de raciocínio; e mesmo sem
+     pausa nenhuma corta-se por tamanho, senão sai um parágrafo de mil palavras
+     que nenhum humano relê. */
+
+  var PAUSA = 2.2;        // segundos de silêncio que abrem parágrafo
+  var MAX_PALAVRAS = 110; // teto de segurança quando não há tempos
+
+  function emParagrafos(blocos) {
+    var paras = [], atual = [], marca = null, ultimoFim = null;
+
+    blocos.forEach(function (b) {
+      var pausou = ultimoFim != null && b.ini != null && (b.ini - ultimoFim) >= PAUSA;
+      var cheio = atual.length >= MAX_PALAVRAS;
+      if (atual.length && (pausou || cheio)) {
+        paras.push({ ini: marca, texto: atual.join(' ') });
+        atual = []; marca = null;
+      }
+      if (marca == null) marca = b.ini;
+      atual = atual.concat(b.palavras);
+      if (b.fim != null) ultimoFim = b.fim;
+      else if (b.ini != null) ultimoFim = b.ini;
+    });
+    if (atual.length) paras.push({ ini: marca, texto: atual.join(' ') });
+    return paras;
+  }
+
+  /* ---------- 3. chamadas de ação ----------
+     Escritos com as duas grafias (com e sem acento) porque a legenda
+     automática troca-as sem critério. */
+
+  var CTA = [
+    // canal
+    /\b(?:se\s+)?inscrev(?:a|e)(?:m)?(?:\s*-?\s*se|\s+se)?(?:\s+(?:a[íi]|l[áa]|no\s+canal))?/gi,
+    /\binscri[çc][ãa]o\s+no\s+canal\b/gi,
+    /\b(?:deix(?:a|e)|d[áa]|manda|mande|solta|joga)\s+(?:o\s+|aquele\s+|um\s+|seu\s+)?(?:like|joinha)\b/gi,
+    /\b(?:ativ(?:a|e)|liga|ligue)\s+(?:o\s+)?sininho\b/gi,
+    /\bsininho\s+d(?:as?|e)\s+notifica[çc][õo]es\b/gi,
+    /\bativ(?:a|e)\s+as\s+notifica[çc][õo]es\b/gi,
+    /\bcompartilh(?:a|e|em)\s+(?:esse|este|o)?\s*v[íi]deo\b/gi,
+    /\bcoment(?:a|e)\s*(?:a[íi]|aqui)?\s*(?:em\s*)?(?:baixo|abaixo)\b/gi,
+    /\bdeix(?:a|e)\s+(?:nos|seu|o\s+seu)\s+coment[áa]rios?\b/gi,
+    /\blink(?:s)?\s+(?:(?:est[áa]|t[áa]|fica|segue)\s+)?(?:na|no|da|do|em)\s+(?:descri[çc][ãa]o|bio|primeiro\s+coment[áa]rio)\b/gi,
+    /\bl[áa]\s+(?:na|em)\s+descri[çc][ãa]o\b/gi,
+    /\b(?:me\s+)?(?:sig(?:a|o|am)|segue|seguem)\s+(?:l[áa]\s+)?no\s+(?:instagram|insta|tiktok|facebook|face|twitter|kwai)\b/gi,
+    /\b(?:seja|sejam|vira|torne\s*-?\s*se)\s+membro\b/gi,
+    /\bn[ãa]o\s+esque[çc](?:a|am)\s+de\s+(?:se\s+inscrever|dar\s+(?:o\s+)?like|curtir|compartilhar)\b/gi,
+    /\bsalv(?:a|e)\s+(?:esse|este)\s+v[íi]deo\b/gi,
+    /\bbora\s+(?:pros?|para)\s+[\d.]+\s*mil\s+inscritos?\b/gi,
+    /\bmeta\s+d(?:e|os)\s+[\d.]+\s*mil\s+inscritos?\b/gi,
+    // patrocínio e venda
+    /(?:\b(?:esse|este)\s+v[íi]deo\s+(?:[ée]|foi)\s+)?\bpatrocin(?:ado|ada|adora?|[ií]o)\b[^.!?;]*/gi,
+    /\b(?:esse|este)\s+v[íi]deo\s+[ée]\s+um\s+oferecimento\b[^.!?;]*/gi,
+    /\b(?:esse|este)\s+v[íi]deo\s+(?:[ée]|foi)\s+(?:um\s+)?(?:oferecimento|parceria)\b[^.!?;]*/gi,
+    /\b(?:use|usem|utilize)\s+o\s+cupom\b[^.!?;]*/gi,
+    /\bcupom\s+de\s+desconto\b[^.!?;]*/gi,
+    /\bc[óo]digo\s+de\s+desconto\b[^.!?;]*/gi,
+    /\blink\s+de\s+afiliado\b/gi,
+    /\bcompre\s+(?:pelo|no)\s+link\b[^.!?;]*/gi,
+    // saudação e despedida
+    /\b(?:fala|e\s+a[íi]|salve|opa)\s*,?\s*(?:galera|pessoal|rapaziada|meu\s+povo|meus?\s+amigos?|fam[íi]lia|meu\s+chapa)\b/gi,
+    /\bsalve\s+salve\b/gi,
+    /\bsej(?:a|am)\s+(?:muito\s+)?bem\s*-?\s*vind[oa]s?\b(?:\s+(?:de\s+volta\s+)?(?:a|ao)\s+(?:mais\s+um\s+v[íi]deo|meu\s+canal|canal))?/gi,
+    /\bat[ée]\s+(?:o\s+|a\s+)?pr[óo]xim[oa](?:\s+(?:v[íi]deo|vez|pescaria))?\b/gi,
+    /\bum\s+abra[çc]o(?:\s+e\s+at[ée]\s+(?:a\s+)?pr[óo]xima)?\b/gi,
+    /\b(?:muito\s+)?obrigad[oa]\s+por\s+(?:assistir|ver|acompanhar|chegar\s+at[ée]\s+aqui)\b/gi,
+    /\bfiqu(?:e|em)\s+com\s+deus\b/gi,
+    /\bvaleu\s+(?:galera|pessoal|demais)\b/gi,
+    /\bmais\s+um\s+v[íi]deo\s+(?:aqui\s+)?(?:no|pro)\s+canal\b/gi
+  ];
+
+  // Divide em frases mantendo a pontuação; sem pontuação, a frase é o parágrafo.
+  function frases(t) {
+    return String(t).split(/(?<=[.!?;])\s+/);
+  }
+  function frasesSemLookbehind(t) {
+    var out = [], buf = '', s = String(t);
+    for (var i = 0; i < s.length; i++) {
+      buf += s[i];
+      if (/[.!?;]/.test(s[i])) {
+        var j = i + 1;
+        while (j < s.length && /\s/.test(s[j])) j++;
+        if (j > i + 1) { out.push(buf); buf = ''; i = j - 1; }
+      }
+    }
+    if (buf.trim()) out.push(buf);
+    return out.length ? out : [s];
+  }
+  var partirFrases = (function () {
+    try { new RegExp('(?<=a)b'); return frases; }
+    catch (e) { return frasesSemLookbehind; }      // Safari antigo não tem lookbehind
+  })();
+
+  function contarPalavras(t) { return palavras(t).length; }
+
+  function tirarCTA(texto, ehProtegida) {
+    var removidas = [], aparadas = [];
+    var saida = partirFrases(texto).map(function (fr) {
+      var bateu = false;
+      CTA.forEach(function (re) { re.lastIndex = 0; if (re.test(fr)) bateu = true; });
+      if (!bateu) return fr;
+
+      var protegida = ehProtegida ? ehProtegida(fr) : false;
+      if (!protegida) { removidas.push(fr.trim()); return ''; }
+
+      /* Fala de pesca com CTA colado: apara-se o pedido e guarda-se o resto.
+         Se sobrar quase nada, a frase era só CTA e sai inteira. */
+      var podado = fr;
+      CTA.forEach(function (re) { re.lastIndex = 0; podado = podado.replace(re, ' '); });
+      podado = podado.replace(/\s{2,}/g, ' ').replace(/^[\s,;:.!?-]+/, '')
+        // aparar o CTA do início deixa a conjunção pendurada: "e amarra o anzol"
+        .replace(/^(?:e|ent[ãa]o|a[íi]|mas|que)\s+/i, '').trim();
+      if (contarPalavras(podado) < 3) { removidas.push(fr.trim()); return ''; }
+      aparadas.push({ antes: fr.trim(), depois: podado });
+      return podado;
+    }).filter(function (f) { return f.trim(); }).join(' ');
+
+    return { texto: saida, removidas: removidas, aparadas: aparadas };
+  }
+
+  /* ---------- 4. vícios de linguagem ----------
+     Dois níveis, e a diferença entre eles é a única coisa que impede este passo
+     de comer conteúdo.
+
+     Nível 1 apaga-se em qualquer sítio: são palavras que em português falado
+     nunca carregam informação («né», «tipo assim», hesitações).
+
+     Nível 2 só se apaga quando está isolado por vírgulas ou fecha a frase —
+     porque «sabe» solto é muleta, mas «você sabe escolher o anzol» é conteúdo,
+     e «tipo» solto é muleta, mas «tipo de isca» é o assunto do vídeo. */
+
+  /* O \b do JavaScript conta só [A-Za-z0-9_] como palavra, por isso "né" nunca
+     casava: entre o "é" e o espaço não há fronteira nenhuma aos olhos dele.
+     Daí as fronteiras serem escritas à mão, com a classe acentuada. */
+  var LETRA = '0-9a-zà-ÿ';
+  function comFronteira(alt, flags) {
+    return new RegExp('(^|[^' + LETRA + '])(?:' + alt + ')(?![' + LETRA + '])', flags || 'gi');
+  }
+
+  var NIVEL1 = comFronteira(
+    'n[ée]|t[áa]\\s+ligado|tipo\\s+assim|ent[ãa]o\\s+assim|aah+|ahn+|hum+|uhm+|[ãa]{2,}|[ée]{2,}|hein');
+
+  var NIVEL2_PALAVRAS = [
+    'cara', 'mano', 'meu', 'gente', 'p[ôo]', 'poxa', 'enfim', 'beleza',
+    'certo', 'sabe', 'entendeu', 'olha\\s+s[óo]', 'tipo', 'ent[ãa]o',
+    'a[íi]', 'assim', 'viu', 't[áa]', 'ok', 'bom', 'ent[ãa]o\\s+t[áa]',
+    'vamo\\s+l[áa]', 'vamos\\s+l[áa]', 'basicamente', 'literalmente'
+  ];
+
+  /* Apagáveis em qualquer posição: nenhuma delas é conteúdo em português. */
+  var NIVEL3_PALAVRAS = [
+    'mano', 'p[ôo]', 'poxa', 'beleza', 'enfim', 'basicamente',
+    'literalmente', 'olha\\s+s[óo]', 'sei\\s+l[áa]', 'meu\\s+amigo'
+  ];
+
+  /* Estas três são muleta quase sempre — mas «a gente vai pescar» é «nós»,
+     e «a cara do peixe» é a cara do peixe. O que as separa é o que vem
+     antes: com artigo ou preposição à frente, são conteúdo. Custou uma tilápia: no primeiro teste o nível agressivo escreveu
+     «hoje a vai pescar tilápia». */
+  var NIVEL3_AMBIGUAS = ['cara', 'gente'];
+
+  /* Mesma ideia para os verbos que também servem de muleta: «sabe», «entendeu» e «viu»
+     soltos são enchimento, mas com sujeito à frente são frase de verdade —
+     «você sabe amarrar o nó?» e «ele viu o cardume» têm de sobreviver. */
+  var NIVEL3_VERBOS = ['sabe', 'entendeu', 'entende', 'viu'];
+  var SUJEITO = /(?:^|[^0-9a-zà-ÿ])(?:voc[êe]s?|vc|tu|ele|ela|eles|elas|quem|que|n[ãa]o|se|j[áa]|ningu[ée]m|algu[ée]m|todos?|gente)\s*$/i;
+  var DETERMINANTE = /(?:^|[^0-9a-zà-ÿ])(?:a|as|o|os|da|do|das|dos|na|no|nas|nos|de|com|pela|pelo|sua|seu|suas|seus|minha|meu|essa|esse|uma|um|aquela|aquele|qualquer|outra|outro)\s*$/i;
+
+  function tirarMuletas(texto, nivel) {
+    var antes = contarPalavras(texto);
+    var t = texto;
+
+    if (nivel >= 1) t = t.replace(NIVEL1, '$1 ');
+
+    if (nivel >= 2) {
+      var alt = NIVEL2_PALAVRAS.join('|');
+      // isolada por pontuação de um lado e do outro, ou a fechar a frase
+      var isolada = new RegExp('([,;:]|^)\\s*(?:' + alt + ')\\s*(?=[,;:]|$)', 'gim');
+      for (var v = 0; v < 3; v++) t = t.replace(isolada, '$1');   // apanha seguidas
+      var noFim = new RegExp('[,;]\\s*(?:' + alt + ')\\s*(?=[.!?]|$)', 'gim');
+      t = t.replace(noFim, '');
+    }
+
+    /* Nível 3: legenda automática vem sem vírgula nenhuma, e aí o nível 2 não
+       tem por onde pegar. Aqui apaga-se em qualquer posição, mas só a lista
+       curta que nunca é conteúdo — "tipo" e "então" ficam de fora de
+       propósito, porque "tipo de isca" e "então joga" são frase. */
+    if (nivel >= 3) {
+      t = t.replace(comFronteira(NIVEL3_PALAVRAS.join('|')), '$1 ');
+      t = t.replace(comFronteira(NIVEL3_AMBIGUAS.join('|')), function (todo, antes, pos, texto) {
+        var anterior = texto.slice(0, pos) + antes;
+        return DETERMINANTE.test(anterior) ? todo : antes + ' ';
+      });
+      t = t.replace(comFronteira(NIVEL3_VERBOS.join('|')), function (todo, antes, pos, texto) {
+        var anterior = texto.slice(0, pos) + antes;
+        return SUJEITO.test(anterior) ? todo : antes + ' ';
+      });
+    }
+
+    if (nivel >= 1) {
+      // palavra dobrada por gaguez: «o o peixe», «vamos vamos»
+      t = t.replace(new RegExp('(^|[^' + LETRA + '])([' + LETRA + ']+)((?:\\s+\\2)+)(?![' + LETRA + '])', 'gi'), '$1$2');
+    }
+
+    t = arrumarPontuacao(t);
+    return { texto: t, tirou: Math.max(0, antes - contarPalavras(t)) };
+  }
+
+  function arrumarPontuacao(t) {
+    return String(t)
+      .replace(/[ \t]{2,}/g, ' ')
+      .replace(/\s+([,.;:!?])/g, '$1')
+      .replace(/([,;:])\s*(?=[,;:])/g, '')
+      .replace(/([.!?])\s*[,;:]/g, '$1')
+      .replace(/(^|[.!?]\s+)[,;:]\s*/g, '$1')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  }
+
+  /* Maiúscula no início e ponto final: a legenda vem toda em caixa baixa e sem
+     ponto, e um parágrafo assim colado ao seguinte lê-se como uma frase só. */
+  function fecharParagrafo(t) {
+    var s = arrumarPontuacao(t);
+    if (!s) return '';
+    s = s.charAt(0).toUpperCase() + s.slice(1);
+    s = s.replace(/(^|[.!?]\s+)([a-zà-ÿ])/g, function (_, a, b) { return a + b.toUpperCase(); });
+    if (!/[.!?…]$/.test(s)) s += '.';
+    return s;
+  }
+
+  /* ---------- tudo junto ---------- */
+
+  function processar(falas, opts) {
+    opts = opts || {};
+    var nivelMuleta = opts.muletas == null ? 2 : opts.muletas;
+
+    var blocos = opts.sobreposicao === false ? falas.map(function (f) {
+      return { ini: f.ini, fim: f.fim, palavras: palavras(f.texto) };
+    }) : juntarSemRepetir(falas);
+
+    var palavrasBrutas = falas.reduce(function (n, f) { return n + contarPalavras(f.texto); }, 0);
+    var palavrasSemRepetir = blocos.reduce(function (n, b) { return n + b.palavras.length; }, 0);
+
+    var paras = emParagrafos(blocos);
+    var removidas = [], aparadas = [], tirouMuletas = 0;
+
+    var limpos = paras.map(function (p) {
+      var t = p.texto;
+      if (opts.cta !== false) {
+        var r = tirarCTA(t, opts.ehProtegida);
+        t = r.texto; removidas = removidas.concat(r.removidas); aparadas = aparadas.concat(r.aparadas);
+      }
+      if (nivelMuleta > 0) {
+        var m = tirarMuletas(t, nivelMuleta);
+        t = m.texto; tirouMuletas += m.tirou;
+      }
+      t = fecharParagrafo(t);
+      return { ini: p.ini, texto: t };
+    }).filter(function (p) { return p.texto && contarPalavras(p.texto) >= 2; });
+
+    return {
+      paragrafos: limpos,
+      relatorio: {
+        palavrasBrutas: palavrasBrutas,
+        palavrasSemRepetir: palavrasSemRepetir,
+        repetidas: palavrasBrutas - palavrasSemRepetir,
+        palavrasFinais: limpos.reduce(function (n, p) { return n + contarPalavras(p.texto); }, 0),
+        ctaRemovidas: removidas,
+        ctaAparadas: aparadas,
+        muletas: tirouMuletas
+      }
+    };
+  }
+
+  return {
+    processar: processar, juntarSemRepetir: juntarSemRepetir,
+    tirarCTA: tirarCTA, tirarMuletas: tirarMuletas, fecharParagrafo: fecharParagrafo,
+    CTA: CTA
+  };
+})();
+
+
+/* pescaria.js — vocabulário controlado do «Fish Tank» e etiquetagem automática.
+
+   Duas responsabilidades:
+     1. reconhecer termos de pesca num texto e devolvê-los sempre na mesma
+        forma canónica ("tilapia", "Tilápias", "TILÁPIA" -> "Tilápia"), porque
+        etiqueta livre parte a importação no app;
+     2. montar o cabeçalho YAML e as secções que o cadastro espera.
+
+   Não há IA aqui: é dicionário e correspondência de palavra inteira. A troco
+   disso corre offline, é instantâneo e dá sempre o mesmo resultado para a
+   mesma entrada — coisa que um modelo não garante. */
+var Pescaria = (function () {
+  "use strict";
+
+  /* Comparar sem acento e sem maiúsculas resolve de uma vez "traira/traíra"
+     e "TILAPIA/tilápia", que aparecem misturados nas legendas automáticas. */
+  function normal(t) {
+    return String(t || '').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+
+  /* Cada entrada: forma canónica -> variantes escritas como aparecem na fala.
+     As variantes são normalizadas na compilação, por isso podem levar acento. */
+  var GRUPOS = {
+    peixes: {
+      'Tilápia':      ['tilapia', 'tilapias'],
+      'Tucunaré':     ['tucunare', 'tucunares'],
+      'Traíra':       ['traira', 'trairas', 'trairao', 'trairoes'],
+      'Dourado':      ['dourado', 'dourados'],
+      'Pacu':         ['pacu', 'pacus'],
+      'Pintado':      ['pintado', 'pintados', 'surubim', 'cachara'],
+      'Lambari':      ['lambari', 'lambaris'],
+      'Carpa':        ['carpa', 'carpas'],
+      'Bagre':        ['bagre', 'bagres'],
+      'Piau':         ['piau', 'piaus', 'piapara'],
+      'Corvina':      ['corvina', 'corvinas'],
+      'Robalo':       ['robalo', 'robalos'],
+      'Tainha':       ['tainha', 'tainhas'],
+      'Pirarucu':     ['pirarucu', 'pirarucus'],
+      'Tambaqui':     ['tambaqui', 'tambaquis'],
+      'Matrinxã':     ['matrinxa', 'matrinxas'],
+      'Curimbatá':    ['curimbata', 'curimba', 'curimbatas'],
+      'Cascudo':      ['cascudo', 'cascudos'],
+      'Jundiá':       ['jundia', 'jundias'],
+      'Black bass':   ['black bass', 'black-bass', 'blackbass'],
+      'Apaiari':      ['apaiari', 'apaiaris'],
+      'Acará':        ['acara', 'acaras'],
+      'Piraputanga':  ['piraputanga', 'piraputangas'],
+      'Tabarana':     ['tabarana', 'tabaranas'],
+      'Truta':        ['truta', 'trutas'],
+      'Piranha':      ['piranha', 'piranhas'],
+      'Pescada':      ['pescada', 'pescadas'],
+      'Anchova':      ['anchova', 'anchovas'],
+      'Sardinha':     ['sardinha', 'sardinhas']
+    },
+    locais: {
+      'Represa':      ['represa', 'represas', 'barragem', 'barragens'],
+      'Rio':          ['rio', 'rios'],
+      'Lago':         ['lago', 'lagos', 'lagoa', 'lagoas'],
+      'Açude':        ['acude', 'acudes'],
+      'Pesqueiro':    ['pesqueiro', 'pesqueiros', 'pesque-pague', 'pesque pague'],
+      'Praia':        ['praia', 'praias', 'beira-mar'],
+      'Costão':       ['costao', 'costoes'],
+      'Mangue':       ['mangue', 'mangues'],
+      'Córrego':      ['corrego', 'corregos', 'riacho', 'riachos', 'ribeirao'],
+      'Mar':          ['mar', 'alto-mar', 'oceano'],
+      'Estuário':     ['estuario', 'estuarios', 'foz'],
+      'Cachoeira':    ['cachoeira', 'cachoeiras', 'corredeira', 'corredeiras'],
+      'Píer':         ['pier', 'trapiche', 'ponte']
+    },
+    tecnicas: {
+      'Boia':         ['boia', 'boias'],
+      'Fundo':        ['pesca de fundo', 'no fundo', 'fundeada'],
+      'Arremesso':    ['arremesso', 'arremessos', 'arremessar', 'casting'],
+      'Ultraleve':    ['ultraleve', 'ultra-leve'],
+      'Fly':          ['fly', 'fly fishing', 'pesca com mosca'],
+      'Corrico':      ['corrico', 'trolling'],
+      'Molinete':     ['molinete', 'molinetes'],
+      'Carretilha':   ['carretilha', 'carretilhas'],
+      'Vara de mão':  ['vara de mao', 'canico', 'canicos', 'vara de bambu'],
+      'Superfície':   ['superficie', 'meia-agua', 'meia agua'],
+      'Spinning':     ['spinning'],
+      'Embarcada':    ['embarcada', 'de barco', 'caiaque', 'caiaques']
+    },
+    iscas: {
+      'Minhoca':          ['minhoca', 'minhocas', 'minhocucu'],
+      'Massa':            ['massa', 'massinha'],
+      'Milho':            ['milho'],
+      'Camarão':          ['camarao', 'camaroes'],
+      'Isca viva':        ['isca viva', 'iscas vivas', 'lambari vivo', 'tuvira'],
+      'Isca artificial':  ['isca artificial', 'iscas artificiais', 'artificial'],
+      'Plug':             ['plug', 'plugs'],
+      'Jig':              ['jig', 'jigs'],
+      'Colher':           ['colher', 'colheres'],
+      'Spinner':          ['spinner', 'spinners'],
+      'Popper':           ['popper', 'poppers'],
+      'Ração':            ['racao'],
+      'Coração de galinha': ['coracao de galinha'],
+      'Mandioca':         ['mandioca', 'aipim', 'macaxeira']
+    },
+    equipamento: {
+      'Anzol':        ['anzol', 'anzois'],
+      'Chumbada':     ['chumbada', 'chumbadas', 'chumbo'],
+      'Linha':        ['linha', 'linhas', 'nailon', 'monofilamento', 'multifilamento'],
+      'Vara':         ['vara', 'varas'],
+      'Molinete':     ['molinete', 'molinetes'],
+      'Carretilha':   ['carretilha', 'carretilhas'],
+      'Girador':      ['girador', 'giradores', 'destorcedor'],
+      'Alicate':      ['alicate', 'alicates'],
+      'Puçá':         ['puca', 'passagua'],
+      'Empate':       ['empate', 'encastoamento'],
+      'Caixa de pesca': ['caixa de pesca', 'estojo de pesca']
+    },
+    seguranca: {
+      'Colete salva-vidas': ['colete', 'coletes', 'salva-vidas'],
+      'Protetor solar':     ['protetor solar', 'filtro solar'],
+      'Chapéu ou boné':     ['bone', 'chapeu'],
+      'Óculos de sol':      ['oculos de sol', 'oculos escuros'],
+      'Adulto por perto':   ['adulto', 'responsavel', 'supervisao', 'acompanhado'],
+      'Anzol sem farpa':    ['sem farpa', 'farpa amassada', 'anzol sem farpa'],
+      'Hidratação':         ['hidratacao', 'beber agua', 'hidratar']
+    }
+  };
+
+  /* Uma expressão por grupo, com alternativas ordenadas da mais longa para a
+     mais curta: sem isso "isca viva" era apanhado pelo "isca artificial"
+     parcial e "black bass" partia-se em duas palavras soltas. */
+  function compilar(mapa) {
+    var pares = [];
+    Object.keys(mapa).forEach(function (canon) {
+      mapa[canon].forEach(function (v) { pares.push({ v: normal(v), canon: canon }); });
+    });
+    pares.sort(function (a, b) { return b.v.length - a.v.length; });
+    var alt = pares.map(function (p) { return p.v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|');
+    return {
+      re: new RegExp('(?:^|[^a-z0-9])(' + alt + ')(?![a-z0-9])', 'g'),
+      de: pares.reduce(function (m, p) { if (!(p.v in m)) m[p.v] = p.canon; return m; }, {})
+    };
+  }
+
+  var COMPILADO = {};
+  Object.keys(GRUPOS).forEach(function (g) { COMPILADO[g] = compilar(GRUPOS[g]); });
+
+  /* Termos que nunca devem ser apagados pela limpeza de vícios de linguagem:
+     é a salvaguarda contra cortar "amarra o anzol" achando que é enrolação. */
+  var PROTEGIDO = (function () {
+    var todas = [];
+    Object.keys(GRUPOS).forEach(function (g) {
+      Object.keys(GRUPOS[g]).forEach(function (c) {
+        todas = todas.concat(GRUPOS[g][c].map(normal));
+      });
+    });
+    todas = todas.concat(['pesca', 'pescar', 'pescaria', 'peixe', 'peixes',
+      'isca', 'iscar', 'fisgar', 'fisgada', 'ferrar', 'nó', 'no cego',
+      'profundidade', 'correnteza', 'barranco', 'margem', 'temporada', 'piracema']);
+    todas.sort(function (a, b) { return b.length - a.length; });
+    var alt = todas.map(function (t) { return t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|');
+    return new RegExp('(?:^|[^a-z0-9])(?:' + alt + ')(?![a-z0-9])');
+  })();
+
+  function temTermoDePesca(frase) { return PROTEGIDO.test(normal(frase)); }
+
+  /* Conta ocorrências para poder ordenar por relevância: o peixe citado
+     trinta vezes é o assunto, o citado uma vez é passagem. */
+  function achar(texto, grupo) {
+    var c = COMPILADO[grupo], alvo = normal(texto), conta = {}, m;
+    c.re.lastIndex = 0;
+    while ((m = c.re.exec(alvo))) {
+      var canon = c.de[m[1]];
+      if (canon) conta[canon] = (conta[canon] || 0) + 1;
+      /* O termo não consome o carácter que o segue (o fim é lookahead), por
+         isso a varredura normal do /g já apanha o termo seguinte. Recuar aqui
+         fazia "isca artificial" contar também como "artificial". */
+    }
+    return Object.keys(conta)
+      .sort(function (a, b) { return conta[b] - conta[a] || a.localeCompare(b, 'pt'); })
+      .map(function (k) { return { termo: k, vezes: conta[k] }; });
+  }
+
+  function etiquetar(texto) {
+    var saida = {};
+    Object.keys(GRUPOS).forEach(function (g) { saida[g] = achar(texto, g); });
+    saida.dificuldade = dificuldade(texto);
+    saida.leitura = leitura(texto);
+    return saida;
+  }
+
+  var SINAL_INICIANTE = /(?:^|[^a-z])(iniciante|iniciantes|comecando|comecar|primeira vez|quem nunca|basico|basica|facil|simples|passo a passo|crianca|criancas|infantil|para leigos)(?![a-z])/;
+  var SINAL_AVANCADO  = /(?:^|[^a-z])(avancado|avancada|profissional|torneio|campeonato|experiente|tecnica avancada|competicao)(?![a-z])/;
+
+  function dificuldade(texto) {
+    var t = normal(texto);
+    var ini = (t.match(new RegExp(SINAL_INICIANTE.source, 'g')) || []).length;
+    var av = (t.match(new RegExp(SINAL_AVANCADO.source, 'g')) || []).length;
+    if (ini > av) return 'iniciante';
+    if (av > ini) return 'avancado';
+    return 'intermediario';
+  }
+
+  /* O destino é um app infantil, por isso vale medir se o texto está pesado.
+     Não é índice académico: é a proporção de palavras longas, que na prática
+     é o que trava a leitura de uma criança. */
+  function leitura(texto) {
+    var palavras = String(texto).split(/\s+/).filter(function (p) { return /[a-zà-ÿ]/i.test(p); });
+    if (!palavras.length) return { palavras: 0, longas: 0, pct: 0, nivel: 'sem texto' };
+    var longas = palavras.filter(function (p) { return p.replace(/[^a-zà-ÿ]/gi, '').length >= 12; }).length;
+    var pct = Math.round(longas / palavras.length * 1000) / 10;
+    return {
+      palavras: palavras.length, longas: longas, pct: pct,
+      nivel: pct < 2 ? 'fácil para criança' : pct < 5 ? 'exige apoio de adulto' : 'pesado para criança'
+    };
+  }
+
+  /* ---------- saída em Markdown ---------- */
+
+  function yamlLista(itens) {
+    if (!itens || !itens.length) return '[]';
+    return '[' + itens.map(function (i) {
+      var t = i.termo || i;
+      return /[:#,\[\]{}]/.test(t) ? '"' + t + '"' : t;
+    }).join(', ') + ']';
+  }
+
+  function yamlTexto(v) {
+    var s = String(v == null ? '' : v);
+    return /^[\w .\-\/()À-ÿ]*$/.test(s) && s.indexOf(': ') < 0
+      ? s : '"' + s.replace(/"/g, '\\"') + '"';
+  }
+
+  function frontMatter(meta, tags) {
+    var l = ['---'];
+    l.push('fonte: ' + yamlTexto(meta.fonte || 'youtube'));
+    l.push('titulo: ' + yamlTexto(meta.titulo || 'sem título'));
+    if (meta.url) l.push('url: ' + yamlTexto(meta.url));
+    if (meta.videoId) l.push('video_id: ' + yamlTexto(meta.videoId));
+    if (meta.playlist) l.push('playlist: ' + yamlTexto(meta.playlist));
+    if (meta.duracao) l.push('duracao: ' + yamlTexto(meta.duracao));
+    l.push('peixes: ' + yamlLista(tags.peixes));
+    l.push('locais: ' + yamlLista(tags.locais));
+    l.push('tecnicas: ' + yamlLista(tags.tecnicas));
+    l.push('iscas: ' + yamlLista(tags.iscas));
+    l.push('equipamento: ' + yamlLista(tags.equipamento));
+    l.push('seguranca: ' + yamlLista(tags.seguranca));
+    l.push('dificuldade: ' + tags.dificuldade);
+    l.push('leitura_infantil: ' + yamlTexto(tags.leitura.nivel));
+    l.push('gerado_em: ' + new Date().toISOString().slice(0, 10));
+    l.push('---');
+    return l.join('\n');
+  }
+
+  var ROTULOS = {
+    peixes: 'Tipo de Peixe', locais: 'Local', tecnicas: 'Técnica',
+    iscas: 'Isca', equipamento: 'Equipamento', seguranca: 'Segurança'
+  };
+
+  function seccoes(tags) {
+    var out = [];
+    Object.keys(ROTULOS).forEach(function (g) {
+      var itens = tags[g];
+      out.push('## ' + ROTULOS[g]);
+      out.push(itens.length
+        ? itens.map(function (i) { return '- ' + i.termo + ' _(' + i.vezes + '×)_'; }).join('\n')
+        : '- _não identificado nesta transcrição_');
+      out.push('');
+    });
+    return out.join('\n');
+  }
+
+  return {
+    etiquetar: etiquetar, frontMatter: frontMatter, seccoes: seccoes,
+    temTermoDePesca: temTermoDePesca, normal: normal, ROTULOS: ROTULOS,
+    GRUPOS: GRUPOS
+  };
+})();
+
+
+/* tubo.js — endereços do YouTube e montagem do Markdown final.
+
+   Sobre buscar a legenda sozinho: não dá, e não é falta de vontade. A página
+   /watch não devolve cabeçalho CORS nenhum, e o endpoint antigo
+   /api/timedtext responde vazio desde que o YouTube passou a exigir
+   parâmetros assinados. Qualquer navegador bloqueia as duas coisas. Por isso
+   o caminho garantido é a legenda vir do utilizador (colada ou em ficheiro),
+   e a busca automática é um extra que só funciona com um repetidor próprio. */
+var Tubo = (function () {
+  "use strict";
+
+  var ID_VIDEO = '[A-Za-z0-9_-]{11}';
+  var ID_LISTA = '[A-Za-z0-9_-]{12,}';
+
+  var PADROES = [
+    new RegExp('youtu\\.be/(' + ID_VIDEO + ')'),
+    new RegExp('youtube\\.com/watch\\?(?:[^#]*&)?v=(' + ID_VIDEO + ')'),
+    new RegExp('youtube\\.com/(?:embed|v|shorts|live)/(' + ID_VIDEO + ')'),
+    new RegExp('youtube\\.com/oembed\\?[^#]*url=[^#]*?(' + ID_VIDEO + ')')
+  ];
+
+  function idDoVideo(url) {
+    var s = String(url || '').trim();
+    for (var i = 0; i < PADROES.length; i++) {
+      var m = s.match(PADROES[i]);
+      if (m) return m[1];
+    }
+    // um id colado sozinho também serve
+    return new RegExp('^' + ID_VIDEO + '$').test(s) ? s : null;
+  }
+
+  function idDaLista(url) {
+    var m = String(url || '').match(new RegExp('[?&]list=(' + ID_LISTA + ')'));
+    if (m) return m[1];
+    return /^(?:PL|UU|LL|FL|OL|RD)[A-Za-z0-9_-]{10,}$/.test(String(url || '').trim())
+      ? String(url).trim() : null;
+  }
+
+  function ehPlaylist(url) { return !!idDaLista(url) && !idDoVideo(url); }
+
+  function urlDoVideo(id) { return 'https://www.youtube.com/watch?v=' + id; }
+  function urlDaLista(id) { return 'https://www.youtube.com/playlist?list=' + id; }
+
+  /* Uma caixa de texto com vários links, um por linha ou colados no meio de
+     uma frase. Devolve endereços únicos, na ordem em que aparecem. */
+  function acharEnderecos(texto) {
+    var s = String(texto || '');
+    var achados = [], vistos = {};
+
+    var re = /(?:https?:\/\/)?(?:www\.|m\.|music\.)?(?:youtube\.com|youtu\.be)\/[^\s<>"')\]]+/gi;
+    var m;
+    while ((m = re.exec(s))) {
+      var bruto = m[0].replace(/[.,;)]+$/, '');
+      var v = idDoVideo(bruto), l = idDaLista(bruto);
+      var chave = (v || '') + '|' + (l || '');
+      if (!v && !l) continue;
+      if (vistos[chave]) continue;
+      vistos[chave] = true;
+      achados.push({ url: bruto, videoId: v, playlist: l, tipo: v ? 'video' : 'playlist' });
+    }
+
+    // ids soltos, uma linha cada, quando não houve endereço nenhum
+    if (!achados.length) {
+      s.split(/[\s,]+/).forEach(function (p) {
+        var v = idDoVideo(p), l = idDaLista(p);
+        if (!v && !l) return;
+        var k = (v || '') + '|' + (l || '');
+        if (vistos[k]) return;
+        vistos[k] = true;
+        achados.push({ url: v ? urlDoVideo(v) : urlDaLista(l), videoId: v, playlist: l, tipo: v ? 'video' : 'playlist' });
+      });
+    }
+    return achados;
+  }
+
+  /* Repetidor opcional. O utilizador guarda um molde com {url} — por exemplo
+     o seu próprio worker — e o app troca-o pelo endereço pedido. Sem molde
+     configurado não se tenta rede nenhuma: o ficheiro continua a abrir e a
+     trabalhar em modo avião. */
+  var CHAVE_REPETIDOR = 'pdfia.repetidor';
+
+  function repetidor() {
+    try { return localStorage.getItem(CHAVE_REPETIDOR) || ''; } catch (e) { return ''; }
+  }
+  function guardarRepetidor(v) {
+    try {
+      if (v) localStorage.setItem(CHAVE_REPETIDOR, v);
+      else localStorage.removeItem(CHAVE_REPETIDOR);
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function viaRepetidor(url) {
+    var molde = repetidor();
+    if (!molde) return null;
+    return molde.indexOf('{url}') >= 0
+      ? molde.replace('{url}', encodeURIComponent(url))
+      : molde.replace(/\/?$/, '/') + encodeURIComponent(url);
+  }
+
+  async function buscarLegenda(url) {
+    var alvo = viaRepetidor(url);
+    if (!alvo) {
+      var e = new Error('Nenhum repetidor configurado — o navegador não deixa este arquivo falar com o YouTube.');
+      e.codigo = 'sem-repetidor'; throw e;
+    }
+    var r = await fetch(alvo, { credentials: 'omit' });
+    if (!r.ok) {
+      var err = new Error('O repetidor respondeu ' + r.status + '.');
+      err.codigo = 'repetidor-falhou'; throw err;
+    }
+    return await r.text();
+  }
+
+  /* ---------- Markdown final ---------- */
+
+  function tempoLink(url, seg) {
+    if (!url || seg == null || !isFinite(seg)) return null;
+    var t = Math.max(0, Math.floor(seg));
+    return url + (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + t + 's';
+  }
+
+  /* meta: {titulo, url, videoId, playlist, fonte, duracao}
+     limpo: saída de LimparFala.processar
+     tags:  saída de Pescaria.etiquetar
+     opts:  {marcarTempo, auditoria, seccoes, frontMatter} */
+  function markdown(meta, limpo, tags, opts, P) {
+    opts = opts || {};
+    var partes = [];
+
+    if (opts.frontMatter !== false) partes.push(P.frontMatter(meta, tags));
+
+    partes.push('# ' + (meta.titulo || 'Transcrição sem título'));
+
+    var cab = [];
+    if (meta.url) cab.push('[Assistir no YouTube](' + meta.url + ')');
+    if (meta.duracao) cab.push('duração ' + meta.duracao);
+    if (meta.canal) cab.push('canal: ' + meta.canal);
+    if (cab.length) partes.push('_' + cab.join(' · ') + '_');
+
+    if (opts.seccoes !== false) partes.push(P.seccoes(tags));
+
+    partes.push('## Transcrição');
+    partes.push(limpo.paragrafos.map(function (p) {
+      if (opts.marcarTempo && p.ini != null) {
+        var marca = '[' + hms(p.ini) + ']';
+        var l = tempoLink(meta.url, p.ini);
+        return (l ? '**[' + hms(p.ini) + '](' + l + ')** ' : '**' + marca + '** ') + p.texto;
+      }
+      return p.texto;
+    }).join('\n\n'));
+
+    if (opts.auditoria) {
+      var r = limpo.relatorio;
+      var aud = ['## O que foi retirado',
+        '',
+        '| item | quantidade |', '|---|---|',
+        '| palavras na legenda original | ' + r.palavrasBrutas + ' |',
+        '| palavras repetidas pela legenda automática | ' + r.repetidas + ' |',
+        '| vícios de linguagem retirados | ' + r.muletas + ' |',
+        '| frases de canal/patrocínio removidas | ' + r.ctaRemovidas.length + ' |',
+        '| frases aparadas mas mantidas | ' + r.ctaAparadas.length + ' |',
+        '| palavras no texto final | ' + r.palavrasFinais + ' |', ''];
+      if (r.ctaRemovidas.length) {
+        aud.push('<details><summary>Frases removidas por inteiro</summary>', '');
+        r.ctaRemovidas.forEach(function (f) { aud.push('- ' + f); });
+        aud.push('', '</details>', '');
+      }
+      if (r.ctaAparadas.length) {
+        aud.push('<details><summary>Frases aparadas (o conteúdo de pesca ficou)</summary>', '');
+        r.ctaAparadas.forEach(function (f) {
+          aud.push('- ~~' + f.antes + '~~');
+          aud.push('  → ' + f.depois);
+        });
+        aud.push('', '</details>', '');
+      }
+      partes.push(aud.join('\n'));
+    }
+
+    return partes.join('\n\n').replace(/\n{4,}/g, '\n\n\n').trim() + '\n';
+  }
+
+  function hms(s) {
+    s = Math.max(0, Math.floor(s || 0));
+    var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = s % 60;
+    return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(r).padStart(2, '0');
+  }
+
+  /* Nome de ficheiro previsível: o app do outro lado vai importar por nome. */
+  function nomeArquivo(meta) {
+    var base = (meta.titulo || meta.videoId || 'transcricao')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^A-Za-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '').toLowerCase().slice(0, 60) || 'transcricao';
+    return base + (meta.videoId ? '-' + meta.videoId : '') + '.md';
+  }
+
+  return {
+    idDoVideo: idDoVideo, idDaLista: idDaLista, ehPlaylist: ehPlaylist,
+    urlDoVideo: urlDoVideo, urlDaLista: urlDaLista, acharEnderecos: acharEnderecos,
+    repetidor: repetidor, guardarRepetidor: guardarRepetidor, viaRepetidor: viaRepetidor,
+    buscarLegenda: buscarLegenda, markdown: markdown, nomeArquivo: nomeArquivo, hms: hms
+  };
+})();
+</script>
+
+<script>
 (function(){
   "use strict";
   var dz=document.getElementById('dz'), input=document.getElementById('file'),
@@ -3168,6 +4483,615 @@ var ReadZip = (function () {
   dz.addEventListener('drop',function(e){
     if(e.dataTransfer&&e.dataTransfer.files) adicionar(e.dataTransfer.files);
   });
+
+  /* ============================================================
+     SEPARADORES, YOUTUBE E NÍVEL PROFISSIONAL
+     ============================================================ */
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ---------- separadores ---------- */
+
+  var ABAS = [
+    { aba: 'aba-pdf', painel: 'painel-pdf' },
+    { aba: 'aba-yt',  painel: 'painel-yt' },
+    { aba: 'aba-pro', painel: 'painel-pro' }
+  ];
+
+  function mostrarAba(idAba) {
+    ABAS.forEach(function (a) {
+      var b = $(a.aba), p = $(a.painel), ativo = a.aba === idAba;
+      if (!b || !p) return;
+      b.setAttribute('aria-selected', ativo ? 'true' : 'false');
+      b.tabIndex = ativo ? 0 : -1;
+      p.hidden = !ativo;
+    });
+    try { localStorage.setItem('pdfia.aba', idAba); } catch (e) {}
+  }
+
+  ABAS.forEach(function (a, i) {
+    var b = $(a.aba);
+    if (!b) return;
+    b.addEventListener('click', function () { mostrarAba(a.aba); });
+    // setas do teclado: exigência de um tablist que se diz tablist
+    b.addEventListener('keydown', function (e) {
+      var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!d) return;
+      e.preventDefault();
+      var alvo = ABAS[(i + d + ABAS.length) % ABAS.length];
+      mostrarAba(alvo.aba); $(alvo.aba).focus();
+    });
+  });
+
+  (function () {
+    var guardada = null;
+    try { guardada = localStorage.getItem('pdfia.aba'); } catch (e) {}
+    mostrarAba(ABAS.some(function (a) { return a.aba === guardada; }) ? guardada : 'aba-pdf');
+  })();
+
+  /* ---------- ajustes do nível profissional ---------- */
+
+  var CHAVE_PRO = 'pdfia.pro';
+  var CAIXAS_PRO = ['proCTA', 'proAuditoria', 'proFront', 'proSeccoes', 'proTempo', 'proTitulo'];
+
+  function ajustesPro() {
+    var muleta = document.querySelector('input[name=proMuleta]:checked');
+    var a = { muletas: muleta ? parseInt(muleta.value, 10) : 2 };
+    CAIXAS_PRO.forEach(function (id) { var el = $(id); a[id] = el ? el.checked : true; });
+    return a;
+  }
+
+  function guardarPro() {
+    try { localStorage.setItem(CHAVE_PRO, JSON.stringify(ajustesPro())); } catch (e) {}
+  }
+
+  (function carregarPro() {
+    var guardado = null;
+    try { guardado = JSON.parse(localStorage.getItem(CHAVE_PRO) || 'null'); } catch (e) {}
+    if (guardado) {
+      var r = document.querySelector('input[name=proMuleta][value="' + guardado.muletas + '"]');
+      if (r) r.checked = true;
+      CAIXAS_PRO.forEach(function (id) {
+        var el = $(id);
+        if (el && typeof guardado[id] === 'boolean') el.checked = guardado[id];
+      });
+    }
+    CAIXAS_PRO.forEach(function (id) { var el = $(id); if (el) el.addEventListener('change', guardarPro); });
+    Array.prototype.forEach.call(document.querySelectorAll('input[name=proMuleta]'), function (el) {
+      el.addEventListener('change', guardarPro);
+    });
+  })();
+
+  // Quantos padrões de CTA existem, dito pelo próprio código em vez de escrito à mão
+  (function () {
+    var el = $('proCtaConta');
+    if (el && window.LimparFala && LimparFala.CTA) el.textContent = LimparFala.CTA.length;
+  })();
+
+  // O vocabulário fechado, mostrado por extenso: é a lista que o app do outro lado vai receber
+  (function () {
+    var caixa = $('proVocab');
+    if (!caixa || !window.Pescaria) return;
+    var total = 0;
+    Object.keys(Pescaria.ROTULOS).forEach(function (g) {
+      var termos = Object.keys(Pescaria.GRUPOS[g]);
+      total += termos.length;
+      var d = document.createElement('div'); d.className = 'pro-vocab-grupo';
+      var b = document.createElement('b'); b.textContent = Pescaria.ROTULOS[g] + ' ';
+      var c = document.createElement('span'); c.className = 'pro-conta'; c.textContent = '(' + termos.length + ')';
+      d.appendChild(b); d.appendChild(c);
+      var lista = document.createElement('div'); lista.className = 'pro-vocab';
+      termos.forEach(function (t) {
+        var s = document.createElement('span'); s.className = 'pro-tag'; s.textContent = t;
+        lista.appendChild(s);
+      });
+      d.appendChild(lista); caixa.appendChild(d);
+    });
+    var conta = $('proVocabConta');
+    if (conta) conta.textContent = total + ' termos canónicos.';
+  })();
+
+  /* ---------- repetidor ---------- */
+
+  (function () {
+    var campo = $('proRepetidor'), estado = $('proEstado');
+    if (!campo) return;
+    function pintar() {
+      var v = Tubo.repetidor();
+      if (estado) estado.textContent = v ? 'guardado — a busca automática está ligada' : 'vazio — modo avião';
+    }
+    campo.value = Tubo.repetidor();
+    pintar();
+    var guardar = $('proGuardar'), apagar = $('proApagar');
+    if (guardar) guardar.addEventListener('click', function () {
+      var v = campo.value.trim();
+      if (v && !/^https:\/\//i.test(v)) {
+        aviso('O repetidor tem de começar por https://', 'Sem isso o navegador bloqueia o pedido.', true);
+        return;
+      }
+      Tubo.guardarRepetidor(v); pintar();
+      aviso(v ? 'Repetidor guardado' : 'Repetidor apagado',
+            v ? 'A partir de agora o botão «Buscar» tenta ir à rede.' : 'Voltou ao modo 100% offline.');
+    });
+    if (apagar) apagar.addEventListener('click', function () {
+      campo.value = ''; Tubo.guardarRepetidor(''); pintar();
+      aviso('Repetidor apagado', 'Voltou ao modo 100% offline.');
+    });
+  })();
+
+  /* ---------- lote de vídeos ---------- */
+
+  var ytLote = [], ytSeq = 0, ytResultados = [], ytARodar = false;
+  var ytLoteEl = $('ytLote'), ytListaEl = $('ytLista'), ytResumoEl = $('ytResumo'),
+      ytAvisoEl = $('ytAviso'), ytResultsEl = $('ytResults'),
+      ytProg = $('ytProgress'), ytProgTxt = $('ytProgressText'), ytProgBar = $('ytProgressBar');
+
+  /* O título sai sempre do texto JÁ limpo. Tirado da transcrição crua, saía
+     "Fala galera tudo bem com voces se inscreve ai" — o nome do ficheiro
+     ficava a ser exatamente aquilo que a limpeza existe para deitar fora. */
+  function tituloDoTexto(t) {
+    var limpo = String(t || '').replace(/\s+/g, ' ').trim();
+    if (!limpo) return '';
+    var fim = limpo.search(/[.!?]/);
+    var frase = (fim > 12 ? limpo.slice(0, fim) : limpo).trim();
+    if (frase.length > 62) {                      // cortar na palavra, não a meio dela
+      var corte = frase.lastIndexOf(' ', 62);
+      frase = frase.slice(0, corte > 24 ? corte : 62).trim();
+    }
+    frase = frase.replace(/[\s,;:–-]+$/, '');
+    if (!frase) return '';
+    return frase.charAt(0).toUpperCase() + frase.slice(1);
+  }
+
+  function novoItem(dados) {
+    var it = {
+      id: ++ytSeq,
+      url: dados.url || '',
+      videoId: dados.videoId || null,
+      playlist: dados.playlist || null,
+      titulo: dados.titulo || '',
+      rotulo: dados.rotulo || '',
+      legenda: dados.legenda || '',
+      origem: dados.origem || 'link'
+    };
+    ytLote.push(it);
+    return it;
+  }
+
+  function desenharLote() {
+    if (!ytListaEl) return;
+    ytListaEl.innerHTML = '';
+    if (!ytLote.length) { ytLoteEl.hidden = true; return; }
+    ytLoteEl.hidden = false;
+
+    var prontos = ytLote.filter(function (i) { return i.legenda.trim(); }).length;
+    ytResumoEl.textContent = ytLote.length + ' vídeo' + (ytLote.length > 1 ? 's' : '') +
+      ' · ' + prontos + ' com transcrição';
+
+    ytLote.forEach(function (it, i) {
+      var temLegenda = !!it.legenda.trim();
+      var li = document.createElement('div');
+      li.className = 'yt-item ' + (temLegenda ? 'pronto' : 'falta');
+
+      var n = document.createElement('span'); n.className = 'yt-item-num'; n.textContent = (i + 1);
+      var corpo = document.createElement('div'); corpo.className = 'yt-item-corpo';
+
+      var tit = document.createElement('div'); tit.className = 'yt-item-tit';
+      tit.textContent = it.titulo || it.rotulo || (it.videoId ? 'Vídeo ' + it.videoId
+        : it.playlist ? 'Playlist ' + it.playlist : 'Transcrição avulsa');
+      corpo.appendChild(tit);
+
+      var sub = document.createElement('div'); sub.className = 'yt-item-sub';
+      sub.textContent = temLegenda
+        ? (Legendas.ler(it.legenda).formato + ' · ' +
+           it.legenda.trim().split(/\s+/).length + ' palavras' + (it.url ? ' · ' + it.url : ''))
+        : (it.url || 'sem endereço') + ' — falta a transcrição';
+      corpo.appendChild(sub);
+
+      if (!temLegenda) {
+        var ta = document.createElement('textarea');
+        ta.className = 'yt-item-cola';
+        ta.placeholder = 'Cole aqui a transcrição deste vídeo…';
+        /* «input» guarda o que foi escrito sem redesenhar; «change» (que só
+           dispara ao sair da caixa) é que redesenha. Redesenhar a cada tecla
+           destruía as outras caixas do lote e levava com elas o texto que o
+           utilizador ainda não tinha confirmado. */
+        ta.addEventListener('input', function () { it.legenda = ta.value; });
+        ta.addEventListener('change', function () {
+          it.legenda = ta.value;
+          if (!it.titulo && !it.rotulo) it.rotulo = tituloDoTexto(primeirasFalas(ta.value));
+          desenharLote();
+        });
+        corpo.appendChild(ta);
+
+        if (Tubo.repetidor() && it.url) {
+          var busca = document.createElement('button');
+          busca.type = 'button'; busca.className = 'ghost';
+          busca.style.marginTop = '8px'; busca.textContent = 'Buscar pelo repetidor';
+          busca.addEventListener('click', async function () {
+            busca.disabled = true; busca.textContent = 'A buscar…';
+            try {
+              it.legenda = await Tubo.buscarLegenda(it.url);
+              if (!it.legenda.trim()) throw new Error('O repetidor devolveu texto vazio.');
+              desenharLote();
+              aviso('Legenda recebida', it.url);
+            } catch (e) {
+              busca.disabled = false; busca.textContent = 'Buscar pelo repetidor';
+              aviso('Não deu para buscar', (e && e.message) || 'erro desconhecido', true);
+            }
+          });
+          corpo.appendChild(busca);
+        }
+      }
+
+      var x = document.createElement('button');
+      x.type = 'button'; x.className = 'yt-item-x'; x.textContent = '×';
+      x.setAttribute('aria-label', 'Tirar da lista');
+      x.addEventListener('click', function () {
+        ytLote = ytLote.filter(function (o) { return o.id !== it.id; });
+        desenharLote();
+      });
+
+      li.appendChild(n); li.appendChild(corpo); li.appendChild(x);
+      ytListaEl.appendChild(li);
+    });
+
+    var btn = $('ytConverter');
+    btn.disabled = prontos === 0 || ytARodar;
+    btn.textContent = prontos
+      ? 'Converter ' + prontos + ' em Markdown'
+      : 'Falta colar a transcrição';
+
+    var semLegenda = ytLote.length - prontos;
+    if (semLegenda) {
+      ytAvisoEl.hidden = false;
+      ytAvisoEl.textContent = semLegenda + ' vídeo(s) ainda sem transcrição — cole a de cada um na '
+        + 'caixa do próprio item. Os que já têm podem ser convertidos na mesma.';
+    } else { ytAvisoEl.hidden = true; }
+  }
+
+  function primeirasFalas(texto) {
+    var r = Legendas.ler(texto);
+    return r.falas.slice(0, 6).map(function (f) { return f.texto; }).join(' ');
+  }
+
+  /* ---------- entradas ---------- */
+
+  function adicionarEnderecos(texto) {
+    var achados = Tubo.acharEnderecos(texto);
+    if (!achados.length) return 0;
+    var jaTem = {};
+    ytLote.forEach(function (i) { jaTem[(i.videoId || '') + '|' + (i.playlist || '')] = true; });
+    var novos = 0;
+    achados.forEach(function (a) {
+      var k = (a.videoId || '') + '|' + (a.playlist || '');
+      if (jaTem[k]) return;
+      jaTem[k] = true; novos++;
+      novoItem({ url: a.url, videoId: a.videoId, playlist: a.playlist,
+                 titulo: a.playlist && !a.videoId ? 'Playlist ' + a.playlist : '' });
+    });
+    desenharLote();
+    return novos;
+  }
+
+  (function () {
+    var campo = $('ytUrl'), add = $('ytAdd'), colar = $('ytColar');
+    if (!campo) return;
+
+    function submeter() {
+      var v = campo.value.trim();
+      if (!v) return;
+      var n = adicionarEnderecos(v);
+      if (n) { campo.value = ''; aviso(n + ' vídeo(s) na lista', 'Agora cole a transcrição de cada um.'); }
+      else aviso('Nenhum link do YouTube reconhecido',
+                 'Aceita youtu.be, /watch?v=, /shorts/, /live/ e /playlist?list=.', true);
+    }
+    add.addEventListener('click', submeter);
+    campo.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); submeter(); } });
+
+    colar.addEventListener('click', async function () {
+      try {
+        var t = await navigator.clipboard.readText();
+        if (!t) throw new Error('vazio');
+        campo.value = t.trim().split('\n')[0].trim();
+        if (!adicionarEnderecos(t)) aviso('Nada reconhecido no que estava copiado', '', true);
+        else campo.value = '';
+      } catch (e) {
+        aviso('O navegador não deixou ler a área de transferência',
+              'Cole no campo com Ctrl+V e carregue em Adicionar.', true);
+        campo.focus();
+      }
+    });
+  })();
+
+  (function () {
+    var usar = $('ytUsarCola'), limpar = $('ytLimparCola'), cola = $('ytCola');
+    if (!usar) return;
+
+    usar.addEventListener('click', function () {
+      var t = cola.value;
+      if (!t.trim()) { aviso('A caixa está vazia', 'Cole a transcrição antes.', true); return; }
+
+      var lido = Legendas.ler(t);
+      if (!lido.falas.length) { aviso('Não deu para ler esta transcrição', 'Confira se copiou o texto todo.', true); return; }
+
+      // um item à espera recebe a transcrição; senão, entra como vídeo avulso
+      var orfao = ytLote.filter(function (i) { return !i.legenda.trim(); })[0];
+      if (orfao) {
+        orfao.legenda = t;
+        if (!orfao.titulo) orfao.rotulo = tituloDoTexto(primeirasFalas(t));
+      } else {
+        var it = novoItem({ legenda: t, origem: 'colagem' });
+        it.rotulo = tituloDoTexto(primeirasFalas(t));
+      }
+      cola.value = '';
+      desenharLote();
+      aviso('Transcrição adicionada', lido.falas.length + ' falas lidas · formato ' + lido.formato);
+    });
+
+    limpar.addEventListener('click', function () { cola.value = ''; cola.focus(); });
+  })();
+
+  (function () {
+    var input = $('ytFile'), dz = $('ytDz');
+    if (!input) return;
+
+    async function receber(lista) {
+      var arquivos = Array.prototype.slice.call(lista).filter(function (f) {
+        return /\.(srt|vtt|json3|srv3|ttml|xml|txt|sbv)$/i.test(f.name);
+      });
+      if (!arquivos.length) {
+        aviso('Nenhum arquivo de legenda no que você escolheu',
+              'Aceita .srt, .vtt, .json3, .srv3, .ttml, .xml, .sbv e .txt.', true);
+        return;
+      }
+      arquivos.sort(function (a, b) {
+        return a.name.localeCompare(b.name, 'pt', { numeric: true, sensitivity: 'base' });
+      });
+      for (var i = 0; i < arquivos.length; i++) {
+        var f = arquivos[i];
+        var texto = await f.text();
+        if (!texto.trim()) continue;
+        // muito extrator grava o id do vídeo no nome do ficheiro
+        var base = f.name.replace(/\.[^.]+$/, '');
+        var id = Tubo.idDoVideo(base) || (base.match(/\[([A-Za-z0-9_-]{11})\]/) || [])[1] || null;
+        novoItem({
+          legenda: texto, origem: 'ficheiro',
+          videoId: id, url: id ? Tubo.urlDoVideo(id) : '',
+          titulo: base.replace(/[-_]+/g, ' ').replace(/\[[A-Za-z0-9_-]{11}\]/, '').trim()
+        });
+      }
+      desenharLote();
+      aviso(arquivos.length + ' legenda(s) na lista', 'Prontas para converter.');
+    }
+
+    input.addEventListener('change', function () { receber(input.files); input.value = ''; });
+    ['dragenter', 'dragover'].forEach(function (ev) {
+      dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.add('dragging'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+      dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.remove('dragging'); });
+    });
+    dz.addEventListener('drop', function (e) {
+      if (e.dataTransfer && e.dataTransfer.files) receber(e.dataTransfer.files);
+    });
+  })();
+
+  $('ytLimparLote').addEventListener('click', function () {
+    if (ytARodar) return;
+    ytLote = []; ytResultados = [];
+    desenharLote();
+    ytResultsEl.innerHTML = '';
+    $('ytBatch').hidden = true;
+  });
+
+  /* ---------- conversão ---------- */
+
+  function converterItem(it) {
+    var pro = ajustesPro();
+    var lido = Legendas.ler(it.legenda);
+    if (!lido.falas.length) throw new Error('Nenhuma fala foi reconhecida nesta transcrição.');
+
+    var limpo = LimparFala.processar(lido.falas, {
+      ehProtegida: Pescaria.temTermoDePesca,
+      muletas: pro.muletas,
+      cta: pro.proCTA
+    });
+    if (!limpo.paragrafos.length) throw new Error('Depois da limpeza não sobrou texto nenhum. Baixe o nível de limpeza no separador profissional.');
+
+    var corpo = limpo.paragrafos.map(function (p) { return p.texto; }).join(' ');
+    var tags = Pescaria.etiquetar(corpo);
+
+    var titulo = it.titulo || (pro.proTitulo ? tituloDoTexto(corpo) : '') || 'Transcrição sem título';
+    var ultima = lido.falas[lido.falas.length - 1];
+    var fim = ultima.fim != null ? ultima.fim : ultima.ini;
+
+    var meta = {
+      fonte: it.origem === 'ficheiro' ? 'legenda' : 'youtube',
+      titulo: titulo, url: it.url || '', videoId: it.videoId || '',
+      playlist: it.playlist || '', duracao: fim != null ? Tubo.hms(fim) : ''
+    };
+
+    var md = Tubo.markdown(meta, limpo, tags, {
+      marcarTempo: pro.proTempo, auditoria: pro.proAuditoria,
+      seccoes: pro.proSeccoes, frontMatter: pro.proFront
+    }, Pescaria);
+
+    return { md: md, meta: meta, tags: tags, relatorio: limpo.relatorio,
+             nome: Tubo.nomeArquivo(meta), formato: lido.formato };
+  }
+
+  function cartaoVideo(r) {
+    var el = document.createElement('article'); el.className = 'card';
+
+    var head = document.createElement('div'); head.className = 'card-head';
+    var h2 = document.createElement('h2'); h2.className = 'fname'; h2.textContent = r.nome;
+    var meta = document.createElement('span'); meta.className = 'meta';
+    meta.textContent = r.formato + (r.meta.duracao ? ' · ' + r.meta.duracao : '');
+    head.appendChild(h2); head.appendChild(meta); el.appendChild(head);
+
+    var rel = r.relatorio;
+    var chars = r.md.length;
+    var stats = document.createElement('div'); stats.className = 'stats';
+    var cortado = rel.palavrasBrutas
+      ? Math.round((1 - rel.palavrasFinais / rel.palavrasBrutas) * 100) : 0;
+    stats.innerHTML =
+      '<div class="stat"><b>' + fmtNum(rel.palavrasFinais) + '</b><em>palavras limpas</em></div>' +
+      '<div class="stat"><b>' + fmtNum(rel.repetidas) + '</b><em>repetições da legenda</em></div>' +
+      '<div class="stat"><b>' + fmtNum(rel.ctaRemovidas.length + rel.muletas) + '</b><em>ruído retirado</em></div>' +
+      '<div class="stat savings"><b>' + cortado + '%</b><em>menor que a legenda</em></div>';
+    el.appendChild(stats);
+
+    var achou = ['peixes', 'locais', 'tecnicas', 'iscas'].reduce(function (n, g) {
+      return n + r.tags[g].length;
+    }, 0);
+    if (!achou) {
+      var f = document.createElement('p'); f.className = 'flag';
+      f.textContent = 'Nenhum termo de pesca reconhecido nesta transcrição. O arquivo sai com as '
+        + 'secções vazias — confira se o vídeo é mesmo sobre pesca, ou junte o termo em falta ao '
+        + 'vocabulário do separador profissional.';
+      el.appendChild(f);
+    }
+    if (rel.ctaAparadas.length) {
+      var a = document.createElement('p'); a.className = 'flag';
+      a.textContent = rel.ctaAparadas.length + ' frase(s) tinham chamada de canal colada a conteúdo '
+        + 'de pesca: o pedido saiu e o resto ficou. A lista está no fim do arquivo.';
+      el.appendChild(a);
+    }
+
+    var pre = document.createElement('pre'); pre.className = 'preview';
+    var LIMITE = 3000;
+    if (r.md.length > LIMITE) {
+      pre.textContent = r.md.slice(0, LIMITE) + '\n\n…';
+      var mais = document.createElement('button');
+      mais.className = 'ghost'; mais.type = 'button';
+      mais.textContent = 'Ver o arquivo inteiro (' + fmtNum(chars) + ' caracteres)';
+      mais.addEventListener('click', function () { pre.textContent = r.md; mais.remove(); });
+      el.appendChild(pre); el.appendChild(mais);
+    } else { pre.textContent = r.md; el.appendChild(pre); }
+
+    var actions = document.createElement('div'); actions.className = 'actions';
+    var base = r.nome.replace(/\.md$/, '');
+    var blocos = dividirEmBlocos(r.md, blocoAlvoAtual(), base, '.md');
+
+    var dl = document.createElement('button');
+    dl.textContent = blocos ? ('Baixar ' + blocos.length + ' blocos (.zip)') : ('Baixar ' + r.nome);
+    dl.addEventListener('click', async function () {
+      if (!blocos) { download(r.nome, r.md, 'text/markdown;charset=utf-8'); return; }
+      var rot = dl.textContent; dl.disabled = true; dl.textContent = 'A compactar…';
+      try {
+        var blob = await MakeZip.makeZip(blocos);
+        baixarBlob(base + '-blocos.zip', blob);
+      } catch (e) { aviso('Os blocos não foram compactados', e.message || 'erro desconhecido', true); }
+      dl.textContent = rot; dl.disabled = false;
+    });
+
+    var cp = document.createElement('button'); cp.className = 'ghost'; cp.textContent = 'Copiar Markdown';
+    cp.addEventListener('click', function () {
+      copyText(r.md).then(function () {
+        cp.textContent = 'Copiado';
+        setTimeout(function () { cp.textContent = 'Copiar Markdown'; }, 1600);
+        aviso('Markdown copiado: ' + r.nome, fmtNum(r.md.length) + ' caracteres');
+      }, function () {
+        var deu = selectPreview(pre);
+        cp.textContent = deu ? 'Selecionado — carregue Ctrl+C' : 'O navegador bloqueou a cópia';
+        setTimeout(function () { cp.textContent = 'Copiar Markdown'; }, 4000);
+      });
+    });
+
+    actions.appendChild(dl); actions.appendChild(cp); el.appendChild(actions);
+    return el;
+  }
+
+  function refrescarLoteYT() {
+    var bar = $('ytBatch');
+    if (ytResultados.length < 2) { bar.hidden = true; return; }
+    var chars = ytResultados.reduce(function (n, r) { return n + r.text.length; }, 0);
+    $('ytBatchCount').textContent =
+      ytResultados.length + ' ficheiros convertidos · ' + fmtBytesShort(chars) + ' de Markdown';
+    bar.hidden = false;
+  }
+
+  $('ytConverter').addEventListener('click', async function () {
+    var prontos = ytLote.filter(function (i) { return i.legenda.trim(); });
+    if (!prontos.length || ytARodar) return;
+
+    ytARodar = true;
+    this.disabled = true;
+    ytResultsEl.innerHTML = ''; ytResultados = []; $('ytBatch').hidden = true;
+    ytProg.hidden = false; ytProgBar.style.width = '0%';
+
+    for (var i = 0; i < prontos.length; i++) {
+      var it = prontos[i];
+      ytProgTxt.textContent = 'A limpar ' + (it.titulo || it.videoId || 'vídeo ' + (i + 1)) +
+        ' (' + (i + 1) + '/' + prontos.length + ')…';
+      ytProgBar.style.width = Math.round(i / prontos.length * 100) + '%';
+      await new Promise(function (r) { setTimeout(r, 0); });
+      try {
+        var r = converterItem(it);
+        ytResultsEl.appendChild(cartaoVideo(r));
+        ytResultados.push({ name: r.nome, text: r.md });
+      } catch (e) {
+        ytResultsEl.appendChild(errorCard(it.titulo || it.url || 'Vídeo ' + (i + 1),
+          (e && e.message) || 'erro desconhecido'));
+      }
+    }
+
+    ytProgBar.style.width = '100%';
+    ytProg.hidden = true; ytARodar = false;
+    desenharLote();
+    refrescarLoteYT();
+    if (ytResultados.length === 1) {
+      aviso('1 arquivo pronto', 'Confira a pré-visualização antes de baixar.');
+    }
+  });
+
+  $('ytZip').addEventListener('click', async function () {
+    var b = this; if (!ytResultados.length) return;
+    var rot = b.textContent; b.disabled = true; b.textContent = 'A compactar…';
+    try {
+      var alvo = blocoAlvoAtual(), paraZip = [];
+      ytResultados.forEach(function (r) {
+        var base = r.name.replace(/\.md$/, '');
+        var partes = dividirEmBlocos(r.text, alvo, base, '.md');
+        if (partes) paraZip = paraZip.concat(partes); else paraZip.push(r);
+      });
+      var blob = await MakeZip.makeZip(paraZip, function (feito, total) {
+        b.textContent = 'A compactar… ' + (feito + 1) + '/' + total;
+      });
+      baixarBlob('transcricoes-' + new Date().toISOString().slice(0, 10) + '.zip', blob);
+      b.textContent = 'Pronto'; setTimeout(function () { b.textContent = rot; }, 1800);
+    } catch (e) {
+      b.textContent = rot;
+      aviso('O .zip não foi gerado', e.message || 'erro desconhecido', true);
+    }
+    b.disabled = false;
+  });
+
+  $('ytJoin').addEventListener('click', async function () {
+    if (!ytResultados.length) return;
+    /* Um ficheiro só com vários vídeos não pode levar seis cabeçalhos YAML: só o
+       primeiro seria lido. Por isso aqui os cabeçalhos saem e cada vídeo entra
+       como uma secção, com o seu próprio título. */
+    var juntos = ytResultados.map(function (r) {
+      return r.text.replace(/^---\n[\s\S]*?\n---\n+/, '');
+    }).join('\n\n---\n\n');
+    var cabeca = '# Playlist convertida\n\n_' + ytResultados.length +
+      ' vídeos · gerado em ' + new Date().toISOString().slice(0, 10) + '_\n\n';
+    juntos = cabeca + juntos;
+
+    var partes = dividirEmBlocos(juntos, blocoAlvoAtual(), 'playlist', '.md');
+    if (!partes) { download('playlist.md', juntos, 'text/markdown;charset=utf-8'); return; }
+    var b = this, rot = b.textContent; b.disabled = true; b.textContent = 'A compactar…';
+    try {
+      var blob = await MakeZip.makeZip(partes);
+      baixarBlob('playlist-blocos.zip', blob);
+    } catch (e) { aviso('Os blocos não foram compactados', e.message || 'erro desconhecido', true); }
+    b.textContent = rot; b.disabled = false;
+  });
+
+  desenharLote();
+
 })();
 </script>
 </body>
