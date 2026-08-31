@@ -3020,6 +3020,9 @@ var LimparFala = (function () {
       .replace(/\s+([,.;:!?])/g, '$1')
       .replace(/([,;:])\s*(?=[,;:])/g, '')
       .replace(/([.!?])\s*[,;:]/g, '$1')
+      /* Tirar a muleta do fim da frase deixa a vírgula pendurada contra o
+         ponto: «já sabe, né?» vira «já sabe,?». */
+      .replace(/[,;:]+(\s*[.!?])/g, '$1')
       .replace(/(^|[.!?]\s+)[,;:]\s*/g, '$1')
       .replace(/\s{2,}/g, ' ')
       .trim();
@@ -3124,7 +3127,7 @@ var Pescaria = (function () {
       'Bagre':        ['bagre', 'bagres'],
       'Piau':         ['piau', 'piaus', 'piapara'],
       'Corvina':      ['corvina', 'corvinas'],
-      'Robalo':       ['robalo', 'robalos'],
+      'Robalo':       ['robalo', 'robalos', 'roubalo', 'roubalos'],
       'Tainha':       ['tainha', 'tainhas'],
       'Pirarucu':     ['pirarucu', 'pirarucus'],
       'Tambaqui':     ['tambaqui', 'tambaquis'],
@@ -3231,6 +3234,20 @@ var Pescaria = (function () {
   var COMPILADO = {};
   Object.keys(GRUPOS).forEach(function (g) { COMPILADO[g] = compilar(GRUPOS[g]); });
 
+  /* Alguns termos do vocabulário também são gíria, e aí não são etiqueta.
+     «Massa» é isca de pesca, mas em «essa manobra aqui é massa» quer dizer
+     «bacana» — apanhado num vídeo real sobre robalo. O que separa os dois
+     sentidos é o verbo de ligação à frente.
+
+     A guarda corre sobre o texto ORIGINAL, não sobre o normalizado, porque é
+     o acento que distingue «é massa» (gíria) de «isca e massa» (as duas
+     coisas). Isto só funciona porque tirar os acentos não muda o comprimento
+     do texto — «é» decompõe em e+acento e volta a um carácter — de modo que
+     as posições continuam a bater nas duas versões. */
+  var GUARDAS = {
+    'Massa': /(?:^|[^0-9A-Za-zÀ-ÿ])(?:é|tá|está|muito|bem|mais|super|foi|ficou|acho|achei|que)\s*$/i
+  };
+
   /* Termos que nunca devem ser apagados pela limpeza de vícios de linguagem:
      é a salvaguarda contra cortar "amarra o anzol" achando que é enrolação. */
   var PROTEGIDO = (function () {
@@ -3257,7 +3274,12 @@ var Pescaria = (function () {
     c.re.lastIndex = 0;
     while ((m = c.re.exec(alvo))) {
       var canon = c.de[m[1]];
-      if (canon) conta[canon] = (conta[canon] || 0) + 1;
+      if (canon) {
+        var guarda = GUARDAS[canon];
+        // início do termo: a correspondência inclui o carácter de fronteira
+        var antes = guarda ? texto.slice(0, m.index + (m[0].length - m[1].length)) : '';
+        if (!guarda || !guarda.test(antes)) conta[canon] = (conta[canon] || 0) + 1;
+      }
       /* O termo não consome o carácter que o segue (o fim é lookahead), por
          isso a varredura normal do /g já apanha o termo seguinte. Recuar aqui
          fazia "isca artificial" contar também como "artificial". */
