@@ -1,9 +1,18 @@
 # PDF → IA — offline
 
-Converte PDFs em texto puro (`.txt`) ou Markdown (`.md`) **inteiramente dentro do navegador**.
-Nenhum arquivo é enviado para lugar nenhum: não há servidor, não há upload, não há conta.
+Converte PDFs e transcrições de vídeo em texto puro (`.txt`) ou Markdown (`.md`)
+**inteiramente dentro do navegador**. Nenhum arquivo é enviado para lugar nenhum: não há
+servidor, não há upload, não há conta.
 
 É um arquivo HTML só. Dá para usar direto do celular, do computador, ou até em modo avião.
+
+Três separadores:
+
+| Separador | O que faz |
+|---|---|
+| **PDF** | Um ou muitos PDFs, uma pasta ou um `.zip` viram `.txt` ou `.md` |
+| **YouTube** | Legenda de vídeo ou de playlist vira Markdown limpo e etiquetado |
+| **Nível profissional** | Regula a limpeza da fala e a estruturação da saída |
 
 ## Para que serve
 
@@ -11,7 +20,7 @@ Mandar um PDF para uma IA custa caro porque o arquivo carrega fontes, imagens e 
 que o modelo não precisa. Extrair o texto antes reduz muito o tamanho — e o Markdown ainda
 preserva títulos, listas e tabelas, que ajudam o modelo a entender o documento.
 
-## Como usar
+## Como usar — PDF
 
 Abra a página, escolha os PDFs (ou uma pasta inteira), confira a lista e aperte **Converter**.
 
@@ -57,6 +66,82 @@ distingui-los exigiria um dicionário.
 frase, e só se parte à força um parágrafo maior que o bloco inteiro. Cada ficheiro leva no
 topo o nome do documento e a posição (`bloco 2 de 7`), para o modelo saber o que está a
 ler. Sai um `.zip` com as partes.
+
+## Como usar — YouTube
+
+Cole o link do vídeo (ou da playlist, ou vários links de uma vez, um por linha), depois cole
+a transcrição de cada um. No YouTube ela sai em **…mais → Mostrar transcrição**, selecionar
+tudo e copiar. Também aceita ficheiros de legenda largados na página: `.srt`, `.vtt`,
+`.json3`, `.srv3`, `.ttml` e `.sbv`, vários ao mesmo tempo — é o caminho para uma playlist
+inteira de uma vez.
+
+Cada vídeo sai num `.md` próprio, com nome previsível (`titulo-do-video-ID.md`). Vários
+saem num `.zip`, ou juntos num ficheiro só — e aí os cabeçalhos YAML de cada um dão lugar
+a secções, porque num ficheiro só o primeiro cabeçalho seria lido.
+
+### Porque é preciso colar a legenda
+
+O navegador não consegue ir buscá-la sozinho, e não é falta de vontade: a página do vídeo
+não devolve cabeçalho CORS nenhum, e o endereço antigo de legendas (`/api/timedtext`)
+responde vazio desde que o YouTube passou a exigir parâmetros assinados. Qualquer página
+que tente é bloqueada. Quem tiver um repetidor próprio pode configurá-lo no separador
+profissional; enquanto o campo estiver vazio — e vem vazio — não há requisição de rede
+nenhuma e o modo avião continua a valer.
+
+## Nível profissional
+
+Fala não é texto escrito: repete-se, não tem pontuação e vem embrulhada em pedidos de
+inscrição. Este separador regula as quatro passagens que desfazem isso.
+
+**Sobreposição.** As legendas automáticas vêm em rolo — cada bloco repete o fim do
+anterior. A junção compara palavra a palavra, não carácter, senão colava `pesca` com `r`.
+
+**Parágrafos pela pausa.** Sem pontuação, o único sinal de fronteira que a legenda dá é o
+silêncio: uma pausa de 2,2 s abre parágrafo. Sem tempos nenhuns, corta-se por tamanho.
+
+**Chamadas de canal e patrocínio.** São 34 padrões — «se inscreve», «deixa o like», «ativa
+o sininho», «link na descrição», «patrocinado por», «use o cupom», «fala galera», «até o
+próximo vídeo» — escritos com e sem acento, porque a legenda automática troca as grafias
+sem critério.
+
+A regra que manda em tudo: **uma frase apanhada por um destes padrões mas que fala de pesca
+não é deitada fora.** Apara-se só o pedido e o resto fica. «Deixa o like e amarra o anzol
+com nó cego» perde o pedido e mantém o nó. Cortar a frase inteira seria pior do que deixar
+passar um «deixa o like», porque o conhecimento não volta.
+
+**Vícios de linguagem**, em quatro níveis:
+
+| Nível | O que apaga |
+|---|---|
+| Nenhuma | só junta as repetições da legenda |
+| Segura | «né», «tipo assim», «tá ligado», hesitações, palavra dobrada |
+| Padrão | mais «cara», «sabe», «beleza» — só quando isolados por vírgula |
+| Agressiva | essas muletas em qualquer posição |
+
+O nível agressivo tem guardas: `cara` e `gente` não se apagam com artigo ou preposição à
+frente (`a gente vai pescar` é «nós», `a cara do peixe` é a cara do peixe), e `sabe`,
+`entendeu` e `viu` não se apagam com sujeito à frente (`você sabe amarrar o nó`, `ele viu o
+cardume`). Sem essas guardas, o primeiro teste escreveu «hoje a vai pescar tilápia».
+
+Um pormenor que dá trabalho em português: o `\b` do JavaScript conta só `[A-Za-z0-9_]` como
+palavra, por isso `\bné\b` nunca casa — entre o `é` e o espaço não há fronteira aos olhos
+dele. As fronteiras estão escritas à mão, com a classe acentuada.
+
+### Estruturação e vocabulário controlado
+
+A saída leva cabeçalho YAML e secções `# Tipo de Peixe`, `# Local`, `# Técnica`, `# Isca`,
+`# Equipamento`, `# Segurança`, com a contagem de vezes que cada termo aparece — o peixe
+citado trinta vezes é o assunto, o citado uma vez é passagem.
+
+As etiquetas saem de um vocabulário fechado de 86 termos canónicos: `tilapia`, `Tilápias` e
+`TILÁPIA` viram sempre **Tilápia**. Etiqueta livre escrita de três maneiras parte a
+importação, por isso a lista é fechada e está visível no separador. Não há modelo nenhum
+nisto — é dicionário e correspondência de palavra inteira, o que faz correr offline e
+devolver sempre o mesmo resultado para a mesma entrada.
+
+Com a auditoria ligada, o ficheiro termina com a contagem do que foi retirado e a lista das
+frases removidas e aparadas. Sem isso a limpeza é invisível, e limpeza invisível não se
+confere antes de importar.
 
 ## Como funciona
 
@@ -105,6 +190,14 @@ com 0,2% de caracteres sem tradução.
 - **PDFs com palavra-passe a sério** continuam a precisar de ser abertos e gravados sem
   proteção antes. O mesmo para **AES-256**, que ainda não está implementado — em ambos os
   casos o app diz qual é o caso, em vez de devolver texto errado.
+- **A legenda do YouTube tem de ser colada ou trazida em ficheiro.** O navegador não a
+  consegue buscar sozinho — ver acima. Pela mesma razão, um endereço de playlist não se
+  expande em vídeos automaticamente: entra como um item, e os vídeos entram à medida que as
+  legendas chegam.
+- **A pontuação é heurística.** Os parágrafos são cortados pelas pausas do vídeo, não por
+  compreensão da frase. Sai legível, mas não é a pontuação que um humano poria.
+- **O vocabulário é fechado.** Um peixe fora da lista dos 86 termos não é etiquetado. É o
+  preço de nunca inventar uma etiqueta que o app do outro lado não conhece.
 - Alguns glifos podem faltar quando nenhuma fonte do documento oferece a correspondência.
 - Lotes muito grandes podem pesar no celular. O app avisa e permite cancelar no meio.
 
