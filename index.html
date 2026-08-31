@@ -601,6 +601,7 @@
       <div class="fila-topo">
         <span id="ytResumo">0 vídeos</span>
         <span class="fila-acoes">
+          <button type="button" id="ytBuscarTudo" hidden>Buscar todas pelo repetidor</button>
           <button type="button" id="ytLimparLote">Limpar</button>
         </span>
       </div>
@@ -735,7 +736,7 @@
     <p>O leitor de PDF e o de legendas estão embutidos neste arquivo: PDFs e transcrições coladas nunca saem do seu computador, e tudo funciona em modo avião. A única exceção é o repetidor do separador profissional — enquanto estiver vazio, e vem vazio, não há requisição de rede nenhuma.</p>
     <p>A estimativa de tokens usa a média de ~4 caracteres por token, para comparar tamanhos. PDFs escaneados não têm texto embutido e precisam de OCR antes.</p>
     <p class="direitos">© 2026 Jeovani · Todos os direitos reservados. Usar é livre; copiar, redistribuir, hospedar ou vender exige autorização.
-      <span class="versao">versão <b id="versaoApp">12</b><span id="versaoEstado"></span></span></p>
+      <span class="versao">versão <b id="versaoApp">13</b><span id="versaoEstado"></span></span></p>
   </footer>
 
   <div class="avisos" id="avisos" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -3343,6 +3344,7 @@ var Pescaria = (function () {
     var l = ['---'];
     l.push('fonte: ' + yamlTexto(meta.fonte || 'youtube'));
     l.push('titulo: ' + yamlTexto(meta.titulo || 'sem título'));
+    if (meta.canal) l.push('canal: ' + yamlTexto(meta.canal));
     if (meta.url) l.push('url: ' + yamlTexto(meta.url));
     if (meta.videoId) l.push('video_id: ' + yamlTexto(meta.videoId));
     if (meta.playlist) l.push('playlist: ' + yamlTexto(meta.playlist));
@@ -3478,26 +3480,52 @@ var Tubo = (function () {
     } catch (e) { return false; }
   }
 
-  function viaRepetidor(url) {
+  function viaRepetidor(url, lang) {
     var molde = repetidor();
     if (!molde) return null;
-    return molde.indexOf('{url}') >= 0
-      ? molde.replace('{url}', encodeURIComponent(url))
-      : molde.replace(/\/?$/, '/') + encodeURIComponent(url);
+    if (molde.indexOf('{url}') >= 0) {
+      var pronto = molde.replace('{url}', encodeURIComponent(url));
+      return molde.indexOf('{lang}') >= 0
+        ? pronto.replace('{lang}', encodeURIComponent(lang || 'pt')) : pronto;
+    }
+    // molde sem marcador: junta-se ?url= respeitando o que já lá esteja
+    return molde + (molde.indexOf('?') >= 0 ? '&' : '?') + 'url=' + encodeURIComponent(url)
+         + '&lang=' + encodeURIComponent(lang || 'pt');
   }
 
-  async function buscarLegenda(url) {
-    var alvo = viaRepetidor(url);
-    if (!alvo) {
-      var e = new Error('Nenhum repetidor configurado — o navegador não deixa este arquivo falar com o YouTube.');
-      e.codigo = 'sem-repetidor'; throw e;
+  function falha(msg, codigo) {
+    var e = new Error(msg); e.codigo = codigo || 'desconhecido'; return e;
+  }
+
+  /* Fala com o repetidor. O nosso devolve JSON — com título, canal, duração e
+     a lista de vídeos quando é playlist. Mas aceita-se também um repetidor
+     simples que devolva só o texto da legenda, porque essa é a forma mais fácil
+     de alguém montar o seu à pressa e não vale a pena excluí-la. */
+  async function buscar(url, lang) {
+    var alvo = viaRepetidor(url, lang);
+    if (!alvo) throw falha('Nenhum repetidor configurado — o navegador não deixa este arquivo falar com o YouTube.', 'sem-repetidor');
+
+    var r, texto;
+    try {
+      r = await fetch(alvo, { credentials: 'omit' });
+      texto = await r.text();
+    } catch (e) {
+      throw falha('Não foi possível falar com o repetidor. Verifique o endereço e se ele está no ar.', 'repetidor-inacessivel');
     }
-    var r = await fetch(alvo, { credentials: 'omit' });
-    if (!r.ok) {
-      var err = new Error('O repetidor respondeu ' + r.status + '.');
-      err.codigo = 'repetidor-falhou'; throw err;
+
+    var dados = null;
+    try { dados = JSON.parse(texto); } catch (e) {}
+
+    if (dados && typeof dados === 'object' && !Array.isArray(dados)) {
+      if (dados.erro) throw falha(dados.erro, dados.codigo);
+      if (dados.tipo === 'playlist') return dados;
+      if (dados.legenda) return dados;
+      throw falha('O repetidor respondeu num formato que não reconheço.', 'resposta-estranha');
     }
-    return await r.text();
+
+    if (!r.ok) throw falha('O repetidor respondeu ' + r.status + '.', 'repetidor-falhou');
+    if (!texto.trim()) throw falha('O repetidor devolveu texto vazio.', 'legenda-vazia');
+    return { tipo: 'video', legenda: texto };
   }
 
   /* ---------- Markdown final ---------- */
@@ -3587,7 +3615,7 @@ var Tubo = (function () {
     idDoVideo: idDoVideo, idDaLista: idDaLista, ehPlaylist: ehPlaylist,
     urlDoVideo: urlDoVideo, urlDaLista: urlDaLista, acharEnderecos: acharEnderecos,
     repetidor: repetidor, guardarRepetidor: guardarRepetidor, viaRepetidor: viaRepetidor,
-    buscarLegenda: buscarLegenda, markdown: markdown, nomeArquivo: nomeArquivo, hms: hms
+    buscar: buscar, markdown: markdown, nomeArquivo: nomeArquivo, hms: hms
   };
 })();
 </script>
@@ -4673,11 +4701,54 @@ var Tubo = (function () {
       playlist: dados.playlist || null,
       titulo: dados.titulo || '',
       rotulo: dados.rotulo || '',
+      canal: dados.canal || '',
+      duracao: dados.duracao == null ? null : dados.duracao,
       legenda: dados.legenda || '',
       origem: dados.origem || 'link'
     };
     ytLote.push(it);
     return it;
+  }
+
+  /* Uma busca só. O repetidor devolve, além da legenda, o título verdadeiro do
+     vídeo, o canal e a duração — que é bem melhor do que adivinhar o título
+     pela primeira frase da transcrição. */
+  async function buscarItem(it) {
+    var dados = await Tubo.buscar(it.url, 'pt');
+    if (dados.tipo === 'playlist') throw new Error('Este endereço é uma playlist, não um vídeo.');
+    it.legenda = dados.legenda || '';
+    if (!it.legenda.trim()) throw new Error('O repetidor devolveu a legenda vazia.');
+    if (dados.titulo) it.titulo = dados.titulo;
+    if (dados.canal) it.canal = dados.canal;
+    if (dados.duracao != null) it.duracao = dados.duracao;
+    if (dados.videoId && !it.videoId) {
+      it.videoId = dados.videoId; it.url = Tubo.urlDoVideo(dados.videoId);
+    }
+    return it;
+  }
+
+  /* Uma playlist não é convertível: é uma lista de vídeos. Assim que o
+     repetidor a expande, o item da playlist sai da lista e no lugar dele
+     entram os vídeos, já com o título certo — cada um à espera da sua legenda. */
+  async function expandirPlaylist(it) {
+    var dados = await Tubo.buscar(it.url || it.playlist, 'pt');
+    if (dados.tipo !== 'playlist') throw new Error('O repetidor não devolveu uma playlist.');
+
+    var jaTem = {};
+    ytLote.forEach(function (o) { if (o.videoId) jaTem[o.videoId] = true; });
+
+    var pos = ytLote.indexOf(it);
+    var novos = dados.videos.filter(function (v) { return !jaTem[v.videoId]; }).map(function (v) {
+      return {
+        id: ++ytSeq, url: Tubo.urlDoVideo(v.videoId), videoId: v.videoId,
+        playlist: dados.playlist || it.playlist, titulo: v.titulo || '', rotulo: '',
+        canal: '', duracao: v.duracao == null ? null : v.duracao, legenda: '', origem: 'playlist'
+      };
+    });
+    ytLote.splice(pos < 0 ? ytLote.length : pos, pos < 0 ? 0 : 1);
+    var onde = pos < 0 ? ytLote.length : pos;
+    Array.prototype.splice.apply(ytLote, [onde, 0].concat(novos));
+    return novos.length;
   }
 
   function desenharLote() {
@@ -4698,6 +4769,14 @@ var Tubo = (function () {
       var n = document.createElement('span'); n.className = 'yt-item-num'; n.textContent = (i + 1);
       var corpo = document.createElement('div'); corpo.className = 'yt-item-corpo';
 
+      var x = document.createElement('button');
+      x.type = 'button'; x.className = 'yt-item-x'; x.textContent = '×';
+      x.setAttribute('aria-label', 'Tirar da lista');
+      x.addEventListener('click', function () {
+        ytLote = ytLote.filter(function (o) { return o.id !== it.id; });
+        desenharLote();
+      });
+
       var tit = document.createElement('div'); tit.className = 'yt-item-tit';
       tit.textContent = it.titulo || it.rotulo || (it.videoId ? 'Vídeo ' + it.videoId
         : it.playlist ? 'Playlist ' + it.playlist : 'Transcrição avulsa');
@@ -4709,6 +4788,34 @@ var Tubo = (function () {
            it.legenda.trim().split(/\s+/).length + ' palavras' + (it.url ? ' · ' + it.url : ''))
         : (it.url || 'sem endereço') + ' — falta a transcrição';
       corpo.appendChild(sub);
+
+      // uma playlist não se converte: expande-se em vídeos
+      if (!temLegenda && it.playlist && !it.videoId) {
+        var exp = document.createElement('button');
+        exp.type = 'button'; exp.style.marginTop = '8px';
+        if (Tubo.repetidor()) {
+          exp.textContent = 'Abrir a playlist em vídeos';
+          exp.addEventListener('click', async function () {
+            exp.disabled = true; exp.textContent = 'A abrir…';
+            try {
+              var quantos = await expandirPlaylist(it);
+              desenharLote();
+              aviso(quantos + ' vídeo(s) da playlist na lista',
+                    'Agora use «Buscar todas pelo repetidor».');
+            } catch (e) {
+              exp.disabled = false; exp.textContent = 'Abrir a playlist em vídeos';
+              aviso('Não deu para abrir a playlist', (e && e.message) || 'erro desconhecido', true);
+            }
+          });
+        } else {
+          exp.className = 'ghost'; exp.disabled = true;
+          exp.textContent = 'Configure um repetidor para abrir a playlist';
+        }
+        corpo.appendChild(exp);
+        li.appendChild(n); li.appendChild(corpo); li.appendChild(x);
+        ytListaEl.appendChild(li);
+        return;
+      }
 
       if (!temLegenda) {
         var ta = document.createElement('textarea');
@@ -4733,10 +4840,9 @@ var Tubo = (function () {
           busca.addEventListener('click', async function () {
             busca.disabled = true; busca.textContent = 'A buscar…';
             try {
-              it.legenda = await Tubo.buscarLegenda(it.url);
-              if (!it.legenda.trim()) throw new Error('O repetidor devolveu texto vazio.');
+              await buscarItem(it);
               desenharLote();
-              aviso('Legenda recebida', it.url);
+              aviso('Legenda recebida', it.titulo || it.url);
             } catch (e) {
               busca.disabled = false; busca.textContent = 'Buscar pelo repetidor';
               aviso('Não deu para buscar', (e && e.message) || 'erro desconhecido', true);
@@ -4745,14 +4851,6 @@ var Tubo = (function () {
           corpo.appendChild(busca);
         }
       }
-
-      var x = document.createElement('button');
-      x.type = 'button'; x.className = 'yt-item-x'; x.textContent = '×';
-      x.setAttribute('aria-label', 'Tirar da lista');
-      x.addEventListener('click', function () {
-        ytLote = ytLote.filter(function (o) { return o.id !== it.id; });
-        desenharLote();
-      });
 
       li.appendChild(n); li.appendChild(corpo); li.appendChild(x);
       ytListaEl.appendChild(li);
@@ -4763,6 +4861,14 @@ var Tubo = (function () {
     btn.textContent = prontos
       ? 'Converter ' + prontos + ' em Markdown'
       : 'Falta colar a transcrição';
+
+    var tudo = $('ytBuscarTudo');
+    var buscaveis = ytLote.filter(function (i) {
+      return !i.legenda.trim() && i.url && !(i.playlist && !i.videoId);
+    }).length;
+    tudo.hidden = !(Tubo.repetidor() && buscaveis);
+    tudo.textContent = 'Buscar ' + buscaveis + ' pelo repetidor';
+    tudo.disabled = ytARodar;
 
     var semLegenda = ytLote.length - prontos;
     if (semLegenda) {
@@ -4915,6 +5021,39 @@ var Tubo = (function () {
     });
   })();
 
+  /* Busca em série, de propósito: em paralelo o YouTube corta com 429 e a
+     playlist inteira falha. Uma de cada vez é mais lento e chega ao fim. */
+  $('ytBuscarTudo').addEventListener('click', async function () {
+    var b = this;
+    var pendentes = ytLote.filter(function (i) {
+      return !i.legenda.trim() && i.url && !(i.playlist && !i.videoId);
+    });
+    if (!pendentes.length || ytARodar) return;
+
+    ytARodar = true; b.disabled = true;
+    ytProg.hidden = false; ytProgBar.style.width = '0%';
+    var feitos = 0, falhas = [];
+
+    for (var i = 0; i < pendentes.length; i++) {
+      var it = pendentes[i];
+      ytProgTxt.textContent = 'A buscar legenda ' + (i + 1) + ' de ' + pendentes.length + '…';
+      ytProgBar.style.width = Math.round(i / pendentes.length * 100) + '%';
+      try { await buscarItem(it); feitos++; }
+      catch (e) { falhas.push((it.titulo || it.videoId || it.url) + ': ' + ((e && e.message) || 'erro')); }
+      desenharLote();
+    }
+
+    ytProg.hidden = true; ytARodar = false;
+    desenharLote();
+    if (feitos) aviso(feitos + ' legenda(s) recebidas',
+                      falhas.length ? falhas.length + ' falharam — veja a lista' : 'Pode converter.');
+    if (falhas.length) {
+      ytResultsEl.innerHTML = '';
+      ytResultsEl.appendChild(errorCard('Não deu para buscar ' + falhas.length + ' legenda(s)',
+        falhas.join('\n')));
+    }
+  });
+
   $('ytLimparLote').addEventListener('click', function () {
     if (ytARodar) return;
     ytLote = []; ytResultados = [];
@@ -4943,11 +5082,14 @@ var Tubo = (function () {
     var titulo = it.titulo || (pro.proTitulo ? tituloDoTexto(corpo) : '') || 'Transcrição sem título';
     var ultima = lido.falas[lido.falas.length - 1];
     var fim = ultima.fim != null ? ultima.fim : ultima.ini;
+    // a duração dita pelo YouTube é exata; a da última fala é só onde a legenda parou
+    var dur = it.duracao != null ? it.duracao : fim;
 
     var meta = {
       fonte: it.origem === 'ficheiro' ? 'legenda' : 'youtube',
       titulo: titulo, url: it.url || '', videoId: it.videoId || '',
-      playlist: it.playlist || '', duracao: fim != null ? Tubo.hms(fim) : ''
+      canal: it.canal || '',
+      playlist: it.playlist || '', duracao: dur != null ? Tubo.hms(dur) : ''
     };
 
     var md = Tubo.markdown(meta, limpo, tags, {
