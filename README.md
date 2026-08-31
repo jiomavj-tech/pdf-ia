@@ -69,12 +69,21 @@ ler. Sai um `.zip` com as partes.
 
 ## Como usar — YouTube
 
-Três passos, e o primeiro só se faz uma vez:
+Três passos, e o caminho muda conforme o aparelho — o app deteta sozinho.
 
-1. **Instale o atalho.** Arraste o botão amarelo para a barra de favoritos.
+**No computador:**
+
+1. **Instale o atalho.** Arraste o botão amarelo para a barra de favoritos. Só a primeira vez.
 2. **Abra o vídeo e clique no favorito.** Cole o link no campo e aperte *Abrir*; na página que
    abrir, clique no favorito. Ele baixa um ficheiro com a legenda.
 3. **Traga o ficheiro para cá** e escolha `.txt` ou `.md`.
+
+**No telemóvel** não há barra de favoritos nem como arrastar, por isso o atalho sai da frente:
+
+1. **Copie a transcrição no YouTube.** Toque na descrição, role até *Mostrar transcrição*,
+   segure no texto, selecione tudo e copie.
+2. **Cole na caixa.**
+3. **Escolha `.txt` ou `.md` e converta.**
 
 `.txt` é o padrão porque o destino habitual é alimentar outra IA, e aí cada token conta. Num
 vídeo de 20 minutos: 117 KB de legenda em bruto, 52 mil caracteres de fala, e a saída em

@@ -596,43 +596,75 @@
 
   <ol class="passos">
 
-    <li class="passo">
-      <div class="passo-n">1</div>
-      <div class="passo-corpo">
-        <h3>Instale o atalho <span class="passo-tag">só a primeira vez</span></h3>
-        <p>Arraste o botão amarelo para a <b>barra de favoritos</b> do navegador.
-           Fica lá para sempre.</p>
-        <div class="bm-linha">
-          <a class="bm-atalho" id="bmAtalho" href="#" title="Arraste-me para a barra de favoritos">🎣 Pegar do YouTube</a>
-          <button type="button" class="ghost" id="bmCopiar">Copiar o endereço</button>
+    <!-- No telemóvel não há barra de favoritos para arrastar o atalho, por isso
+         o caminho principal é outro: copiar a transcrição do próprio YouTube.
+         O JS mostra um dos dois conjuntos. -->
+    <div id="passosCel" hidden>
+      <li class="passo">
+        <div class="passo-n">1</div>
+        <div class="passo-corpo">
+          <h3>Copie a transcrição no YouTube</h3>
+          <p>Cole o link e aperte <b>Abrir</b>. No YouTube: toque na <b>descrição</b> do vídeo,
+             role até <span class="chave">Mostrar transcrição</span>, segure no texto,
+             <b>selecionar tudo</b> e copiar.</p>
+          <div class="yt-linha">
+            <input type="url" id="ytUrlCel" placeholder="https://youtu.be/…"
+                   autocomplete="off" spellcheck="false">
+            <button type="button" id="ytAbrirCel">Abrir</button>
+          </div>
+          <p class="passo-nota"><b>Por que o app não baixa sozinho?</b> O YouTube proíbe
+             qualquer página de fazer isso — é regra do navegador, não falta do app.</p>
         </div>
-        <p class="passo-nota"><b>Por que não basta colar o link aqui?</b> O YouTube proíbe
-           esta página de baixar a legenda — é uma regra do navegador, não uma falta do app.
-           O atalho consegue porque roda <b>dentro</b> do YouTube, onde é permitido.</p>
-      </div>
-    </li>
+      </li>
 
-    <li class="passo">
-      <div class="passo-n">2</div>
-      <div class="passo-corpo">
-        <h3>Abra o vídeo e clique no favorito</h3>
-        <p>Cole o link aqui e aperte <b>Abrir</b>. Na página que abrir, clique no favorito
-           <b>🎣 Pegar do YouTube</b> — ele baixa um arquivo com a legenda.</p>
-        <div class="yt-linha">
-          <input type="url" id="ytUrl" placeholder="https://youtu.be/…  ou  …/playlist?list=PL…"
-                 autocomplete="off" spellcheck="false">
-          <button type="button" id="ytColar" class="ghost">Colar</button>
-          <button type="button" id="ytAbrir">Abrir</button>
+      <li class="passo">
+        <div class="passo-n">2</div>
+        <div class="passo-corpo">
+          <h3>Cole aqui</h3>
+          <div id="celCola"></div>
         </div>
-        <p class="passo-nota">Numa <b>playlist</b>, o atalho percorre os vídeos e junta tudo
-           num arquivo só.</p>
-      </div>
-    </li>
+      </li>
+    </div>
+
+    <div id="passosPc">
+      <li class="passo">
+        <div class="passo-n">1</div>
+        <div class="passo-corpo">
+          <h3>Instale o atalho <span class="passo-tag">só a primeira vez</span></h3>
+          <p>Arraste o botão amarelo para a <b>barra de favoritos</b> do navegador.
+             Fica lá para sempre.</p>
+          <div class="bm-linha">
+            <a class="bm-atalho" id="bmAtalho" href="#" title="Arraste-me para a barra de favoritos">🎣 Pegar do YouTube</a>
+            <button type="button" class="ghost" id="bmCopiar">Copiar o endereço</button>
+          </div>
+          <p class="passo-nota"><b>Por que não basta colar o link aqui?</b> O YouTube proíbe
+             esta página de baixar a legenda — é uma regra do navegador, não uma falta do app.
+             O atalho consegue porque roda <b>dentro</b> do YouTube, onde é permitido.</p>
+        </div>
+      </li>
+
+      <li class="passo">
+        <div class="passo-n">2</div>
+        <div class="passo-corpo">
+          <h3>Abra o vídeo e clique no favorito</h3>
+          <p>Cole o link aqui e aperte <b>Abrir</b>. Na página que abrir, clique no favorito
+             <b>🎣 Pegar do YouTube</b> — ele baixa um arquivo com a legenda.</p>
+          <div class="yt-linha">
+            <input type="url" id="ytUrl" placeholder="https://youtu.be/…  ou  …/playlist?list=PL…"
+                   autocomplete="off" spellcheck="false">
+            <button type="button" id="ytColar" class="ghost">Colar</button>
+            <button type="button" id="ytAbrir">Abrir</button>
+          </div>
+          <p class="passo-nota">Numa <b>playlist</b>, o atalho percorre os vídeos e junta tudo
+             num arquivo só.</p>
+        </div>
+      </li>
+    </div>
 
     <li class="passo">
       <div class="passo-n">3</div>
       <div class="passo-corpo">
-        <h3>Traga o arquivo para cá</h3>
+        <h3 id="tit3">Traga o arquivo para cá</h3>
         <label class="yt-tile" id="ytDz">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -820,7 +852,7 @@
     <p>O leitor de PDF e o de legendas estão embutidos neste arquivo: PDFs e transcrições coladas nunca saem do seu computador, e tudo funciona em modo avião. A única exceção é o repetidor do separador profissional — enquanto estiver vazio, e vem vazio, não há requisição de rede nenhuma.</p>
     <p>A estimativa de tokens usa a média de ~4 caracteres por token, para comparar tamanhos. PDFs escaneados não têm texto embutido e precisam de OCR antes.</p>
     <p class="direitos">© 2026 Jeovani · Todos os direitos reservados. Usar é livre; copiar, redistribuir, hospedar ou vender exige autorização.
-      <span class="versao">versão <b id="versaoApp">16</b><span id="versaoEstado"></span></span></p>
+      <span class="versao">versão <b id="versaoApp">17</b><span id="versaoEstado"></span></span></p>
   </footer>
 
   <div class="avisos" id="avisos" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -3979,7 +4011,8 @@ var Tubo = (function () {
     if (meta.titulo) l.push(meta.titulo);
     var cab = [];
     if (meta.canal) cab.push(meta.canal);
-    if (meta.duracao) cab.push(meta.duracao);
+    // sozinha, a duração numa linha só lê-se como um tempo perdido no meio do texto
+    if (meta.duracao) cab.push(cab.length || meta.url ? meta.duracao : 'duração ' + meta.duracao);
     if (meta.url) cab.push(meta.url);
     if (cab.length) l.push(cab.join(' · '));
 
@@ -5361,6 +5394,73 @@ var Tubo = (function () {
     desenharLote();
     return novos;
   }
+
+  /* ---------- telemóvel ou computador ----------
+     No telemóvel não há barra de favoritos, e arrastar não existe: empurrar o
+     atalho como caminho principal ali foi o erro que fez alguém carregar no
+     botão amarelo e receber «isto é para arrastar». Então o aparelho decide
+     qual dos dois conjuntos de passos aparece. */
+  function noTelemovel() {
+    try {
+      if (window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches) return false;
+    } catch (e) {}
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')
+        || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  }
+
+  (function () {
+    var cel = $('passosCel'), pc = $('passosPc');
+    if (!cel || !pc) return;
+    var movel = noTelemovel();
+    cel.hidden = !movel;
+    pc.hidden = movel;
+
+    if (movel) {
+      // a caixa de colar deixa de estar escondida em «outras formas» e sobe
+      // para o passo 2, que no telemóvel é o caminho que funciona
+      var destino = $('celCola'), rot = $('ytCola');
+      if (destino && rot) {
+        var linha = rot.nextElementSibling;      // os botões «Usar» e «Limpar»
+        destino.appendChild(rot);
+        if (linha) destino.appendChild(linha);
+      }
+      var t3 = $('tit3');
+      if (t3) t3.textContent = 'Escolha o formato e converta';
+      var dz = $('ytDz');
+      if (dz) {
+        var sub = dz.querySelector('.tile-sub');
+        if (sub) sub.textContent = 'Só se você já tiver o arquivo da legenda guardado';
+        dz.style.opacity = '.75';
+      }
+      // o atalho continua disponível, mas fora do caminho principal
+      var det = document.querySelector('.yt-outras');
+      if (det) {
+        var res = document.createElement('div');
+        res.className = 'yt-outras-corpo';
+        res.style.borderTop = '1.5px solid var(--line)';
+        res.innerHTML = '<p class="passo-nota" style="margin-top:0"><b>No computador</b> há um '
+          + 'atalho que baixa a legenda com um clique, sem copiar e colar. Abra este site '
+          + 'no computador para o instalar.</p>';
+        det.appendChild(res);
+      }
+    }
+  })();
+
+  /* Campo de link do telemóvel: abre o vídeo, tal como no computador. */
+  (function () {
+    var campo = $('ytUrlCel'), abrir = $('ytAbrirCel');
+    if (!campo || !abrir) return;
+    function irPara() {
+      var v = campo.value.trim();
+      if (!v) { aviso('Cole o link do vídeo primeiro', '', true); campo.focus(); return; }
+      var achados = Tubo.acharEnderecos(v);
+      if (!achados.length) { aviso('Não reconheci um link do YouTube', '', true); return; }
+      window.open(achados[0].url, '_blank', 'noopener');
+      aviso('Vídeo aberto', 'Toque na descrição, procure «Mostrar transcrição», copie tudo e volte.');
+    }
+    abrir.addEventListener('click', irPara);
+    campo.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); irPara(); } });
+  })();
 
   /* Passo 2: o campo de link abre o vídeo. É a única coisa que ele pode fazer
      de útil — a página não consegue baixar a legenda, e um campo que aceita o
