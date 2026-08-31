@@ -93,6 +93,15 @@ quem está a ver, que é precisamente o que falta ao servidor.
 O ficheiro sai com o identificador no nome (`… [bdh0XH21QBs].pt.json3`), e é daí que o
 conversor tira sozinho o endereço do vídeo e os carimbos de tempo clicáveis.
 
+**Numa playlist** o atalho percorre os vídeos, um de cada vez, e guarda tudo num ficheiro
+`.lote.json` — largado no conversor, volta a abrir-se em itens separados, cada um com o seu
+título, canal e duração. Vai num ficheiro só de propósito: com um download por vídeo, o
+navegador bloqueia ao terceiro. Um vídeo sem legenda é saltado e contado no fim, em vez de
+parar a playlist. O teto é de 60 vídeos por vez, com uma pausa entre pedidos: em paralelo o
+YouTube corta com 429 e perde-se a playlist inteira em vez de um vídeo.
+
+Estando a ver um vídeo que pertence a uma playlist, ele pergunta qual dos dois quer.
+
 A fonte do atalho é [`repetidor/bookmarklet.js`](repetidor/bookmarklet.js). A página não
 guarda uma cópia minificada: monta o endereço do favorito a partir dessa mesma fonte, para
 não haver duas versões a divergir.
