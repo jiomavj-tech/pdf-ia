@@ -79,14 +79,26 @@ Cada vídeo sai num `.md` próprio, com nome previsível (`titulo-do-video-ID.md
 saem num `.zip`, ou juntos num ficheiro só — e aí os cabeçalhos YAML de cada um dão lugar
 a secções, porque num ficheiro só o primeiro cabeçalho seria lido.
 
-### Porque é preciso colar a legenda
+### Colar a legenda, ou deixar o repetidor buscá-la
 
-O navegador não consegue ir buscá-la sozinho, e não é falta de vontade: a página do vídeo
-não devolve cabeçalho CORS nenhum, e o endereço antigo de legendas (`/api/timedtext`)
-responde vazio desde que o YouTube passou a exigir parâmetros assinados. Qualquer página
-que tente é bloqueada. Quem tiver um repetidor próprio pode configurá-lo no separador
-profissional; enquanto o campo estiver vazio — e vem vazio — não há requisição de rede
+Por omissão a legenda vem de si, porque o navegador não consegue ir buscá-la sozinho: a
+página do vídeo não devolve cabeçalho CORS nenhum, e o endereço antigo de legendas
+(`/api/timedtext`) responde vazio desde que o YouTube passou a exigir parâmetros
+assinados. Qualquer página que tente é bloqueada.
+
+Com o **repetidor** ligado (pasta [`repetidor/`](repetidor/)), o fluxo passa a ser colar o
+link → **Buscar** → **Converter**, e um endereço de playlist abre-se sozinho na lista de
+vídeos, cada um já com o título, o canal e a duração certos. Corre no seu computador
+(`node repetidor/local.mjs`) ou no plano grátis do Cloudflare Workers.
+
+Enquanto o campo do repetidor estiver vazio — e vem vazio — não há requisição de rede
 nenhuma e o modo avião continua a valer.
+
+Aviso que consta também do [README do repetidor](repetidor/README.md): o YouTube trata
+pedidos vindos de datacenter como robôs e recusa uma parte deles. Medido a partir de uma
+máquina de nuvem, com pausas e vídeos diferentes, **4 em 6**. O repetidor tenta quatro
+caminhos diferentes e guarda em cache o que conseguiu, mas conte com «tente outra vez».
+Correr o repetidor em casa evita quase todo esse problema.
 
 ## Nível profissional
 
@@ -190,10 +202,14 @@ com 0,2% de caracteres sem tradução.
 - **PDFs com palavra-passe a sério** continuam a precisar de ser abertos e gravados sem
   proteção antes. O mesmo para **AES-256**, que ainda não está implementado — em ambos os
   casos o app diz qual é o caso, em vez de devolver texto errado.
-- **A legenda do YouTube tem de ser colada ou trazida em ficheiro.** O navegador não a
-  consegue buscar sozinho — ver acima. Pela mesma razão, um endereço de playlist não se
-  expande em vídeos automaticamente: entra como um item, e os vídeos entram à medida que as
-  legendas chegam.
+- **Sem repetidor, a legenda tem de ser colada ou trazida em ficheiro**, e um endereço de
+  playlist não se expande sozinho. O navegador não consegue buscar nada — ver acima.
+- **Com repetidor, o YouTube recusa parte dos pedidos** por virem de datacenter. Não há
+  volta a dar do lado do código; há mitigação (vários clientes, cache, cookie opcional) e
+  há a saída de o correr em casa.
+- **A legenda automática erra nomes.** Num vídeo real sobre robalo, o YouTube escreveu
+  «roubalo», «roubal» e «romalo». O conversor limpa ruído e repetição; não conserta o que
+  o YouTube ouviu mal, e nenhuma ferramenta conserta sem reprocessar o áudio.
 - **A pontuação é heurística.** Os parágrafos são cortados pelas pausas do vídeo, não por
   compreensão da frase. Sai legível, mas não é a pontuação que um humano poria.
 - **O vocabulário é fechado.** Um peixe fora da lista dos 86 termos não é etiquetado. É o

@@ -1,0 +1,6 @@
+name = "repetidor-legendas"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+# O cookie da sessão, se usado, entra por segredo e não por aqui:
+#   wrangler secret put YT_COOKIE
