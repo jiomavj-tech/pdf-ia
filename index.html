@@ -735,7 +735,7 @@
     <p>O leitor de PDF e o de legendas estão embutidos neste arquivo: PDFs e transcrições coladas nunca saem do seu computador, e tudo funciona em modo avião. A única exceção é o repetidor do separador profissional — enquanto estiver vazio, e vem vazio, não há requisição de rede nenhuma.</p>
     <p>A estimativa de tokens usa a média de ~4 caracteres por token, para comparar tamanhos. PDFs escaneados não têm texto embutido e precisam de OCR antes.</p>
     <p class="direitos">© 2026 Jeovani · Todos os direitos reservados. Usar é livre; copiar, redistribuir, hospedar ou vender exige autorização.
-      <span class="versao">versão <b id="versaoApp">11</b><span id="versaoEstado"></span></span></p>
+      <span class="versao">versão <b id="versaoApp">12</b><span id="versaoEstado"></span></span></p>
   </footer>
 
   <div class="avisos" id="avisos" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -4750,6 +4750,22 @@ var Tubo = (function () {
     } else { ytAvisoEl.hidden = true; }
   }
 
+  /* O nome do ficheiro de legenda é a melhor fonte de título que temos, mas
+     vem sujo de duas maneiras. O yt-dlp acrescenta o idioma no fim
+     («… [dQw4w9WgXcQ].pt-BR.vtt»), e trocar hífens por espaços — que é o que
+     salva um nome em slug — estraga um título de verdade, porque «Rick Astley
+     - Never Gonna» tinha virado «Rick Astley   Never Gonna». Por isso o idioma
+     sai sempre, e os hífens só se trocam quando o nome não tem espaço nenhum,
+     que é a assinatura de um slug. */
+  function tituloDoNome(base) {
+    var t = String(base || '')
+      .replace(/\[[A-Za-z0-9_-]{11}\]/, '')
+      .replace(/\.[a-z]{2,3}(?:-[A-Za-z]{2,4})?(?:-orig)?$/i, '')
+      .trim();
+    if (!/\s/.test(t)) t = t.replace(/[-_]+/g, ' ');
+    return t.replace(/\s{2,}/g, ' ').trim();
+  }
+
   function primeirasFalas(texto) {
     var r = Legendas.ler(texto);
     return r.falas.slice(0, 6).map(function (f) { return f.texto; }).join(' ');
@@ -4858,7 +4874,7 @@ var Tubo = (function () {
         novoItem({
           legenda: texto, origem: 'ficheiro',
           videoId: id, url: id ? Tubo.urlDoVideo(id) : '',
-          titulo: base.replace(/[-_]+/g, ' ').replace(/\[[A-Za-z0-9_-]{11}\]/, '').trim()
+          titulo: tituloDoNome(base)
         });
       }
       desenharLote();
