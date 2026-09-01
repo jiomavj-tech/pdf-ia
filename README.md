@@ -75,6 +75,17 @@ minutos, e o botão de cancelar continua a funcionar durante todo esse tempo.
 | Página de uma ou duas colunas | Infográfico com caixas e colunas encavalitadas |
 | | Setas, marcas e símbolos, que viram letras trocadas |
 
+**Formatos de imagem que abre.** JPEG e imagens sem compressão, que são a maioria; e
+também **CCITT G3/G4** (o formato do fax, comum em arquivo digitalizado dos anos 90 e
+2000) e **JBIG2** (usado por digitalizadores que apertam o ficheiro ao máximo). Fica de
+fora o JPEG 2000, que só o Safari abre. Quando não consegue, o app diz porquê em vez de
+devolver uma página vazia sem explicação.
+
+**A folha é montada como o PDF manda.** Se a página tem `/Rotate`, é rodada antes de ler;
+se o digitalizador a partiu em tiras horizontais, as tiras são recompostas; se a matriz
+inverte a imagem, a inversão é respeitada. Sem isto uma página girada ia de lado para o
+reconhecimento e voltava em disparate.
+
 O app separa as colunas antes de montar o texto, e deita fora as palavras em que o
 reconhecimento tem pouca confiança — é o que evita que as ilustrações virem linhas de
 disparate. Ainda assim, **confira o resultado antes de confiar nele.** O `.txt` sai melhor
@@ -294,10 +305,8 @@ com 0,2% de caracteres sem tradução.
   página e de erros de reconhecimento — veja [Páginas escaneadas](#páginas-escaneadas-ocr).
   Com a opção desligada, o app avisa quando deteta esse caso, e no `.zip` o ficheiro leva
   uma nota a explicar em vez de sair com zero bytes.
-- **Nem toda a imagem de página se abre.** O OCR lê páginas guardadas em JPEG ou sem
-  compressão, que é a esmagadora maioria. Digitalizações antigas a preto-e-branco em
-  CCITT ou JBIG2, e as raras em JPEG 2000, ainda não abrem: o app diz que não conseguiu em
-  vez de devolver texto errado.
+- **JPEG 2000 não abre.** É raro, e só o Safari o descodifica nativamente. O app diz que
+  não conseguiu em vez de devolver texto errado.
 - **Fórmulas matemáticas saem estropiadas.** Os parênteses grandes são montados com
   pecinhas cujos códigos calham em letras acentuadas, e aparecem no texto como `ç` ou `÷`.
   Pior: uma equação é bidimensional, com numerador sobre denominador, e texto corrido é

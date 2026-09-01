@@ -859,7 +859,7 @@
     <p>O leitor de PDF e o de legendas estão embutidos neste arquivo: PDFs e transcrições coladas nunca saem do seu computador, e tudo funciona em modo avião. Há duas exceções, ambas opcionais e ambas desligadas de origem: o repetidor do separador profissional, e o leitor de páginas escaneadas, que da primeira vez baixa ~5&nbsp;MB deste mesmo site. Nem um nem outro envia o que você abriu — e enquanto não os ligar, não há requisição de rede nenhuma.</p>
     <p>A estimativa de tokens usa a média de ~4 caracteres por token, para comparar tamanhos. PDFs escaneados não têm texto embutido: para esses, ligue «Ler páginas escaneadas» nas opções.</p>
     <p class="direitos">© 2026 Jeovani · Todos os direitos reservados. Usar é livre; copiar, redistribuir, hospedar ou vender exige autorização.
-      <span class="versao">versão <b id="versaoApp">18</b><span id="versaoEstado"></span></span></p>
+      <span class="versao">versão <b id="versaoApp">19</b><span id="versaoEstado"></span></span></p>
   </footer>
 
   <div class="avisos" id="avisos" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -1496,8 +1496,30 @@ var PDFText = (function () {
           return { data: data, kind: "jpeg" };    // daqui em diante é com o navegador
         } else if (nome === "JPXDecode") {
           return { data: data, kind: "jpx" };
+        } else if (nome === "CCITTFaxDecode" || nome === "CCF") {
+          /* Os parâmetros do fax vivem no DecodeParms e não na imagem: sem eles
+             o descodificador não sabe a largura da linha nem se é G3 ou G4. */
+          return { data: data, kind: "ccitt", parms: {
+            K: num(pp.K, 0),
+            Columns: num(pp.Columns, 1728),
+            Rows: num(pp.Rows, 0),
+            BlackIs1: pp.BlackIs1 === true,
+            EncodedByteAlign: pp.EncodedByteAlign === true,
+            EndOfLine: pp.EndOfLine === true,
+            EndOfBlock: pp.EndOfBlock !== false
+          } };
+        } else if (nome === "JBIG2Decode") {
+          /* O dicionário de símbolos costuma estar num fluxo à parte, partilhado
+             por todas as páginas. Sem ele não se descodifica nada. */
+          var globais = null;
+          var gref = pd.JBIG2Globals;
+          if (gref !== undefined) {
+            var grec = isRef(gref) ? this.objs[String(gref.__r)] : null;
+            if (grec) { try { globais = await this.stream(grec); } catch (e) { globais = null; } }
+          }
+          return { data: data, kind: "jbig2", parms: { globals: globais } };
         } else {
-          return null;                            // CCITT, JBIG2, LZW: ainda não
+          return null;                            // LZW e o resto: ainda não
         }
       } catch (e) { return null; }
     }
@@ -1508,37 +1530,90 @@ var PDFText = (function () {
      Entra também em XObjects de formulário, porque há geradores que embrulham
      o digitalizado num formulário em vez de o desenhar direto. */
   Doc.prototype.pageImages = async function (pg, limite) {
-    var self = this, achadas = [], vistos = {};
+    var self = this, achadas = [];
 
-    async function varrer(resDict, profundidade) {
+    /* Uma imagem desenhada duas vezes conta duas vezes, porque ocupa dois
+       sítios da folha; mas o mesmo XObject visto pelo mesmo caminho não se
+       repete. A chave junta objeto e matriz. */
+    var vistos = {};
+
+    async function varrer(resDict, conteudo, baseCtm, profundidade) {
       if (!resDict || profundidade > 6 || achadas.length >= limite) return;
       var xo = self.get(resDict, "XObject");
       if (!isDict(xo)) return;
+      var onde = conteudo ? scanPlacements(conteudo) : {};
+
       for (var nome in xo.__d) {
         if (achadas.length >= limite) return;
         var ref = xo.__d[nome];
         var chave = isRef(ref) ? String(ref.__r) : null;
-        if (chave) { if (vistos[chave]) continue; vistos[chave] = 1; }
         var alvo = self.resolve(ref);
         if (!isDict(alvo)) continue;
         var sub = self.get(alvo.__d, "Subtype");
+
+        // Matrizes com que este XObject foi desenhado, já no espaço da página.
+        var matrizes = (onde[nome] || []).map(function (m) { return mul(m, baseCtm); });
+
         if (isName(sub, "Image")) {
           var rec = chave ? self.objs[chave] : null;
           if (!rec) continue;
           var largura = num(self.get(alvo.__d, "Width"), 0);
           var altura = num(self.get(alvo.__d, "Height"), 0);
           if (largura < 2 || altura < 2) continue;      // ícone ou espaçador
-          achadas.push({ rec: rec, dict: alvo.__d, width: largura, height: altura });
+          /* Sem `Do` no fluxo — recurso declarado e não usado, ou fluxo que não
+             conseguimos ler — fica sem matriz, e a composição trata disso. */
+          var lista = matrizes.length ? matrizes : [null];
+          for (var q = 0; q < lista.length && achadas.length < limite; q++) {
+            var k = chave + "|" + (lista[q] ? lista[q].join(",") : "-");
+            if (vistos[k]) continue;
+            vistos[k] = 1;
+            achadas.push({ rec: rec, dict: alvo.__d, width: largura, height: altura, ctm: lista[q] });
+          }
         } else if (isName(sub, "Form")) {
           var fres = self.resolve(self.get(alvo.__d, "Resources"));
-          if (isDict(fres)) await varrer(fres.__d, profundidade + 1);
+          if (!isDict(fres)) continue;
+          var fconteudo = null;
+          if (chave && self.objs[chave]) {
+            var bytes = await self.stream(self.objs[chave]);
+            if (bytes) fconteudo = toLatin1(bytes);
+          }
+          /* O formulário tem a sua própria /Matrix, aplicada antes da matriz
+             com que foi invocado. */
+          var fm = self.resolve(self.get(alvo.__d, "Matrix"));
+          var mForm = (Array.isArray(fm) && fm.length === 6)
+            ? fm.map(function (v) { return num(self.resolve(v), 0); })
+            : [1, 0, 0, 1, 0, 0];
+          var invocacoes = matrizes.length ? matrizes : [baseCtm];
+          for (var i = 0; i < invocacoes.length && achadas.length < limite; i++) {
+            await varrer(fres.__d, fconteudo, mul(mForm, invocacoes[i]), profundidade + 1);
+          }
         }
       }
     }
 
     var res = this.resolve(pg.dict.Resources !== undefined ? pg.dict.Resources : pg.inh.Resources);
-    if (isDict(res)) await varrer(res.__d, 0);
+    if (isDict(res)) await varrer(res.__d, await this.pageContent(pg), [1, 0, 0, 1, 0, 0], 0);
     return achadas;
+  };
+
+  // O fluxo de conteúdo da página, já junto e descomprimido.
+  Doc.prototype.pageContent = async function (pg) {
+    var contents = this.get(pg.dict, "Contents"), recs = [];
+    if (Array.isArray(contents)) {
+      for (var i = 0; i < contents.length; i++) {
+        var r = isRef(contents[i]) ? this.objs[String(contents[i].__r)] : null;
+        if (r) recs.push(r);
+      }
+    } else if (pg.dict.Contents !== undefined && isRef(pg.dict.Contents)) {
+      var rr = this.objs[String(pg.dict.Contents.__r)];
+      if (rr) recs.push(rr);
+    }
+    var buf = "";
+    for (var q = 0; q < recs.length; q++) {
+      var data = await this.stream(recs[q]);
+      if (data) buf += toLatin1(data) + "\n";
+    }
+    return buf;
   };
 
   // Expande objetos guardados dentro de /ObjStm (PDF 1.5+)
@@ -1972,6 +2047,55 @@ var PDFText = (function () {
     ];
   }
 
+  /* Onde cada imagem é desenhada na página.
+
+     Percorre o fluxo de conteúdo só a olhar a matriz corrente e os `Do`. Sem
+     isto sabíamos que a página tinha imagens, mas não onde nem com que
+     tamanho — e uma folha que o digitalizador partiu em tiras horizontais
+     dava só uma tira. A matriz também traz a rotação e o espelhamento, que
+     alguns digitalizadores usam em vez de rodar os pixéis.
+
+     Um `Do` desenha a imagem no quadrado unitário transformado pela matriz.
+     Devolve, por nome de XObject, a lista de matrizes com que foi invocado —
+     lista porque a mesma imagem pode ser desenhada mais do que uma vez. */
+  function scanPlacements(content) {
+    var lex = new Lexer(content, 0);
+    var ctm = [1, 0, 0, 1, 0, 0], pilha = [], stack = [];
+    var onde = {}, guarda = 0;
+
+    while (lex.p < content.length && guarda++ < 400000) {
+      lex.skip();
+      if (lex.p >= content.length) break;
+      var c = content[lex.p];
+      if (c === "/" || c === "(" || c === "[" || c === "<") {
+        try { stack.push(lex.object()); } catch (e) { break; }
+        if (stack.length > 32) stack.shift();
+        continue;
+      }
+      var t = lex.token();
+      if (t === null) break;
+      if (/^[+-]?[\d.]+(?:[eE][+-]?\d+)?$/.test(t)) {
+        stack.push(parseFloat(t));
+        if (stack.length > 32) stack.shift();
+        continue;
+      }
+      if (t === "<<") { lex.p -= 2; try { stack.push(lex.object()); } catch (e) { break; } continue; }
+
+      if (t === "q") pilha.push(ctm.slice());
+      else if (t === "Q") { if (pilha.length) ctm = pilha.pop(); }
+      else if (t === "cm") { if (stack.length >= 6) ctm = mul(stack.slice(-6), ctm); }
+      else if (t === "Do") {
+        var nome = stack[stack.length - 1];
+        if (isName(nome)) {
+          if (!onde[nome.__n]) onde[nome.__n] = [];
+          onde[nome.__n].push(ctm.slice());
+        }
+      }
+      stack.length = 0;
+    }
+    return onde;
+  }
+
   async function runContent(doc, content, fonts, items) {
     var lex = new Lexer(content, 0);
     var stack = [];
@@ -2302,15 +2426,16 @@ var PDFText = (function () {
         var pg = pages[n - 1];
         if (!pg) return null;
         var m = medida(pg);
-        var achadas = await doc.pageImages(pg, 8);
+        var achadas = await doc.pageImages(pg, 64);
         var imagens = [];
         for (var i = 0; i < achadas.length; i++) {
           var a = achadas[i];
           var s = await doc.imageStream(a.rec);
           if (!s) continue;
           imagens.push({
-            data: s.data, kind: s.kind,
+            data: s.data, kind: s.kind, parms: s.parms || null,
             width: a.width, height: a.height,
+            ctm: a.ctm,                           // onde e com que tamanho vai na folha
             bpc: num(doc.get(a.dict, "BitsPerComponent"), 8),
             mask: doc.get(a.dict, "ImageMask") === true,
             space: nomeDoEspaco(doc, doc.get(a.dict, "ColorSpace")),
@@ -2318,8 +2443,8 @@ var PDFText = (function () {
           });
           a.rec.__data = null;                    // não guardar o bitmap no documento
         }
-        // A maior primeiro: numa página digitalizada é a folha inteira.
-        imagens.sort(function (x, y) { return (y.width * y.height) - (x.width * x.height); });
+        /* Sem ordenar: a ordem é a de desenho, e quem compõe a folha pinta por
+           cima pela mesma ordem que o PDF manda. */
         return { n: n, width: m.width, height: m.height, rotate: m.rotate, images: imagens };
       }
     };
@@ -2952,6 +3077,82 @@ var OCR = (function () {
     return Math.max(1, Math.min(MAX_ESCALA, ALVO_DPI / dpi));
   }
 
+  /* Os descodificadores de CCITT e JBIG2 são um ficheiro à parte, carregado só
+     quando aparece mesmo uma página nesses formatos. A maioria dos
+     digitalizados é JPEG e nunca chega aqui. */
+  var promessaImagens = null;
+
+  function carregarImagens() {
+    if (promessaImagens) return promessaImagens;
+    promessaImagens = new Promise(function (ok, erro) {
+      if (window.PDFImagens) return ok(window.PDFImagens);
+      var s = document.createElement("script");
+      s.src = PASTA + "imagens.js";
+      s.async = true;
+      s.onload = function () {
+        if (window.PDFImagens) ok(window.PDFImagens);
+        else erro(new Error("Os descodificadores de imagem carregaram mal."));
+      };
+      s.onerror = function () {
+        promessaImagens = null;
+        erro(new Error("Não foi possível carregar os descodificadores de imagem. " +
+                       "Da primeira vez precisam de rede."));
+      };
+      document.head.appendChild(s);
+    });
+    return promessaImagens;
+  }
+
+  /* CCITT G3/G4 — o formato do fax. Sai em bits empacotados, um por pixel,
+     tal e qual uma imagem de 1 bit qualquer: daí devolver-se no mesmo formato
+     que o caminho dos bytes crus já sabe pintar. */
+  async function decodificarCCITT(img) {
+    var lib = await carregarImagens();
+    var p = img.parms || {};
+    var dados = img.data, i = 0;
+    var fonte = { next: function () { return i < dados.length ? dados[i++] : -1; } };
+    var dec = new lib.CCITTFaxDecoder(fonte, {
+      K: p.K, EndOfLine: p.EndOfLine, EncodedByteAlign: p.EncodedByteAlign,
+      Columns: p.Columns || img.width, Rows: p.Rows || img.height,
+      EndOfBlock: p.EndOfBlock, BlackIs1: p.BlackIs1
+    });
+    var esperado = Math.ceil((p.Columns || img.width) / 8) * img.height;
+    var out = new Uint8Array(esperado), n = 0, c;
+    try {
+      while (n < esperado && (c = dec.readNextChar()) !== -1) out[n++] = c;
+    } catch (e) {
+      if (!n) throw new Error("Esta página está comprimida em CCITT (fax) e veio corrompida: " +
+                              ((e && e.message) || "erro ao descodificar") + ".");
+      // Descodificou parte: aproveita-se o que saiu, que é melhor que nada.
+    }
+    if (!n) throw new Error("Esta página está comprimida em CCITT (fax) e não foi possível abri-la.");
+    return { data: out, bpc: 1, space: "DeviceGray" };
+  }
+
+  /* JBIG2 — o compressor dos digitalizadores que apertam ao máximo. Ao
+     contrário do CCITT, devolve um byte por pixel já expandido. */
+  async function decodificarJBIG2(img) {
+    var lib = await carregarImagens();
+    var pedacos = [];
+    var g = img.parms && img.parms.globals;
+    if (g && g.length) pedacos.push({ data: g, start: 0, end: g.length });
+    pedacos.push({ data: img.data, start: 0, end: img.data.length });
+    var bits;
+    try {
+      bits = new lib.Jbig2Image().parseChunks(pedacos);
+    } catch (e) {
+      /* A mensagem do descodificador é técnica de mais para quem só quer o
+         texto, mas guarda-se: é o que permite perceber o que correu mal. */
+      throw new Error("Esta página está comprimida em JBIG2 e não foi possível abri-la (" +
+                      ((e && e.message) || "erro ao descodificar") + "). " +
+                      "Se o PDF tiver um fluxo de símbolos partilhado em falta, não há como o reconstruir.");
+    }
+    if (!bits || !bits.length) throw new Error("Esta página está comprimida em JBIG2 e saiu vazia.");
+    // No JBIG2 o 1 é preto, ao contrário do que o resto do caminho espera.
+    for (var k = 0; k < bits.length; k++) bits[k] ^= 0xff;
+    return { data: bits, bpc: 8, space: "DeviceGray" };
+  }
+
   async function paraBitmap(img) {
     if (img.kind === "jpeg" || img.kind === "jpx") {
       var tipo = img.kind === "jpeg" ? "image/jpeg" : "image/jp2";
@@ -2961,6 +3162,13 @@ var OCR = (function () {
         if (img.kind === "jpx") throw new Error("Esta página usa JPEG 2000, que este navegador não abre.");
         throw e;
       }
+    }
+    if (img.kind === "ccitt" || img.kind === "jbig2") {
+      var d = img.kind === "ccitt" ? await decodificarCCITT(img) : await decodificarJBIG2(img);
+      return bitmapDeBytesCrus({
+        data: d.data, width: img.width, height: img.height,
+        bpc: d.bpc, space: d.space, mask: img.mask, decode: img.decode
+      });
     }
     return bitmapDeBytesCrus(img);
   }
@@ -3008,21 +3216,79 @@ var OCR = (function () {
     return createImageBitmap(new ImageData(out, L, A));
   }
 
-  // Desenha ampliado, já em cinzento: o Tesseract não usa a cor e assim gasta menos.
-  function paraCanvas(bitmap, escala) {
-    var L = Math.max(1, Math.round(bitmap.width * escala)),
-        A = Math.max(1, Math.round(bitmap.height * escala));
+  /* Compõe a folha inteira: pinta cada imagem no sítio que o PDF manda, na
+     escala escolhida e já com a rotação da página aplicada.
+
+     Antes daqui lia-se só a maior imagem da página, sem posição nenhuma. Isso
+     falha em dois casos reais: o digitalizador que parte a folha em tiras
+     horizontais (lia-se uma tira), e a página com /Rotate (ia torta para o
+     reconhecimento, que devolvia disparate). Compor resolve os dois, e ainda
+     o espelhamento, porque tudo isso vem na matriz. */
+  function comporFolha(pecas, pagina, escala) {
+    var giro = pagina.rotate || 0;
+    var trocaEixos = (giro === 90 || giro === 270);
+    var larguraPt = trocaEixos ? pagina.height : pagina.width;
+    var alturaPt = trocaEixos ? pagina.width : pagina.height;
+
+    var L = Math.max(1, Math.round(larguraPt * escala)),
+        A = Math.max(1, Math.round(alturaPt * escala));
     if (L * A > MAX_PIXEIS) {
       var f = Math.sqrt(MAX_PIXEIS / (L * A));
       L = Math.max(1, Math.round(L * f)); A = Math.max(1, Math.round(A * f));
+      escala = escala * f;
     }
+
     var cv = document.createElement("canvas");
     cv.width = L; cv.height = A;
     var ctx = cv.getContext("2d", { willReadFrequently: false });
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(bitmap, 0, 0, L, A);
-    return cv;
+    ctx.fillStyle = "#fff";                        // folha branca por baixo
+    ctx.fillRect(0, 0, L, A);
+
+    /* Do espaço do PDF (y para cima, origem em baixo à esquerda) para o do
+       canvas (y para baixo), com a rotação da página pelo meio. */
+    /* Uma matriz [a,b,c,d,e,f] leva (x,y) a (a·x+c·y+e, b·x+d·y+f).
+
+       Sem rotação: X = x, Y = altura − y — só a inversão do eixo vertical.
+       Com /Rotate 90 a folha gira no sentido dos ponteiros: o que era «para
+       cima» passa a apontar para a direita e o que era «para a direita» passa
+       a apontar para baixo, logo X = y e Y = x. Com 270 é o contrário, e com
+       180 invertem-se os dois eixos em relação ao caso sem rotação.
+
+       O determinante é −1 em todos: a passagem de um referencial com y para
+       cima para outro com y para baixo é, ela própria, uma inversão. */
+    var base;
+    if (giro === 90)       base = [0, 1, 1, 0, 0, 0];
+    else if (giro === 180) base = [-1, 0, 0, 1, pagina.width, 0];
+    else if (giro === 270) base = [0, -1, -1, 0, pagina.height, pagina.width];
+    else                   base = [1, 0, 0, -1, 0, pagina.height];
+    base = mulM(base, [escala, 0, 0, escala, 0, 0]);
+
+    for (var i = 0; i < pecas.length; i++) {
+      var pc = pecas[i];
+      var ctm = pc.ctm;
+      if (!ctm) {
+        /* Imagem sem `Do` legível: assume-se a folha inteira, que é o que uma
+           página digitalizada é. Melhor isso do que não a ler de todo. */
+        ctm = [pagina.width, 0, 0, pagina.height, 0, 0];
+      }
+      // O quadrado unitário do PDF tem origem em baixo; o bitmap, em cima.
+      var m = mulM(mulM([1 / pc.bitmap.width, 0, 0, -1 / pc.bitmap.height, 0, 1], ctm), base);
+      ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
+      try { ctx.drawImage(pc.bitmap, 0, 0); } catch (e) { /* peça impossível: segue */ }
+    }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    return { canvas: cv, larguraPt: larguraPt, alturaPt: alturaPt };
+  }
+
+  // m aplicada antes de n (mesma convenção do resto do ficheiro)
+  function mulM(m, n) {
+    return [
+      m[0] * n[0] + m[1] * n[2], m[0] * n[1] + m[1] * n[3],
+      m[2] * n[0] + m[3] * n[2], m[2] * n[1] + m[3] * n[3],
+      m[4] * n[0] + m[5] * n[2] + n[4], m[4] * n[1] + m[5] * n[3] + n[5]
+    ];
   }
 
   // ---------- do reconhecimento para itens de PDF ----------
@@ -3120,11 +3386,38 @@ var OCR = (function () {
     if (opcoes.cancelado && opcoes.cancelado()) return [];
 
     var w = await iniciar(opcoes.onEstado);
-    var img = pagina.images[0];                    // a maior: a folha digitalizada
-    var bitmap = await paraBitmap(img);
-    var escala = escalaPara(bitmap.width, pagina.width);
-    var cv = paraCanvas(bitmap, escala);
-    if (bitmap.close) bitmap.close();
+
+    /* Abre todas as peças da folha. Uma que não se consiga descodificar não
+       deita a página fora: compõe-se o que houver e guarda-se o motivo, para o
+       app poder dizer o que faltou em vez de devolver uma página vazia sem
+       explicação. */
+    var pecas = [], falhas = [];
+    for (var k = 0; k < pagina.images.length; k++) {
+      if (opcoes.cancelado && opcoes.cancelado()) return [];
+      try {
+        var bm = await paraBitmap(pagina.images[k]);
+        pecas.push({ bitmap: bm, ctm: pagina.images[k].ctm });
+      } catch (e) {
+        falhas.push((e && e.message) || "imagem ilegível");
+      }
+    }
+    if (!pecas.length) {
+      var motivo = falhas.length ? falhas[0] : "Não foi possível abrir a imagem desta página.";
+      throw new Error(motivo);
+    }
+
+    /* A escala sai da peça mais detalhada em relação ao espaço que ocupa: é
+       essa que fixa quantos pixéis por polegada a folha tem para ler. */
+    var escala = 1;
+    for (var e2 = 0; e2 < pecas.length; e2++) {
+      var pc = pecas[e2];
+      var larguraPt = pc.ctm ? Math.hypot(pc.ctm[0], pc.ctm[1]) : pagina.width;
+      if (larguraPt > 1) escala = Math.max(escala, escalaPara(pc.bitmap.width, larguraPt));
+    }
+
+    var folha = comporFolha(pecas, pagina, escala);
+    for (var f2 = 0; f2 < pecas.length; f2++) if (pecas[f2].bitmap.close) pecas[f2].bitmap.close();
+    var cv = folha.canvas;
 
     if (opcoes.cancelado && opcoes.cancelado()) { cv.width = cv.height = 0; return []; }
 
@@ -3142,8 +3435,8 @@ var OCR = (function () {
     var data = res.data, pal = palavrasDe(data);
     var limite = opcoes.confianca === undefined ? CONFIANCA_MIN : opcoes.confianca;
 
-    // pixéis do canvas -> pontos do PDF
-    var sx = pagina.width / cvL, sy = pagina.height / cvA;
+    // pixéis do canvas -> pontos da folha como ela se lê (já rodada)
+    var sx = folha.larguraPt / cvL, sy = folha.alturaPt / cvA;
     var itens = [];
     for (var i = 0; i < pal.length; i++) {
       var p = pal[i];

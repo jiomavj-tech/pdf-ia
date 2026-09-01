@@ -28,6 +28,7 @@ lista de `ESSENCIAIS` do `sw.js`.
 | `tesseract-core-simd-lstm.wasm.js` | Motor em WebAssembly, versão com SIMD (a normal) |
 | `tesseract-core-lstm.wasm.js` | O mesmo motor sem SIMD, para navegadores mais antigos |
 | `por.traineddata.gz` | Modelo de português |
+| `imagens.js` | Descodificadores de CCITT (fax) e JBIG2, para digitalizações a preto-e-branco |
 
 O navegador escolhe sozinho entre as duas versões do motor: descarrega **uma**,
 nunca as duas.
@@ -38,6 +39,11 @@ nunca as duas.
   (`tesseract.min.js`, `worker.min.js`)
 - **tesseract.js-core 5.1.1** — <https://github.com/naptha/tesseract.js-core>
   (os dois `tesseract-core-*.wasm.js`)
+- **pdf.js 4.10.38** — <https://github.com/mozilla/pdf.js> (`imagens.js`, montado a
+  partir de `src/core/ccitt.js`, `src/core/arithmetic_decoder.js` e `src/core/jbig2.js`).
+  As adaptações são mínimas e estão assinaladas no topo do ficheiro: tirar os
+  `import`/`export` de módulo e fornecer os poucos utilitários que esses ficheiros
+  esperavam do resto do pdf.js.
 - **`por.traineddata`** — do repositório `tessdata_fast` do projeto Tesseract OCR,
   <https://github.com/tesseract-ocr/tessdata_fast>, comprimido com `gzip -9`.
   A variante `fast` foi escolhida por ser a mais pequena; `tessdata` e
@@ -53,6 +59,17 @@ Todos estes ficheiros são de terceiros e distribuídos sob a
 **Licença Apache 2.0** — <https://www.apache.org/licenses/LICENSE-2.0>.
 São de projetos independentes, com os seus próprios autores e direitos, e o
 `LICENSE` na raiz deste repositório **não se aplica a esta pasta**.
+
+## Porque não escrevemos os descodificadores
+
+CCITT e JBIG2 são milhares de linhas de manipulação de bits em que um erro não dá
+erro nenhum — dá **texto errado**, que é bem pior do que não ler a página. O JBIG2
+tem ainda a particularidade de trabalhar por dicionário de símbolos, e foi assim que
+o bug famoso das fotocopiadoras Xerox trocou algarismos em documentos digitalizados
+sem que ninguém desse por isso.
+
+Preferiu-se código provado: o `imagens.js` é o mesmo que o Firefox usa para mostrar
+estes PDFs.
 
 ## Atualizar
 
