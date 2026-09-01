@@ -19,7 +19,7 @@
 
 // Ao incrementar, atualizar também o número mostrado no rodapé do index.html
 // (elemento #versaoApp): é por ele que se vê qual a versão a correr.
-const VERSAO = 'pdf-ia-v17';
+const VERSAO = 'pdf-ia-v19';
 const ESSENCIAIS = [
   './',
   './index.html',
@@ -66,6 +66,24 @@ self.addEventListener('fetch', (evento) => {
           return resposta;
         })
         .catch(() => caches.match(pedido).then((c) => c || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  /* Os ficheiros do OCR: cache primeiro e sem revalidar. São megabytes, e
+     revalidá-los a cada abertura gastaria a ligação do utilizador à toa. Uma
+     versão nova do motor chega com um nome novo, e o VERSAO acima limpa o
+     resto. Não vão na lista de ESSENCIAIS: só se guardam se alguém ligar o
+     OCR, e quem nunca o ligar nunca os descarrega. */
+  if (/\/ocr\//.test(new URL(pedido.url).pathname)) {
+    evento.respondWith(
+      caches.match(pedido).then((emCache) => emCache || fetch(pedido).then((resposta) => {
+        if (resposta && resposta.ok) {
+          const copia = resposta.clone();
+          caches.open(VERSAO).then((cache) => cache.put(pedido, copia));
+        }
+        return resposta;
+      }))
     );
     return;
   }
