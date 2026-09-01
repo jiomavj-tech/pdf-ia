@@ -5,6 +5,7 @@ Converte PDFs e transcrições de vídeo em texto puro (`.txt`) ou Markdown (`.m
 servidor, não há upload, não há conta.
 
 É um arquivo HTML só. Dá para usar direto do celular, do computador, ou até em modo avião.
+A única exceção é o OCR de páginas escaneadas, que é opcional e explicada mais abaixo.
 
 Três separadores:
 
@@ -44,6 +45,43 @@ ou juntar num arquivo só.
 | Enxugar espaços | Remove espaçamento excessivo |
 | Limpar cabeçalhos e rodapés | Remove o título corrente e o «Página 3 de 40» repetidos |
 | Dividir em blocos | Reparte a saída em ficheiros de ~8, 32 ou 100 mil tokens |
+| Ler páginas escaneadas (OCR) | Reconhece o texto das páginas que são imagem — veja abaixo |
+
+### Páginas escaneadas (OCR)
+
+Um PDF que é uma fotografia da página não tem texto nenhum lá dentro — não há o que
+extrair. Ligando **Ler páginas escaneadas**, o app tira a imagem de cada página sem texto
+e reconhece-a.
+
+A decisão é **por página, não por arquivo**: num contrato com trinta páginas geradas por
+computador e duas assinadas e digitalizadas, só essas duas passam pelo OCR. As outras
+seguem pelo caminho normal, que é exato e instantâneo.
+
+**Da primeira vez precisa de rede.** O motor e o modelo de português (~5 MB) vêm deste
+mesmo site, da pasta [`ocr/`](ocr/) — nunca de um CDN. Depois de descarregados ficam na
+cache e o OCR passa a funcionar em modo avião como o resto. O documento continua sem sair
+do aparelho: o que desce é o leitor, não sobe nada. Enquanto a opção estiver desligada, ou
+enquanto nenhuma página precisar dela, não há requisição nenhuma.
+
+**É lento.** Conte alguns segundos por página. Um documento escaneado de cem páginas leva
+minutos, e o botão de cancelar continua a funcionar durante todo esse tempo.
+
+**E erra.** O que sai depende da digitalização:
+
+| Sai bem | Sai mal |
+|---|---|
+| Texto de corpo, impresso, com bom contraste | Letra decorativa, manuscrita ou de pincel |
+| Digitalização direita, a 200 dpi ou mais | Fotografia de página torta, escura ou de baixa resolução |
+| Página de uma ou duas colunas | Infográfico com caixas e colunas encavalitadas |
+| | Setas, marcas e símbolos, que viram letras trocadas |
+
+O app separa as colunas antes de montar o texto, e deita fora as palavras em que o
+reconhecimento tem pouca confiança — é o que evita que as ilustrações virem linhas de
+disparate. Ainda assim, **confira o resultado antes de confiar nele.** O `.txt` sai melhor
+que o `.md`: a estrutura do Markdown depende do tamanho da letra, que num digitalizado é
+uma estimativa.
+
+Um aviso no cartão de cada arquivo diz quantas páginas passaram pelo OCR.
 
 ### Limpeza para IA
 
@@ -250,10 +288,16 @@ com 0,2% de caracteres sem tradução.
 
 ## Limitações
 
-- **PDFs escaneados não funcionam.** Se as páginas forem fotografias, não existe texto para
-  extrair e o resultado sai vazio. Isso exige OCR, que é outra tecnologia. O app avisa
-  quando deteta esse caso, e no `.zip` o ficheiro leva uma nota a explicar em vez de sair
-  com zero bytes.
+- **PDFs escaneados exigem o OCR, que é opcional e imperfeito.** Se as páginas forem
+  fotografias, não existe texto para extrair. A opção **Ler páginas escaneadas** resolve a
+  maioria dos casos, ao custo de uma descarga inicial de ~5 MB, de alguns segundos por
+  página e de erros de reconhecimento — veja [Páginas escaneadas](#páginas-escaneadas-ocr).
+  Com a opção desligada, o app avisa quando deteta esse caso, e no `.zip` o ficheiro leva
+  uma nota a explicar em vez de sair com zero bytes.
+- **Nem toda a imagem de página se abre.** O OCR lê páginas guardadas em JPEG ou sem
+  compressão, que é a esmagadora maioria. Digitalizações antigas a preto-e-branco em
+  CCITT ou JBIG2, e as raras em JPEG 2000, ainda não abrem: o app diz que não conseguiu em
+  vez de devolver texto errado.
 - **Fórmulas matemáticas saem estropiadas.** Os parênteses grandes são montados com
   pecinhas cujos códigos calham em letras acentuadas, e aparecem no texto como `ç` ou `÷`.
   Pior: uma equação é bidimensional, com numerador sobre denominador, e texto corrido é
@@ -316,6 +360,7 @@ Os restantes arquivos existem apenas para a versão publicada por HTTPS e são o
 |---|---|
 | `manifest.webmanifest` | Nome, cores e ícones para a instalação |
 | `sw.js` | Faz o app abrir sem rede depois de instalado |
+| `ocr/` | O leitor de páginas escaneadas, baixado só quando o OCR é usado ([detalhes](ocr/README.md)) |
 | `icone-*.png` | Ícone no ecrã principal e na lista de aplicativos |
 | `robots.txt`, `sitemap.xml` | Permitem que buscadores encontrem a página |
 

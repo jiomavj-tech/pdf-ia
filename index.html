@@ -558,6 +558,13 @@
         <small>Colapsa espaços repetidos e sequências de linhas em branco.</small></span>
     </label>
     <label class="opt">
+      <input type="checkbox" id="optOcr">
+      <span>Ler páginas escaneadas (OCR)
+        <small>Para PDFs que são imagem e não têm texto embutido. Da primeira vez baixa
+          o leitor (~5&nbsp;MB) deste mesmo site — depois funciona sem rede. O documento
+          continua sem sair do aparelho. É lento: conte alguns segundos por página.</small></span>
+    </label>
+    <label class="opt">
       <input type="checkbox" id="optBordas" checked>
       <span>Limpar cabeçalhos e rodapés repetidos
         <small>Remove o título corrente e o «Página 3 de 40» que se repetem em quase
@@ -849,10 +856,10 @@
   </div><!-- /painel-pro -->
 
   <footer>
-    <p>O leitor de PDF e o de legendas estão embutidos neste arquivo: PDFs e transcrições coladas nunca saem do seu computador, e tudo funciona em modo avião. A única exceção é o repetidor do separador profissional — enquanto estiver vazio, e vem vazio, não há requisição de rede nenhuma.</p>
-    <p>A estimativa de tokens usa a média de ~4 caracteres por token, para comparar tamanhos. PDFs escaneados não têm texto embutido e precisam de OCR antes.</p>
+    <p>O leitor de PDF e o de legendas estão embutidos neste arquivo: PDFs e transcrições coladas nunca saem do seu computador, e tudo funciona em modo avião. Há duas exceções, ambas opcionais e ambas desligadas de origem: o repetidor do separador profissional, e o leitor de páginas escaneadas, que da primeira vez baixa ~5&nbsp;MB deste mesmo site. Nem um nem outro envia o que você abriu — e enquanto não os ligar, não há requisição de rede nenhuma.</p>
+    <p>A estimativa de tokens usa a média de ~4 caracteres por token, para comparar tamanhos. PDFs escaneados não têm texto embutido: para esses, ligue «Ler páginas escaneadas» nas opções.</p>
     <p class="direitos">© 2026 Jeovani · Todos os direitos reservados. Usar é livre; copiar, redistribuir, hospedar ou vender exige autorização.
-      <span class="versao">versão <b id="versaoApp">17</b><span id="versaoEstado"></span></span></p>
+      <span class="versao">versão <b id="versaoApp">18</b><span id="versaoEstado"></span></span></p>
   </footer>
 
   <div class="avisos" id="avisos" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -1443,6 +1450,95 @@ var PDFText = (function () {
     }
     rec.__data = data;
     return data;
+  };
+
+  /* Como o `stream` acima, mas para imagens: aplica os filtros de transporte
+     (Flate, ASCII85, ASCIiHex) e para no filtro de imagem, devolvendo os bytes
+     ainda codificados junto com o nome do formato. É deliberado: um JPEG não
+     precisa de ser descodificado aqui — o navegador abre-o sozinho a partir de
+     um Blob, e faz isso em código nativo, muito mais depressa do que qualquer
+     descodificador escrito à mão.
+
+     Devolve { data, kind } com kind em "jpeg", "jpx" ou "raw"; ou null. */
+  Doc.prototype.imageStream = async function (rec) {
+    if (!rec || rec.streamStart < 0) return null;
+    var data = this.rawStream(rec);
+    if (!data) return null;
+
+    if (this.cripto && rec.num !== undefined && !isName(this.get(rec.dict, "Type"), "XRef")) {
+      try { data = await this.decifrar(data, rec.num, rec.gen || 0); }
+      catch (e) { return null; }
+    }
+
+    var filters = this.get(rec.dict, "Filter");
+    var parms = this.get(rec.dict, "DecodeParms") || this.get(rec.dict, "DP");
+    if (!filters) return { data: data, kind: "raw" };
+    var list = Array.isArray(filters) ? filters : [filters];
+    var plist = Array.isArray(parms) ? parms : [parms];
+
+    for (var i = 0; i < list.length; i++) {
+      var f = this.resolve(list[i]);
+      var pd = this.resolve(plist[i]);
+      pd = isDict(pd) ? pd.__d : {};
+      var pp = {};
+      for (var k in pd) pp[k] = this.resolve(pd[k]);
+      if (!isName(f)) continue;
+      var nome = f.__n;
+      try {
+        if (nome === "FlateDecode" || nome === "Fl") {
+          data = await inflate(data);
+          data = applyPredictor(data, pp);
+        } else if (nome === "ASCIIHexDecode" || nome === "AHx") {
+          data = asciiHexDecode(data);
+        } else if (nome === "ASCII85Decode" || nome === "A85") {
+          data = ascii85Decode(data);
+        } else if (nome === "DCTDecode" || nome === "DCT") {
+          return { data: data, kind: "jpeg" };    // daqui em diante é com o navegador
+        } else if (nome === "JPXDecode") {
+          return { data: data, kind: "jpx" };
+        } else {
+          return null;                            // CCITT, JBIG2, LZW: ainda não
+        }
+      } catch (e) { return null; }
+    }
+    return { data: data, kind: "raw" };
+  };
+
+  /* Percorre /Resources /XObject à procura das imagens desenhadas na página.
+     Entra também em XObjects de formulário, porque há geradores que embrulham
+     o digitalizado num formulário em vez de o desenhar direto. */
+  Doc.prototype.pageImages = async function (pg, limite) {
+    var self = this, achadas = [], vistos = {};
+
+    async function varrer(resDict, profundidade) {
+      if (!resDict || profundidade > 6 || achadas.length >= limite) return;
+      var xo = self.get(resDict, "XObject");
+      if (!isDict(xo)) return;
+      for (var nome in xo.__d) {
+        if (achadas.length >= limite) return;
+        var ref = xo.__d[nome];
+        var chave = isRef(ref) ? String(ref.__r) : null;
+        if (chave) { if (vistos[chave]) continue; vistos[chave] = 1; }
+        var alvo = self.resolve(ref);
+        if (!isDict(alvo)) continue;
+        var sub = self.get(alvo.__d, "Subtype");
+        if (isName(sub, "Image")) {
+          var rec = chave ? self.objs[chave] : null;
+          if (!rec) continue;
+          var largura = num(self.get(alvo.__d, "Width"), 0);
+          var altura = num(self.get(alvo.__d, "Height"), 0);
+          if (largura < 2 || altura < 2) continue;      // ícone ou espaçador
+          achadas.push({ rec: rec, dict: alvo.__d, width: largura, height: altura });
+        } else if (isName(sub, "Form")) {
+          var fres = self.resolve(self.get(alvo.__d, "Resources"));
+          if (isDict(fres)) await varrer(fres.__d, profundidade + 1);
+        }
+      }
+    }
+
+    var res = this.resolve(pg.dict.Resources !== undefined ? pg.dict.Resources : pg.inh.Resources);
+    if (isDict(res)) await varrer(res.__d, 0);
+    return achadas;
   };
 
   // Expande objetos guardados dentro de /ObjStm (PDF 1.5+)
@@ -2084,10 +2180,20 @@ var PDFText = (function () {
              destes é mesmo um espaço, e juntá-los daria "DOAR" por "DO AR". */
           var mudouTamanho = tamAnterior !== null &&
                              Math.abs(p.size - tamAnterior) > Math.max(0.6, tamAnterior * 0.06);
-          colado = mudouTamanho && g < p.size * 0.32;
+          colado = !p.palavra && mudouTamanho && g < p.size * 0.32;
+
+          /* Vindo do OCR, cada fragmento já é uma palavra inteira e o limite
+             entre elas é conhecido — não há que adivinhar por intervalos. E a
+             regra de cima seria pior que inútil aqui: a altura da caixa muda a
+             cada palavra (um "p" desce, um "offset" não), o que dispararia
+             `mudouTamanho` quase sempre e colaria tudo. Duas palavras
+             reconhecidas em separado nunca se juntam — mesmo que as caixas se
+             sobreponham, o que acontece quando a análise de página falha e
+             mistura colunas: sai a ordem trocada, mas nunca um amálgama. */
+          var separa = p.palavra ? true : g > p.size * 0.16;
 
           if (g > p.size * 0.9) { text += "  "; newCell = true; }   // salto grande: coluna
-          else if (!colado && g > p.size * 0.16 &&
+          else if (!colado && separa &&
                    !/\s$/.test(text) && !/^\s/.test(p.text)) text += " ";
         }
         tamAnterior = p.size;
@@ -2164,7 +2270,82 @@ var PDFText = (function () {
     return { numPages: pages.length, pages: out };
   }
 
-  return { extract: extract, _Doc: Doc, _glyph: glyphToUnicode };
+  /* Abre o documento uma vez e devolve as imagens de cada página a pedido.
+     É preguiçoso de propósito: um digitalizado de 100 páginas dá dezenas de MB
+     em bitmaps, e num telemóvel isso não cabe na memória de uma só vez. Quem
+     chama pede uma página, trata dela e deixa-a ir. */
+  async function openImages(bytes) {
+    var doc = new Doc(bytes);
+    doc.scan();
+    await doc.setupCrypto();
+    await doc.expandObjStreams();
+    var pages = doc.pageList();
+
+    function medida(pg) {
+      var mb = doc.resolve(pg.dict.MediaBox !== undefined ? pg.dict.MediaBox : pg.inh.MediaBox);
+      var caixa = [0, 0, 612, 792];
+      if (Array.isArray(mb) && mb.length === 4) {
+        var v = mb.map(function (x) { return num(doc.resolve(x), 0); });
+        caixa = [Math.min(v[0], v[2]), Math.min(v[1], v[3]),
+                 Math.max(v[0], v[2]), Math.max(v[1], v[3])];
+      }
+      var giro = num(doc.get(pg.dict, "Rotate"), 0);
+      if (!isFinite(giro)) giro = 0;
+      giro = ((Math.round(giro / 90) * 90) % 360 + 360) % 360;
+      return { width: caixa[2] - caixa[0], height: caixa[3] - caixa[1], rotate: giro };
+    }
+
+    return {
+      numPages: pages.length,
+      // Página 1-based -> { width, height, rotate, images:[{data,kind,width,height}] }
+      page: async function (n) {
+        var pg = pages[n - 1];
+        if (!pg) return null;
+        var m = medida(pg);
+        var achadas = await doc.pageImages(pg, 8);
+        var imagens = [];
+        for (var i = 0; i < achadas.length; i++) {
+          var a = achadas[i];
+          var s = await doc.imageStream(a.rec);
+          if (!s) continue;
+          imagens.push({
+            data: s.data, kind: s.kind,
+            width: a.width, height: a.height,
+            bpc: num(doc.get(a.dict, "BitsPerComponent"), 8),
+            mask: doc.get(a.dict, "ImageMask") === true,
+            space: nomeDoEspaco(doc, doc.get(a.dict, "ColorSpace")),
+            decode: doc.resolve(doc.get(a.dict, "Decode")) || null
+          });
+          a.rec.__data = null;                    // não guardar o bitmap no documento
+        }
+        // A maior primeiro: numa página digitalizada é a folha inteira.
+        imagens.sort(function (x, y) { return (y.width * y.height) - (x.width * x.height); });
+        return { n: n, width: m.width, height: m.height, rotate: m.rotate, images: imagens };
+      }
+    };
+  }
+
+  // O espaço de cor interessa só ao caminho "raw"; o JPEG traz o seu.
+  function nomeDoEspaco(doc, cs) {
+    cs = doc.resolve(cs);
+    if (isName(cs)) return cs.__n;
+    if (Array.isArray(cs) && cs.length && isName(doc.resolve(cs[0]))) {
+      var fam = doc.resolve(cs[0]).__n;
+      if (fam === "Indexed" || fam === "I") {
+        var base = doc.resolve(cs[1]);
+        var tabela = doc.resolve(cs[3]);
+        var bytes = null;
+        if (typeof tabela === "string") bytes = fromLatin1(tabela);
+        else if (isDict(tabela) || (tabela && tabela.streamStart !== undefined)) bytes = null;
+        return { indexed: true, base: isName(base) ? base.__n : "DeviceRGB", lookup: bytes };
+      }
+      return fam;
+    }
+    return null;
+  }
+
+  return { extract: extract, openImages: openImages, assemble: assemble,
+           _Doc: Doc, _glyph: glyphToUnicode };
 })();
 
 if (typeof module !== "undefined" && module.exports) module.exports = PDFText;
@@ -2686,6 +2867,345 @@ var ReadZip = (function () {
   }
 
   return { listar: listar, extrair: extrair, pdfsDoZip: pdfsDoZip };
+})();
+
+/* ocr.js — reconhecimento óptico, opcional e sob pedido.
+
+   É o único pedaço da aplicação que precisa de rede, e só na primeira vez:
+   o motor e o modelo de português são servidos deste mesmo site (pasta
+   `ocr/`, ~5 MB), nunca de um CDN. Depois de descarregados ficam na cache do
+   service worker e o OCR passa a correr sem ligação.
+
+   O documento continua sem sair do aparelho: o que desce é o motor, não sobe
+   nada. Enquanto ninguém ligar o OCR não há pedido de rede nenhum.
+
+   Exporta: OCR.reconhecer(pagina, opcoes) -> [{x,xEnd,y,size,text}]
+   — itens no sistema de coordenadas do PDF, prontos para o mesmo `assemble()`
+   que trata do texto normal. É por isso que tudo o que vem a seguir (juntar
+   linhas, limpar cabeçalhos, Markdown, blocos) funciona igual. */
+var OCR = (function () {
+  var PASTA = "ocr/";
+  var promessaScript = null, worker = null, promessaWorker = null;
+
+  // ---------- carregamento ----------
+
+  function carregarScript() {
+    if (promessaScript) return promessaScript;
+    promessaScript = new Promise(function (ok, erro) {
+      if (window.Tesseract) return ok(window.Tesseract);
+      var s = document.createElement("script");
+      s.src = PASTA + "tesseract.min.js";
+      s.async = true;
+      s.onload = function () {
+        if (window.Tesseract) ok(window.Tesseract);
+        else erro(new Error("O motor de OCR carregou mas não se apresentou."));
+      };
+      s.onerror = function () {
+        promessaScript = null;                   // deixa tentar outra vez
+        erro(new Error("Não foi possível carregar o motor de OCR. " +
+                       "Verifique a ligação: da primeira vez ele precisa de rede."));
+      };
+      document.head.appendChild(s);
+    });
+    return promessaScript;
+  }
+
+  /* Sobe o worker do Tesseract. Todos os caminhos apontam para a nossa pasta:
+     sem isto a biblioteca vai buscar tudo a um CDN, que é exatamente o que
+     esta aplicação não faz. */
+  function iniciar(onEstado) {
+    if (promessaWorker) return promessaWorker;
+    promessaWorker = carregarScript().then(function (T) {
+      return T.createWorker("por", 1, {
+        workerPath: PASTA + "worker.min.js",
+        corePath: PASTA,
+        langPath: PASTA,
+        cachePath: PASTA,
+        logger: function (m) {
+          if (!onEstado) return;
+          if (m.status === "loading tesseract core") onEstado("A carregar o motor…", m.progress);
+          else if (m.status === "loading language traineddata") onEstado("A carregar o português…", m.progress);
+          else if (m.status === "initializing tesseract" || m.status === "initializing api") onEstado("A preparar…", m.progress);
+        }
+      });
+    }).then(function (w) { worker = w; return w; })
+      .catch(function (e) { promessaWorker = null; throw e; });
+    return promessaWorker;
+  }
+
+  async function desligar() {
+    var w = worker; worker = null; promessaWorker = null;
+    if (w) { try { await w.terminate(); } catch (e) { /* já foi */ } }
+  }
+
+  // ---------- imagem ----------
+
+  /* Um digitalizado a 87 dpi tem letras de ~10 px: o Tesseract lê mal aí.
+     Ampliar antes de reconhecer recupera bastante — mas ampliar de mais só
+     gasta memória e tempo, e num telemóvel um canvas grande demais rebenta.
+     Daí o alvo em ~300 dpi com teto de área. */
+  var ALVO_DPI = 300, MAX_PIXEIS = 14e6, MAX_ESCALA = 4;
+
+  function escalaPara(imgLargura, paginaLarguraPt) {
+    if (!(imgLargura > 0) || !(paginaLarguraPt > 0)) return 1;
+    var dpi = imgLargura / (paginaLarguraPt / 72);
+    return Math.max(1, Math.min(MAX_ESCALA, ALVO_DPI / dpi));
+  }
+
+  async function paraBitmap(img) {
+    if (img.kind === "jpeg" || img.kind === "jpx") {
+      var tipo = img.kind === "jpeg" ? "image/jpeg" : "image/jp2";
+      var blob = new Blob([img.data], { type: tipo });
+      try { return await createImageBitmap(blob); }
+      catch (e) {
+        if (img.kind === "jpx") throw new Error("Esta página usa JPEG 2000, que este navegador não abre.");
+        throw e;
+      }
+    }
+    return bitmapDeBytesCrus(img);
+  }
+
+  /* Bitmap sem compressão de imagem (veio de Flate). Cobre os casos comuns:
+     cinzento e RGB a 8 bits, e o preto-e-branco de 1 bit. */
+  function bitmapDeBytesCrus(img) {
+    var L = img.width, A = img.height, bpc = img.bpc || 8;
+    var esp = img.space, canais = 1;
+    if (esp === "DeviceRGB" || esp === "RGB" || esp === "CalRGB") canais = 3;
+    else if (esp === "DeviceCMYK" || esp === "CMYK") canais = 4;
+    else if (esp && esp.indexed) canais = 1;
+
+    var out = new Uint8ClampedArray(L * A * 4);
+    var d = img.data, inverte = !!(img.decode && img.decode[0] === 1);
+
+    if (bpc === 1) {
+      var porLinha = Math.ceil(L / 8);
+      for (var y = 0; y < A; y++) for (var x = 0; x < L; x++) {
+        var b = d[y * porLinha + (x >> 3)];
+        var bit = b === undefined ? 0 : (b >> (7 - (x & 7))) & 1;
+        // Numa máscara, 1 = pinta; numa imagem de 1 bit, 1 = branco.
+        var v = img.mask ? (bit ? 0 : 255) : (bit ? 255 : 0);
+        if (inverte) v = 255 - v;
+        var o = (y * L + x) * 4;
+        out[o] = out[o + 1] = out[o + 2] = v; out[o + 3] = 255;
+      }
+    } else if (bpc === 8) {
+      var pal = esp && esp.indexed ? esp.lookup : null;
+      for (var p = 0, i = 0; p < L * A; p++) {
+        var o2 = p * 4, r, g, bl;
+        if (pal) {
+          var idx = (d[i++] || 0) * 3;
+          r = pal[idx] || 0; g = pal[idx + 1] || 0; bl = pal[idx + 2] || 0;
+        } else if (canais === 3) { r = d[i++]; g = d[i++]; bl = d[i++]; }
+        else if (canais === 4) {                       // CMYK -> RGB, aproximado
+          var c = d[i++] / 255, m = d[i++] / 255, am = d[i++] / 255, k = d[i++] / 255;
+          r = 255 * (1 - Math.min(1, c + k)); g = 255 * (1 - Math.min(1, m + k)); bl = 255 * (1 - Math.min(1, am + k));
+        } else { r = g = bl = d[i++]; }
+        out[o2] = r || 0; out[o2 + 1] = g || 0; out[o2 + 2] = bl || 0; out[o2 + 3] = 255;
+      }
+    } else {
+      throw new Error("Imagem com " + bpc + " bits por componente: ainda não suportada.");
+    }
+    return createImageBitmap(new ImageData(out, L, A));
+  }
+
+  // Desenha ampliado, já em cinzento: o Tesseract não usa a cor e assim gasta menos.
+  function paraCanvas(bitmap, escala) {
+    var L = Math.max(1, Math.round(bitmap.width * escala)),
+        A = Math.max(1, Math.round(bitmap.height * escala));
+    if (L * A > MAX_PIXEIS) {
+      var f = Math.sqrt(MAX_PIXEIS / (L * A));
+      L = Math.max(1, Math.round(L * f)); A = Math.max(1, Math.round(A * f));
+    }
+    var cv = document.createElement("canvas");
+    cv.width = L; cv.height = A;
+    var ctx = cv.getContext("2d", { willReadFrequently: false });
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(bitmap, 0, 0, L, A);
+    return cv;
+  }
+
+  // ---------- do reconhecimento para itens de PDF ----------
+
+  /* Palavras abaixo deste grau de certeza são deitadas fora. É a defesa contra
+     o problema típico de digitalizado ilustrado: o Tesseract tenta ler as
+     fotografias e devolve linhas inteiras de disparate. Medido no ficheiro de
+     ensaio, 60 apaga o disparate todo sem levar texto verdadeiro à frente. */
+  var CONFIANCA_MIN = 60;
+
+  function palavrasDe(data) {
+    var out = [];
+    var blocos = data.blocks || [];
+    for (var b = 0; b < blocos.length; b++) {
+      var paras = blocos[b].paragraphs || [];
+      for (var p = 0; p < paras.length; p++) {
+        var linhas = paras[p].lines || [];
+        for (var l = 0; l < linhas.length; l++) {
+          var pal = linhas[l].words || [];
+          for (var w = 0; w < pal.length; w++) out.push(pal[w]);
+        }
+      }
+    }
+    return out;
+  }
+
+  // Restos de ilustração passam às vezes o filtro: um traço, um til, um "|".
+  function ehLixo(t) {
+    var s = (t || "").trim();
+    if (!s) return true;
+    if (s.length <= 2 && !/[0-9A-Za-zÀ-ÿ]/.test(s)) return true;
+    return false;
+  }
+
+  /* Corte XY recursivo — alterna cortes horizontais (faixas separadas por
+     espaço em branco) e verticais (goteiras entre colunas), como fazem os
+     analisadores de página clássicos.
+
+     Sem isto, uma ficha em duas colunas sai com a coluna da esquerda e a da
+     direita coladas na mesma linha, porque estão à mesma altura. Com isto,
+     cada coluna vira um bloco e a leitura fica na ordem certa. */
+  function cortarXY(itens, corpo, prof) {
+    if (itens.length <= 1 || prof > 8) return [itens];
+    if (!(corpo > 0)) return [itens];
+
+    var porTopo = itens.slice().sort(function (a, b) { return b.yTop - a.yTop; });
+    var faixas = [[porTopo[0]]], baixo = porTopo[0].y;
+    for (var k = 1; k < porTopo.length; k++) {
+      var it = porTopo[k];
+      if (baixo - it.yTop > corpo * 0.9) faixas.push([it]);
+      else faixas[faixas.length - 1].push(it);
+      baixo = Math.min(baixo, it.y);
+    }
+    if (faixas.length > 1) {
+      var r = [];
+      for (var f = 0; f < faixas.length; f++) r = r.concat(cortarXY(faixas[f], corpo, prof + 1));
+      return r;
+    }
+
+    var x0 = Infinity, x1 = -Infinity;
+    for (var i = 0; i < itens.length; i++) { x0 = Math.min(x0, itens[i].x); x1 = Math.max(x1, itens[i].xEnd); }
+    if (!isFinite(x0) || !isFinite(x1) || x1 <= x0) return [itens];
+    var P = 1.5, n = Math.ceil((x1 - x0) / P) + 1, oc = new Array(n);
+    for (var z = 0; z < n; z++) oc[z] = 0;
+    for (var q = 0; q < itens.length; q++) {
+      var de = Math.floor((itens[q].x - x0) / P), ate = Math.ceil((itens[q].xEnd - x0) / P);
+      for (var c = Math.max(0, de); c <= Math.min(n - 1, ate); c++) oc[c]++;
+    }
+    var MIN = Math.max(3, (corpo * 0.8) / P), cortes = [], ini = -1;
+    for (var m = 0; m < n; m++) {
+      if (oc[m] === 0) { if (ini < 0) ini = m; }
+      else { if (ini > 0 && m - ini >= MIN) cortes.push(x0 + ((ini + m) / 2) * P); ini = -1; }
+    }
+    if (!cortes.length) return [itens];
+
+    var lim = [x0 - 1].concat(cortes, [x1 + 1]), saida = [];
+    for (var g = 0; g < lim.length - 1; g++) {
+      var grupo = itens.filter(function (o) {
+        var meio = (o.x + o.xEnd) / 2;
+        return meio >= lim[g] && meio < lim[g + 1];
+      });
+      if (grupo.length) saida = saida.concat(cortarXY(grupo, corpo, prof + 1));
+    }
+    return saida;
+  }
+
+  /* Reconhece uma página e devolve itens em coordenadas de PDF.
+
+     `pagina` é o que PDFText.openImages(...).page(n) dá. As opções aceitam
+     `onEstado(texto, fracao)` para a barra de progresso e `cancelado()`, que a
+     aplicação usa para largar o trabalho quando carregam em Cancelar. */
+  async function reconhecer(pagina, opcoes) {
+    opcoes = opcoes || {};
+    if (!pagina || !pagina.images || !pagina.images.length) return [];
+    if (opcoes.cancelado && opcoes.cancelado()) return [];
+
+    var w = await iniciar(opcoes.onEstado);
+    var img = pagina.images[0];                    // a maior: a folha digitalizada
+    var bitmap = await paraBitmap(img);
+    var escala = escalaPara(bitmap.width, pagina.width);
+    var cv = paraCanvas(bitmap, escala);
+    if (bitmap.close) bitmap.close();
+
+    if (opcoes.cancelado && opcoes.cancelado()) { cv.width = cv.height = 0; return []; }
+
+    // Guardadas antes de largar o canvas: são precisas para converter as
+    // coordenadas, e a seguir o canvas fica sem dimensões.
+    var cvL = cv.width, cvA = cv.height;
+
+    var res;
+    try {
+      res = await w.recognize(cv, {}, { blocks: true });
+    } finally {
+      cv.width = cv.height = 0;                    // devolve a memória já
+    }
+
+    var data = res.data, pal = palavrasDe(data);
+    var limite = opcoes.confianca === undefined ? CONFIANCA_MIN : opcoes.confianca;
+
+    // pixéis do canvas -> pontos do PDF
+    var sx = pagina.width / cvL, sy = pagina.height / cvA;
+    var itens = [];
+    for (var i = 0; i < pal.length; i++) {
+      var p = pal[i];
+      if (p.confidence < limite || ehLixo(p.text)) continue;
+      var bb = p.bbox;
+      if (!isFinite(bb.x0) || !isFinite(bb.x1) || !isFinite(bb.y0) || !isFinite(bb.y1)) continue;
+      itens.push({
+        x: bb.x0 * sx, xEnd: bb.x1 * sx,
+        y: (cvA - bb.y1) * sy,                     // no PDF o y cresce para cima
+        yTop: (cvA - bb.y0) * sy,
+        size: Math.max(1, (bb.y1 - bb.y0) * sy),
+        text: p.text,
+        palavra: true                              // o OCR entrega palavras, não glifos
+      });
+    }
+    if (!itens.length) return [];
+
+    var tam = itens.map(function (o) { return o.size; }).sort(function (a, b) { return a - b; });
+    var corpo = tam[Math.floor(tam.length / 2)] || 10;
+
+    var blocos = cortarXY(itens, corpo, 0);
+    // Ordem de leitura: de cima para baixo e, à mesma altura, da esquerda para a direita.
+    blocos.sort(function (a, b) {
+      var ay = Math.max.apply(null, a.map(function (o) { return o.yTop; })),
+          by = Math.max.apply(null, b.map(function (o) { return o.yTop; }));
+      if (Math.abs(ay - by) > corpo * 1.2) return by - ay;
+      return Math.min.apply(null, a.map(function (o) { return o.x; })) -
+             Math.min.apply(null, b.map(function (o) { return o.x; }));
+    });
+
+    /* `assemble()` agrupa por altura, e nós já decidimos a ordem. Para que ele
+       não volte a juntar colunas diferentes, damos a cada bloco uma faixa de
+       alturas própria, descendo sempre. O texto sai na ordem em que o
+       calculámos, e o resto da aplicação nem dá por isso. */
+    var saida = [], alturaFalsa = 1e6;
+    for (var bIdx = 0; bIdx < blocos.length; bIdx++) {
+      var bloco = blocos[bIdx].slice().sort(function (a, b) {
+        return Math.abs(a.y - b.y) > 0.1 ? b.y - a.y : a.x - b.x;
+      });
+      var anterior = null;
+      for (var j = 0; j < bloco.length; j++) {
+        var o = bloco[j];
+        if (anterior !== null && Math.abs(anterior - o.y) > Math.max(1.6, o.size * 0.42)) {
+          alturaFalsa -= Math.max(o.size * 1.2, 2);
+        }
+        anterior = o.y;
+        saida.push({ x: o.x, xEnd: o.xEnd, y: alturaFalsa, size: o.size,
+                     text: o.text, palavra: true });
+      }
+      alturaFalsa -= corpo * 2;                    // separa o bloco seguinte
+    }
+    return saida;
+  }
+
+  return {
+    reconhecer: reconhecer,
+    iniciar: iniciar,
+    desligar: desligar,
+    escalaPara: escalaPara,
+    _cortarXY: cortarXY,
+    _ehLixo: ehLixo
+  };
 })();
 
 
@@ -4411,7 +4931,7 @@ var Tubo = (function () {
     el.appendChild(p); return el;
   }
 
-  function card(file,res){
+  function card(file,res,ocrInfo){
     var text=build(res.pages);
     var limpas=bordasRemovidas;          // build() acabou de o calcular
     var chars=text.length,
@@ -4427,10 +4947,25 @@ var Tubo = (function () {
     meta.textContent=res.pages.length+' de '+res.numPages+' página'+(res.numPages>1?'s':'')+' · '+fmtBytes(file.size);
     head.appendChild(h2); head.appendChild(meta); el.appendChild(head);
 
+    if(ocrInfo && ocrInfo.feitas>0){
+      var okOcr=document.createElement('p'); okOcr.className='flag';
+      okOcr.textContent=ocrInfo.feitas+' de '+ocrInfo.total+' página(s) sem texto foram lidas por OCR. '+
+        'O reconhecimento erra, sobretudo em letra decorativa e texto sobre fotografia: '+
+        'confira antes de confiar no resultado.';
+      el.appendChild(okOcr);
+    }
+    if(ocrInfo && ocrInfo.erro){
+      var erroOcr=document.createElement('p'); erroOcr.className='flag err';
+      erroOcr.textContent='O OCR falhou: '+((ocrInfo.erro&&ocrInfo.erro.message)||'erro desconhecido');
+      el.appendChild(erroOcr);
+    }
     if(chars<40*Math.max(1,res.pages.length)){
       var flag=document.createElement('p'); flag.className='flag';
-      flag.textContent='Quase nenhum texto encontrado. Este PDF provavelmente é escaneado (imagem). '+
-        'Passe um OCR antes — abrir o arquivo com o Google Docs pelo Google Drive resolve na maioria dos casos.';
+      flag.textContent = ocrInfo
+        ? 'Continua quase sem texto mesmo depois do OCR. Se a digitalização estiver torta, '+
+          'clara ou de resolução baixa, não há o que reconhecer — o melhor é digitalizar outra vez.'
+        : 'Quase nenhum texto encontrado. Este PDF provavelmente é escaneado (imagem). '+
+          'Ligue a opção «Ler páginas escaneadas (OCR)» acima e converta outra vez.';
       el.appendChild(flag);
     }
 
@@ -4628,6 +5163,64 @@ var Tubo = (function () {
 
   var cancelar=false, aRodar=false;
 
+  /* ---------- passagem de OCR ---------- */
+
+  /* Uma página com quase nada de texto é, quase sempre, uma folha digitalizada:
+     a imagem está lá, o texto não. É essa que vale a pena mandar ao OCR. O
+     limiar é por página, não por ficheiro, porque documentos meio digitalizados
+     e meio nativos são comuns — um contrato assinado e digitalizado no meio de
+     páginas geradas por computador, por exemplo. */
+  var MIN_TEXTO_PAGINA=40;
+
+  function paginasSemTexto(res){
+    var fora=[];
+    for(var i=0;i<res.pages.length;i++){
+      var soma=0, ls=res.pages[i].lines;
+      for(var j=0;j<ls.length;j++) soma+=ls[j].text.length;
+      if(soma<MIN_TEXTO_PAGINA) fora.push(i);
+    }
+    return fora;
+  }
+
+  // Substitui, nas páginas sem texto, as linhas vazias pelo que o OCR conseguir ler.
+  async function passarOcr(bytes,res,file){
+    var alvo=paginasSemTexto(res);
+    if(!alvo.length) return {feitas:0,total:0,erro:null};
+
+    var doc;
+    try{ doc=await PDFText.openImages(bytes); }
+    catch(e){ return {feitas:0,total:alvo.length,erro:e}; }
+
+    var feitas=0, erro=null;
+    var cancelado=function(){ return cancelar; };
+
+    for(var k=0;k<alvo.length;k++){
+      if(cancelar) break;
+      var idx=alvo[k], n=res.pages[idx].n;
+      var quantos=' ('+(k+1)+'/'+alvo.length+')';
+      progText.textContent=file.name+' · OCR da página '+n+quantos;
+      progBar.style.width=Math.round(k/alvo.length*100)+'%';
+      await new Promise(function(r){setTimeout(r,0);});
+      try{
+        var pg=await doc.page(n);
+        if(!pg||!pg.images.length) continue;      // página em branco de verdade
+        var itens=await OCR.reconhecer(pg,{
+          cancelado:cancelado,
+          onEstado:(function(rotulo){ return function(texto,fracao){
+            progText.textContent=file.name+' · '+texto;
+            if(fracao!=null) progBar.style.width=Math.round(fracao*100)+'%';
+          };})(quantos)
+        });
+        if(itens.length){
+          res.pages[idx].lines=PDFText.assemble(itens);
+          res.pages[idx].ocr=true;
+          feitas++;
+        }
+      }catch(e){ if(!erro) erro=e; }
+    }
+    return {feitas:feitas,total:alvo.length,erro:erro};
+  }
+
   async function run(files){
     if(aRodar || !files.length) return;
 
@@ -4662,8 +5255,12 @@ var Tubo = (function () {
             progBar.style.width=Math.round(done/total*100)+'%';
           }
         });
+        var ocrInfo=null;
+        if(document.getElementById('optOcr').checked){
+          ocrInfo=await passarOcr(bytes,res,file);
+        }
         bytes=null;
-        results.appendChild(card(file,res));
+        results.appendChild(card(file,res,ocrInfo));
       }catch(err){
         var msg = err && err.code==='encrypted'
           ? 'Este PDF está protegido por criptografia. Abra-o com a senha e salve uma cópia sem proteção.'
@@ -4683,6 +5280,10 @@ var Tubo = (function () {
       }
       await new Promise(function(r){setTimeout(r,0);});
     }
+
+    // O motor de OCR ocupa dezenas de MB: mantém-se vivo durante o lote,
+    // e larga-se no fim. O modelo fica na cache, por isso voltar é rápido.
+    if(typeof OCR!=='undefined') OCR.desligar();
 
     progress.hidden=true; btnCancel.hidden=true; aRodar=false;
     btnConverter.disabled=false;
