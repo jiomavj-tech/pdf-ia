@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<!--
+  Giba Compressores — site institucional
+  Copyright (c) 2026 Jeovani. Todos os direitos reservados.
+
+  Um arquivo só: HTML, CSS e JavaScript juntos. Sem dependências, sem CDN.
+  Publicado em https://giba-compressores.web.app
+
+  ANTES DE PUBLICAR, preencha o bloco DADOS, no fim do arquivo, dentro do script:
+  telefone, WhatsApp, cidade, horário e área atendida. Enquanto estiverem
+  vazios, a página mostra «a preencher» no lugar — de propósito, para nada
+  falso ir ao ar.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="author" content="Jeovani">
+<meta name="copyright" content="Copyright (c) 2026 Jeovani. Todos os direitos reservados.">
+<title>Giba Compressores · manutenção e venda de compressores de ar</title>
+<meta name="description" content="Manutenção preventiva e corretiva, venda de compressores de ar, peças, filtros e rede de ar comprimido. Orçamento aprovado antes de qualquer serviço.">
+<meta name="theme-color" content="#10203A">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2310203A'/%3E%3Crect x='16' y='24' width='32' height='26' rx='4' fill='none' stroke='%23F2C230' stroke-width='4'/%3E%3Cpath d='M32 24V12M24 12h16' stroke='%23F2C230' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E" type="image/svg+xml">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Giba Compressores · manutenção e venda de compressores de ar">
+<meta property="og:description" content="Manutenção preventiva e corretiva, venda, peças e rede de ar comprimido. Orçamento aprovado antes de qualquer serviço.">
+<meta property="og:url" content="https://giba-compressores.web.app/">
+<meta property="og:locale" content="pt_BR">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://giba-compressores.web.app/">
+
+<style>
+  :root{
+    --canvas:#EBEDF2;
+    --ink:#10203A;
+    --sheet:#FFFFFF;
+    --mark:#F2C230;
+    --muted:#5F6880;
+    --line:#C7CCDA;
+    --alerta:#A8500F;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  html,body{margin:0;padding:0}
+  body{background:var(--canvas);color:var(--ink);font-family:var(--sans);
+       font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:940px;margin:0 auto;padding:0 20px}
+  a{color:inherit}
+  .oculto{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+           color:var(--muted);margin:0 0 10px}
+
+  /* ---------- barra de navegação ---------- */
+  .barra{position:sticky;top:0;z-index:30;background:var(--ink);color:#fff}
+  .barra .wrap{display:flex;align-items:center;gap:16px;min-height:56px;flex-wrap:wrap}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:-.02em;
+        font-size:16px;text-decoration:none;margin-right:auto}
+  .logo svg{flex:none}
+  .barra nav{display:flex;gap:4px;flex-wrap:wrap}
+  .barra nav a{font-size:13.5px;font-weight:600;text-decoration:none;padding:6px 10px;border-radius:2px;
+               color:#D7DCE8}
+  .barra nav a:hover,.barra nav a:focus-visible{background:rgba(255,255,255,.12);color:#fff}
+
+  /* ---------- cabeçalho ---------- */
+  header.capa{padding:44px 0 12px}
+  h1{font-weight:800;line-height:.94;letter-spacing:-.035em;
+     font-size:clamp(40px,9vw,72px);margin:0 0 14px}
+  h1 .mark{position:relative;display:inline-block;z-index:0;padding:0 .08em}
+  h1 .mark::before{content:"";position:absolute;inset:14% -.04em 12% -.04em;
+                   background:var(--mark);transform:skewX(-9deg);z-index:-1}
+  .lede{margin:0;max-width:54ch;color:var(--muted);font-size:17px}
+  .capa-grid{display:grid;gap:26px;align-items:center}
+  @media (min-width:760px){ .capa-grid{grid-template-columns:1.15fr .85fr;gap:34px} }
+  .desenho{width:100%;height:auto;display:block}
+
+  .acoes{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+  .btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--sans);
+       font-size:14.5px;font-weight:700;padding:11px 18px;border-radius:2px;
+       text-decoration:none;cursor:pointer;border:2px solid var(--ink)}
+  .btn-forte{background:var(--ink);color:#fff;box-shadow:5px 5px 0 var(--mark)}
+  .btn-forte:hover{transform:translate(1px,1px);box-shadow:4px 4px 0 var(--mark)}
+  .btn-leve{background:transparent;color:var(--ink)}
+  .btn-leve:hover{background:var(--mark)}
+  .btn svg{flex:none}
+
+  .selos{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;padding:0;list-style:none}
+  .selos li{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+            color:var(--muted);border:1.5px solid var(--line);background:var(--sheet);
+            padding:5px 9px;border-radius:2px}
+
+  /* ---------- seções ---------- */
+  section{padding:48px 0 4px}
+  .titulo{border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:24px}
+  .titulo h2{font-size:clamp(24px,4.6vw,32px);font-weight:800;letter-spacing:-.03em;margin:0}
+  .titulo p{margin:8px 0 0;color:var(--muted);font-size:15px;max-width:62ch}
+  .num{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--muted)}
+
+  .cartoes{display:grid;gap:14px;grid-template-columns:1fr}
+  @media (min-width:620px){ .cartoes{grid-template-columns:1fr 1fr} }
+  @media (min-width:900px){ .cartoes--3{grid-template-columns:1fr 1fr 1fr} }
+  .cartao{background:var(--sheet);border:1.5px solid var(--line);border-radius:2px;padding:20px}
+  .cartao:hover{border-color:var(--ink);box-shadow:5px 5px 0 var(--ink);transform:translate(-1px,-1px)}
+  .cartao h3{margin:0 0 7px;font-size:17.5px;font-weight:800;letter-spacing:-.02em}
+  .cartao p{margin:0;font-size:14.5px;color:var(--muted)}
+  .cartao svg{display:block;margin-bottom:12px;color:var(--ink)}
+
+  .passos{counter-reset:passo;list-style:none;padding:0;margin:0;display:grid;gap:14px}
+  @media (min-width:760px){ .passos{grid-template-columns:1fr 1fr 1fr} }
+  .passos li{counter-increment:passo;background:var(--sheet);border:2px solid var(--ink);
+             border-radius:2px;padding:20px;position:relative}
+  .passos li::before{content:counter(passo,decimal-leading-zero);position:absolute;top:-13px;left:16px;
+    background:var(--mark);border:2px solid var(--ink);padding:1px 8px;border-radius:2px;
+    font-family:var(--mono);font-size:12px;font-weight:700}
+  .passos b{display:block;margin:6px 0 5px;font-size:16.5px;letter-spacing:-.02em}
+  .passos span{font-size:14.5px;color:var(--muted)}
+
+  .sinais{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+  @media (min-width:700px){ .sinais{grid-template-columns:1fr 1fr} }
+  /* Em linha, não em colunas: com display:flex o rótulo virava uma coluna estreita
+     («Demora / a encher») e a frase partia-se ao meio no telemóvel. */
+  .sinais li{background:var(--sheet);border-left:4px solid var(--mark);
+             padding:13px 15px;font-size:14.5px}
+  .sinais li b{font-weight:700}
+  .sinais li span{color:var(--muted)}
+
+  /* min-width para a tabela rolar dentro de .rolar em vez de se espremer no telemóvel */
+  table.tipos{width:100%;min-width:560px;border-collapse:collapse;background:var(--sheet);
+              border:1.5px solid var(--line);font-size:14.5px}
+  table.tipos caption{min-width:0}
+  table.tipos caption{text-align:left;color:var(--muted);font-size:13.5px;padding:0 0 10px}
+  table.tipos th,table.tipos td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);
+                                vertical-align:top}
+  table.tipos th{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+                 color:var(--muted);background:#F5F6FA}
+  table.tipos tr:last-child td{border-bottom:none}
+  table.tipos td:first-child{font-weight:700;white-space:nowrap}
+  .rolar{overflow-x:auto}
+
+  /* ---------- contato ---------- */
+  .contato{background:var(--ink);color:#fff;margin-top:52px;padding:44px 0 40px}
+  .contato .titulo{border-color:var(--mark)}
+  .contato .titulo p,.contato .num{color:#A9B3C9}
+  .contato-grid{display:grid;gap:26px}
+  @media (min-width:760px){ .contato-grid{grid-template-columns:1fr 1fr;gap:34px} }
+  .dados{list-style:none;padding:0;margin:0;display:grid;gap:14px}
+  .dados li{display:flex;gap:12px;align-items:flex-start}
+  .dados .rot{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+              color:#A9B3C9;display:block;margin-bottom:2px}
+  .dados a{color:#fff;font-weight:700;text-decoration:none;border-bottom:2px solid var(--mark)}
+  .dados svg{flex:none;color:var(--mark);margin-top:2px}
+  .porpreencher{color:var(--mark);font-family:var(--mono);font-size:13px}
+
+  form{display:grid;gap:12px}
+  label{font-size:13.5px;font-weight:600}
+  label span{display:block;margin-bottom:5px}
+  input,textarea,select{width:100%;font-family:var(--sans);font-size:15px;padding:10px 12px;
+    border:2px solid transparent;border-radius:2px;background:#fff;color:var(--ink)}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--mark)}
+  textarea{min-height:96px;resize:vertical}
+  form .btn-forte{background:var(--mark);color:var(--ink);border-color:var(--mark);
+                  box-shadow:5px 5px 0 rgba(255,255,255,.22);justify-content:center}
+  form .btn-forte:hover{box-shadow:4px 4px 0 rgba(255,255,255,.22)}
+  .aviso-form{margin:0;font-size:13px;color:#A9B3C9}
+  .aviso-form b{color:var(--mark);font-weight:600}
+
+  footer{background:var(--ink);color:#8F9AB4;border-top:1px solid rgba(255,255,255,.14);
+         padding:22px 0 30px;font-size:13px}
+  footer .wrap{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between}
+  footer a{color:#C7CFE0}
+
+  /* ---------- botão flutuante do WhatsApp ---------- */
+  .flutua{position:fixed;right:16px;bottom:16px;z-index:40;display:inline-flex;align-items:center;gap:9px;
+    background:var(--mark);color:var(--ink);border:2px solid var(--ink);border-radius:999px;
+    padding:12px 18px;font-weight:800;font-size:14.5px;text-decoration:none;
+    box-shadow:4px 4px 0 var(--ink)}
+  .flutua:hover{transform:translate(1px,1px);box-shadow:3px 3px 0 var(--ink)}
+  @media (max-width:520px){ .flutua span{display:none} .flutua{padding:14px;border-radius:50%} }
+
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    .cartao:hover,.btn:hover,.flutua:hover{transform:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="barra">
+  <div class="wrap">
+    <a class="logo" href="#topo">
+      <svg width="22" height="22" viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="14" y="24" width="36" height="28" rx="5" fill="none" stroke="#F2C230" stroke-width="5"/>
+        <path d="M32 24V11M23 11h18" stroke="#F2C230" stroke-width="5" stroke-linecap="round"/>
+      </svg>
+      Giba Compressores
+    </a>
+    <nav aria-label="Seções">
+      <a href="#servicos">Serviços</a>
+      <a href="#atendimento">Atendimento</a>
+      <a href="#equipamentos">Equipamentos</a>
+      <a href="#sinais">Quando chamar</a>
+      <a href="#contato">Contato</a>
+    </nav>
+  </div>
+</div>
+
+<header class="capa" id="topo">
+  <div class="wrap capa-grid">
+    <div>
+      <p class="eyebrow">Ar comprimido · venda e assistência técnica</p>
+      <h1>Compressor parado <span class="mark">para</span> a oficina inteira.</h1>
+      <p class="lede">
+        Manutenção preventiva e corretiva, venda de equipamento, peças de reposição e rede
+        de ar comprimido. Diagnóstico primeiro, orçamento depois — o serviço só começa
+        quando você aprova o valor.
+      </p>
+      <div class="acoes">
+        <a class="btn btn-forte" id="btnZap" href="#contato">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.1-.2 0-.4.1-.5l.5-.6.2-.5v-.4l-.7-1.7c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3a3 3 0 0 0-1 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c2.2.9 2.2.6 2.6.6a2.6 2.6 0 0 0 1.8-1.2 2.1 2.1 0 0 0 .2-1.2c-.1-.1-.3-.2-.5-.3Z"/></svg>
+          Chamar no WhatsApp
+        </a>
+        <a class="btn btn-leve" href="#servicos">Ver os serviços</a>
+      </div>
+      <ul class="selos">
+        <li>Orçamento sem compromisso</li>
+        <li>Atendimento no local</li>
+        <li>Pistão e parafuso</li>
+      </ul>
+    </div>
+
+    <svg class="desenho" viewBox="0 0 320 260" role="img" aria-label="Desenho de um compressor de ar de pistão sobre tanque horizontal">
+      <g fill="none" stroke="#10203A" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+        <!-- tanque -->
+        <rect x="34" y="132" width="230" height="72" rx="36"/>
+        <line x1="70" y1="132" x2="70" y2="204"/>
+        <line x1="228" y1="132" x2="228" y2="204"/>
+        <!-- pés -->
+        <path d="M74 204v22M224 204v22M60 226h28M210 226h28"/>
+        <!-- motor -->
+        <rect x="52" y="74" width="84" height="58" rx="8" fill="#F2C230"/>
+        <line x1="70" y1="84" x2="70" y2="122"/>
+        <line x1="86" y1="84" x2="86" y2="122"/>
+        <line x1="102" y1="84" x2="102" y2="122"/>
+        <line x1="118" y1="84" x2="118" y2="122"/>
+        <!-- cabeçote / cilindros -->
+        <path d="M162 132v-26h44v26"/>
+        <path d="M156 96h56v-12h-56z" fill="#fff"/>
+        <path d="M168 84V64h32v20"/>
+        <path d="M160 64h48"/>
+        <!-- correia -->
+        <circle cx="146" cy="118" r="16" fill="#fff"/>
+        <circle cx="146" cy="118" r="4" fill="#10203A" stroke="none"/>
+        <!-- manômetro -->
+        <circle cx="240" cy="108" r="20" fill="#fff"/>
+        <path d="M240 132v-4M240 108l10-9"/>
+        <circle cx="240" cy="108" r="2.5" fill="#10203A" stroke="none"/>
+        <!-- saída de ar -->
+        <path d="M264 168h30M288 162l8 6-8 6"/>
+      </g>
+    </svg>
+  </div>
+</header>
+
+<main>
+  <section id="servicos" class="wrap">
+    <div class="titulo">
+      <p class="num">01 — o que fazemos</p>
+      <h2>Serviços</h2>
+      <p>Do reparo de urgência ao plano de manutenção que evita a parada. Atendimento para
+         oficina mecânica, funilaria, marcenaria, lava-jato, indústria e consultório.</p>
+    </div>
+    <div class="cartoes cartoes--3">
+      <article class="cartao">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 1 5 5L20 12l-8 8a2.8 2.8 0 0 1-4-4l8-8Z"/><path d="M9 3 3 9l4 4"/></svg>
+        <h3>Manutenção corretiva</h3>
+        <p>Não liga, não enche, perde pressão, esquenta, vaza óleo, dispara o disjuntor.
+           Diagnóstico do defeito e conserto com peça de reposição.</p>
+      </article>
+      <article class="cartao">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 1 9 9"/><path d="M12 7v5l3 2"/><path d="M3 12H1m2 0 2.5-2.5"/></svg>
+        <h3>Manutenção preventiva</h3>
+        <p>Troca de óleo e de filtros, limpeza do resfriador, ajuste do pressostato, teste
+           da válvula de segurança e purga do tanque, em visita programada.</p>
+      </article>
+      <article class="cartao">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M3 9l2-5h14l2 5"/><path d="M10 13h4"/></svg>
+        <h3>Venda de compressores</h3>
+        <p>Equipamento novo dimensionado pelo consumo real da sua operação — vazão,
+           pressão e tempo de uso — em vez de vender o maior da prateleira.</p>
+      </article>
+      <article class="cartao">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>
+        <h3>Peças e filtros</h3>
+        <p>Pressostato, válvula de retenção, kit de reparo, correia, anel de segmento,
+           filtro de ar, separador de óleo e óleo lubrificante.</p>
+      </article>
+      <article class="cartao">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h9a3 3 0 0 1 3 3v9"/><circle cx="4" cy="6" r="2"/><path d="M16 18h4M18 16v4"/><path d="M9 6v4a3 3 0 0 0 3 3h4"/></svg>
+        <h3>Rede de ar comprimido</h3>
+        <p>Instalação e correção de tubulação, pontos de uso, filtragem, secagem e drenos
+           — porque metade da queda de pressão nasce na rede, não no compressor.</p>
+      </article>
+      <article class="cartao">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>
+        <h3>Urgência</h3>
+        <p>Equipamento parado em dia de produção tem prioridade no agendamento. Descreva
+           o defeito pelo WhatsApp e já saímos com a peça provável na mala.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="atendimento" class="wrap">
+    <div class="titulo">
+      <p class="num">02 — como funciona</p>
+      <h2>Do chamado ao conserto</h2>
+      <p>Três passos, sem surpresa no valor final.</p>
+    </div>
+    <ol class="passos">
+      <li>
+        <b>Você descreve</b>
+        <span>Marca, modelo e o que está acontecendo. Foto da placa do equipamento e um
+              vídeo curto do barulho já adiantam metade do diagnóstico.</span>
+      </li>
+      <li>
+        <b>Avaliamos no local</b>
+        <span>Visita agendada, teste de pressão, verificação elétrica e do conjunto de
+              bombeamento. Você fica sabendo o que causou o defeito, não só o que trocar.</span>
+      </li>
+      <li>
+        <b>Orçamento antes do serviço</b>
+        <span>Peça, mão de obra e prazo por escrito. Nada é executado antes da sua
+              aprovação — e o que não for necessário fica registrado como opcional.</span>
+      </li>
+    </ol>
+  </section>
+
+  <section id="equipamentos" class="wrap">
+    <div class="titulo">
+      <p class="num">03 — equipamentos</p>
+      <h2>O que atendemos</h2>
+      <p>Se o seu equipamento não estiver na lista, pergunte: a maior parte dos compressores
+         de mercado compartilha os mesmos componentes.</p>
+    </div>
+    <div class="rolar">
+      <table class="tipos">
+        <caption>Tipos atendidos e o serviço mais comum em cada um.</caption>
+        <thead>
+          <tr><th scope="col">Tipo</th><th scope="col">Onde costuma estar</th><th scope="col">Serviço mais pedido</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Pistão</td>
+            <td>Oficina, funilaria, marcenaria, borracharia</td>
+            <td>Kit de reparo do cabeçote, válvula, pressostato e troca de óleo</td>
+          </tr>
+          <tr>
+            <td>Parafuso</td>
+            <td>Indústria e linhas de produção contínua</td>
+            <td>Revisão programada, separador de óleo e filtros</td>
+          </tr>
+          <tr>
+            <td>Isento de óleo</td>
+            <td>Odontologia, laboratório, pintura fina</td>
+            <td>Anéis, filtro de ar e secagem do ar</td>
+          </tr>
+          <tr>
+            <td>Direto / portátil</td>
+            <td>Pintura, calibragem, uso doméstico</td>
+            <td>Motor, chave de partida e regulador de pressão</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="sinais" class="wrap">
+    <div class="titulo">
+      <p class="num">04 — quando chamar</p>
+      <h2>Sinais de que o compressor pede atenção</h2>
+      <p>Quase toda queima de motor dá aviso antes. Um destes sintomas já justifica a visita.</p>
+    </div>
+    <ul class="sinais">
+      <li><b>Demora a encher</b> <span>— e o tempo só aumenta a cada semana: anel gasto ou válvula de retenção passando.</span></li>
+      <li><b>Não desliga sozinho</b> <span>— pressostato desregulado ou com contato colado; o motor trabalha até queimar.</span></li>
+      <li><b>Água na linha de ar</b> <span>— tanque sem purga e ar sem secagem estragam pintura e ferramenta pneumática.</span></li>
+      <li><b>Óleo saindo pelo ar</b> <span>— nível alto, óleo errado ou anel de segmento vencido.</span></li>
+      <li><b>Batida ou chiado novo</b> <span>— folga no conjunto de bombeamento ou correia frouxa; ignorar custa o cabeçote.</span></li>
+      <li><b>Disjuntor desarmando</b> <span>— partida sobrecarregada, fiação subdimensionada ou motor em curto.</span></li>
+    </ul>
+  </section>
+</main>
+
+<section class="contato" id="contato">
+  <div class="wrap">
+    <div class="titulo">
+      <p class="num">05 — falar com a gente</p>
+      <h2>Contato</h2>
+      <p>Conte o modelo e o defeito. Respondemos com o próximo horário disponível e uma
+         estimativa antes da visita.</p>
+    </div>
+    <div class="contato-grid">
+      <ul class="dados">
+        <li>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Z"/></svg>
+          <div><span class="rot">WhatsApp</span><a id="linkZap" href="#contato">a preencher</a></div>
+        </li>
+        <li>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a12 12 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2.2 2A17 17 0 0 1 3 6.2 2 2 0 0 1 5 4Z"/></svg>
+          <div><span class="rot">Telefone</span><a id="linkTel" href="#contato">a preencher</a></div>
+        </li>
+        <li>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+          <div><span class="rot">E-mail</span><a id="linkMail" href="#contato">a preencher</a></div>
+        </li>
+        <li>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+          <div><span class="rot">Área atendida</span><span id="txtArea" class="porpreencher">a preencher</span></div>
+        </li>
+        <li>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <div><span class="rot">Horário</span><span id="txtHorario" class="porpreencher">a preencher</span></div>
+        </li>
+      </ul>
+
+      <form id="formZap" novalidate>
+        <label for="nome"><span>Seu nome</span>
+          <input id="nome" name="nome" type="text" autocomplete="name" placeholder="Como podemos chamar você">
+        </label>
+        <label for="equipamento"><span>Equipamento</span>
+          <input id="equipamento" name="equipamento" type="text" placeholder="Marca, modelo e litros do tanque">
+        </label>
+        <label for="assunto"><span>Assunto</span>
+          <select id="assunto" name="assunto">
+            <option>Manutenção corretiva</option>
+            <option>Manutenção preventiva</option>
+            <option>Compra de compressor</option>
+            <option>Peças e filtros</option>
+            <option>Rede de ar comprimido</option>
+            <option>Outro assunto</option>
+          </select>
+        </label>
+        <label for="mensagem"><span>O que está acontecendo</span>
+          <textarea id="mensagem" name="mensagem" placeholder="Descreva o defeito: quando começou, que barulho faz, se enche o tanque…"></textarea>
+        </label>
+        <button class="btn btn-forte" type="submit">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Z"/></svg>
+          Enviar pelo WhatsApp
+        </button>
+        <p class="aviso-form">O formulário <b>não envia nada por conta própria</b>: ele apenas
+           monta a mensagem e abre o WhatsApp com o texto pronto, para você conferir e enviar.
+           Nenhum dado fica guardado nesta página.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© <span id="ano">2026</span> Giba Compressores · todos os direitos reservados</span>
+    <span><a href="#topo">Voltar ao topo</a></span>
+  </div>
+</footer>
+
+<a class="flutua" id="flutuaZap" href="#contato" aria-label="Falar no WhatsApp">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.1-.2 0-.4.1-.5l.5-.6.2-.5v-.4l-.7-1.7c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3a3 3 0 0 0-1 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c2.2.9 2.2.6 2.6.6a2.6 2.6 0 0 0 1.8-1.2 2.1 2.1 0 0 0 .2-1.2c-.1-.1-.3-.2-.5-.3Z"/></svg>
+  <span>WhatsApp</span>
+</a>
+
+<script>
+/* ────────────────────────────────────────────────────────────────
+   DADOS — o único lugar a editar antes de publicar.
+   Deixe vazio o que ainda não souber: a página mostra «a preencher»
+   em vez de inventar um número que ninguém atende.
+   ──────────────────────────────────────────────────────────────── */
+const DADOS = {
+  whatsapp: '',                    // só dígitos, com país e DDD: '5511999999999'
+  telefone: '',                    // como deve aparecer: '(11) 99999-9999'
+  email:    '',                    // 'contato@exemplo.com.br'
+  area:     '',                    // 'São Paulo e região metropolitana'
+  horario:  ''                     // 'Segunda a sexta, 8h às 18h · sábado até 12h'
+};
+
+(function(){
+  'use strict';
+
+  const $ = s => document.querySelector(s);
+  const temZap = /^\d{10,15}$/.test(DADOS.whatsapp);
+
+  /* ---- preenche os dados de contato ---- */
+  function porTexto(el, valor){
+    if(!el) return;
+    if(valor){ el.textContent = valor; el.classList.remove('porpreencher'); }
+  }
+  function porLink(el, valor, href){
+    if(!el) return;
+    if(valor){ el.textContent = valor; el.href = href; }
+    else { el.classList.add('porpreencher'); el.removeAttribute('href'); }
+  }
+
+  const linkDoZap = texto =>
+    'https://wa.me/' + DADOS.whatsapp + (texto ? '?text=' + encodeURIComponent(texto) : '');
+
+  /* No `tel:`, o + só entra quando o número já traz o código do país (12 dígitos ou
+     mais). Um (11) 98888-7777 com + na frente vira um país inexistente e não disca. */
+  const digitos = DADOS.telefone.replace(/\D/g,'');
+  porLink($('#linkTel'), DADOS.telefone, 'tel:' + (digitos.length > 11 ? '+' : '') + digitos);
+  porLink($('#linkMail'), DADOS.email,    'mailto:' + DADOS.email);
+  porLink($('#linkZap'),  temZap ? DADOS.telefone || 'Abrir conversa' : '', linkDoZap(''));
+  porTexto($('#txtArea'),    DADOS.area);
+  porTexto($('#txtHorario'), DADOS.horario);
+
+  /* ---- os botões de WhatsApp ---- */
+  const botoes = [$('#btnZap'), $('#flutuaZap')].filter(Boolean);
+  if(temZap){
+    const alvo = linkDoZap('Olá! Vim pelo site e preciso de ajuda com um compressor.');
+    botoes.forEach(b => { b.href = alvo; b.target = '_blank'; b.rel = 'noopener'; });
+  }
+  /* Sem número configurado, os botões continuam a levar à seção de contato —
+     é o comportamento do HTML, e não há nada a fazer aqui. */
+
+  /* ---- formulário: monta a mensagem e abre o WhatsApp ---- */
+  const form = $('#formZap');
+  if(form) form.addEventListener('submit', function(ev){
+    ev.preventDefault();
+
+    const nome  = $('#nome').value.trim();
+    const equip = $('#equipamento').value.trim();
+    const assun = $('#assunto').value;
+    const msg   = $('#mensagem').value.trim();
+
+    const linhas = ['Olá! Vim pelo site do Giba Compressores.'];
+    if(nome)  linhas.push('Nome: ' + nome);
+    linhas.push('Assunto: ' + assun);
+    if(equip) linhas.push('Equipamento: ' + equip);
+    if(msg)   linhas.push('', msg);
+    const texto = linhas.join('\n');
+
+    if(temZap){
+      window.open(linkDoZap(texto), '_blank', 'noopener');
+      return;
+    }
+    /* Ainda sem número: o e-mail é a saída; se nem ele houver, avisa. */
+    if(DADOS.email){
+      window.location.href = 'mailto:' + DADOS.email +
+        '?subject=' + encodeURIComponent('Site — ' + assun) +
+        '&body=' + encodeURIComponent(texto);
+      return;
+    }
+    alert('O contato ainda não foi configurado nesta página.');
+  });
+
+  $('#ano').textContent = new Date().getFullYear();
+})();
+</script>
+</body>
+</html>
