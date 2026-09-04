@@ -276,6 +276,24 @@ Problemas de PDFs reais que ele resolve, todos encontrados em documentos de verd
 - **Fontes CID sem tabela `ToUnicode`.** Os códigos guardados são índices de glifo, não
   letras, e o texto sai ilegível. A solução é colher as tabelas `cmap` de outras fontes da
   mesma família dentro do próprio documento e emprestá-las para traduzir os glifos.
+- **Texto virado de lado.** Uma folha em `/Rotate 90` — típica de tabelas largas, como as
+  de códigos de erro — tem as letras quase todas no mesmo `x`, espalhadas pelo `y`. Lidas
+  como se fossem horizontais, cada palavra era partida por dezenas de «linhas» e as colunas
+  vizinhas entravam pelo meio: `Defeito do compressor` saía `Def` numa linha e
+  `eito do compressor` noutra. O sentido de cada pedaço sai da matriz de renderização, e as
+  linhas são montadas no referencial de quem lê. Uma página pode ter mais do que um sentido
+  — o corpo direito e uma etiqueta virada na margem —, e cada um é montado por si, saindo
+  primeiro o que traz mais texto.
+- **Texto de um byte em fonte declarada de dois.** Há geradores que dizem `Identity-H` e
+  depois escrevem o texto byte a byte, e outros que põem `<0000> <FFFF>` no
+  `codespacerange` de uma fonte simples e a seguir listam os códigos com um byte só. Lido
+  aos pares, cada duas letras viravam um ideograma: um manual inteiro saía em
+  `䑅䙉义乇` em vez de `DEFINING`, e `Braçadeira flexível` em `䉲懧慤敩r愠ṥ磭v敬`. Numa
+  fonte simples o byte único está na norma e passou a mandar sobre o cabeçalho. Nas de dois
+  bytes a decisão é tomada pedaço a pedaço — um comprimento ímpar é impossível, e pares que
+  nenhuma tabela da fonte reconhece sendo todos os bytes ASCII visível são texto latino —
+  porque a mesma fonte pode ser usada das duas maneiras na mesma página: num manual da
+  Samsung a `SamsungOneKorean` escreve `선택` a dois bytes, como manda, e `Selecione` a um.
 - **Sobreimpressão.** Alguns PDFs desenham o mesmo texto dezenas de vezes na mesma
   coordenada. Fragmentos repetidos na mesma posição são descartados.
 - **Escala na matriz de texto.** As posições estão no espaço do dispositivo e o avanço do
