@@ -288,12 +288,15 @@ Problemas de PDFs reais que ele resolve, todos encontrados em documentos de verd
   depois escrevem o texto byte a byte, e outros que põem `<0000> <FFFF>` no
   `codespacerange` de uma fonte simples e a seguir listam os códigos com um byte só. Lido
   aos pares, cada duas letras viravam um ideograma: um manual inteiro saía em
-  `䑅䙉义乇` em vez de `DEFINING`, e `Braçadeira flexível` em `䉲懧慤敩r愠ṥ磭v敬`. Numa
-  fonte simples o byte único está na norma e passou a mandar sobre o cabeçalho. Nas de dois
-  bytes a decisão é tomada pedaço a pedaço — um comprimento ímpar é impossível, e pares que
-  nenhuma tabela da fonte reconhece sendo todos os bytes ASCII visível são texto latino —
-  porque a mesma fonte pode ser usada das duas maneiras na mesma página: num manual da
-  Samsung a `SamsungOneKorean` escreve `선택` a dois bytes, como manda, e `Selecione` a um.
+  `䑅䙉义乇` em vez de `DEFINING`, `Braçadeira flexível` em `䉲懧慤敩r愠ṥ磭v敬` e um guia de
+  refrigeração em `剅䙒䥇䕒䇇썏` por `REFRIGERAÇÃO`. Numa fonte simples o byte único está na
+  norma e passou a mandar sobre o cabeçalho. Nas de dois bytes a decisão é tomada pedaço a
+  pedaço — um comprimento ímpar é impossível, e pares que nenhuma tabela da fonte reconhece
+  sendo todos os bytes de texto latino foram escritos a um byte. O que separa os dois casos
+  são os bytes de controlo: numa fonte de dois bytes a sério os códigos são pequenos e o
+  primeiro byte cai sempre abaixo de `0x20`. Tem de ser pedaço a pedaço porque a mesma fonte
+  pode ser usada das duas maneiras na mesma página: num manual da Samsung a
+  `SamsungOneKorean` escreve `선택` a dois bytes, como manda, e `Selecione` a um.
 - **Sobreimpressão.** Alguns PDFs desenham o mesmo texto dezenas de vezes na mesma
   coordenada. Fragmentos repetidos na mesma posição são descartados.
 - **Escala na matriz de texto.** As posições estão no espaço do dispositivo e o avanço do

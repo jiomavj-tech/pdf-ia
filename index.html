@@ -2043,10 +2043,19 @@ var PDFText = (function () {
     return n;
   }
 
-  function soAsciiVisivel(raw) {
+  /* Bytes que aparecem em texto latino escrito a um byte: o ASCII visível e,
+     acima dele, os acentuados do Latin-1 e a pontuação do WinAnsi.
+
+     Os de controlo (abaixo de 0x20) é que ficam de fora, e são eles a defesa:
+     numa fonte de dois bytes a sério os códigos são pequenos — 0x0001, 0x0243 —
+     e o primeiro byte cai sempre nessa zona. Exigir ASCII puro era estreito
+     demais para o que esta ferramenta lê: "REFRIGERAÇÃO" tem o Ç em 0xC7 e o Ã
+     em 0xC3, e por causa deles um guia inteiro de refrigeração continuava a sair
+     "剅䙒䥇䕒䇇썏". */
+  function soBytesDeTexto(raw) {
     for (var i = 0; i < raw.length; i++) {
       var b = raw.charCodeAt(i);
-      if (b < 0x20 || b > 0x7E) return false;
+      if (b < 0x20 || b === 0x7F) return false;
     }
     return raw.length > 0;
   }
@@ -2062,7 +2071,7 @@ var PDFText = (function () {
 
        - um número ímpar de bytes, que numa fonte de dois é impossível;
        - nenhum dos pares constar das tabelas da fonte, sendo todos os bytes
-         ASCII visível — texto latino escrito a um byte, portanto.
+         de texto latino — escrito a um byte, portanto.
 
      Sem tabela nenhuma para consultar não há como julgar, e fica como está. */
   function umByte(font, raw) {
@@ -2072,7 +2081,7 @@ var PDFText = (function () {
     var pares = paresDe(raw);
     if (!pares.length || explicados(font, pares) > 0) return false;
     if (explicados(font, avulsosDe(raw)) > 0) return true;
-    return soAsciiVisivel(raw);
+    return soBytesDeTexto(raw);
   }
 
   function decodeString(font, raw) {              // raw: string latin1 de bytes
