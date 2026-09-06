@@ -57,6 +57,16 @@ A decisão é **por página, não por arquivo**: num contrato com trinta página
 computador e duas assinadas e digitalizadas, só essas duas passam pelo OCR. As outras
 seguem pelo caminho normal, que é exato e instantâneo.
 
+Conta como digitalizada a página com menos de 60 caracteres. O limite é generoso porque há
+folhas digitalizadas cujo único texto é a marca deixada pelo programa que as imprimiu —
+`Tabelas_Robertshaw 01.02.2006 14:00 Page 2` são 45 caracteres, e a página é uma imagem
+como as vizinhas. **Mas o OCR só substitui a página se trouxer mais texto do que já lá
+estava.** Sem essa ressalva, uma capa com pouco texto mas exato saía pior: a do «Catálogo
+Comercial América Latina» tem quatro linhas — `Catálogo`, `Comercial`, `América Latina`,
+`think ahead` — e o OCR, posto a ler o grafismo, devolvia um `q`. Numa digitalização a
+sério não havia texto nenhum, portanto tudo o que o OCR leia passa; a ressalva só morde
+onde a extração já tinha feito melhor.
+
 **Da primeira vez precisa de rede.** O motor e o modelo de português (~5 MB) vêm deste
 mesmo site, da pasta [`ocr/`](ocr/) — nunca de um CDN. Depois de descarregados ficam na
 cache e o OCR passa a funcionar em modo avião como o resto. O documento continua sem sair
