@@ -859,7 +859,7 @@
     <p>O leitor de PDF e o de legendas estão embutidos neste arquivo: PDFs e transcrições coladas nunca saem do seu computador, e tudo funciona em modo avião. Há duas exceções, ambas opcionais e ambas desligadas de origem: o repetidor do separador profissional, e o leitor de páginas escaneadas, que da primeira vez baixa ~5&nbsp;MB deste mesmo site. Nem um nem outro envia o que você abriu — e enquanto não os ligar, não há requisição de rede nenhuma.</p>
     <p>A estimativa de tokens usa a média de ~4 caracteres por token, para comparar tamanhos. PDFs escaneados não têm texto embutido: para esses, ligue «Ler páginas escaneadas» nas opções.</p>
     <p class="direitos">© 2026 Jeovani · Todos os direitos reservados. Usar é livre; copiar, redistribuir, hospedar ou vender exige autorização.
-      <span class="versao">versão <b id="versaoApp">20</b><span id="versaoEstado"></span></span></p>
+      <span class="versao">versão <b id="versaoApp">21</b><span id="versaoEstado"></span></span></p>
   </footer>
 
   <div class="avisos" id="avisos" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -5604,8 +5604,21 @@ var Tubo = (function () {
      a imagem está lá, o texto não. É essa que vale a pena mandar ao OCR. O
      limiar é por página, não por ficheiro, porque documentos meio digitalizados
      e meio nativos são comuns — um contrato assinado e digitalizado no meio de
-     páginas geradas por computador, por exemplo. */
-  var MIN_TEXTO_PAGINA=40;
+     páginas geradas por computador, por exemplo.
+
+     Sessenta caracteres, e não quarenta, por causa das folhas digitalizadas cujo
+     único texto é a marca da impressora que as gerou. Numas tabelas da Robertshaw
+     essa marca — «Tabelas_Robertshaw 01.02.2006 14:00 Page 2» — dá 45 caracteres,
+     e por cinco acima do limiar antigo a página escapava ao OCR sendo uma
+     digitalização como as outras.
+
+     O número é um equilíbrio, não uma certeza. Subi-lo apanha mais digitalizações,
+     mas também apanha capas: a do «Catálogo Comercial América Latina» tem 42
+     caracteres de texto perfeito, e ao ser mandada ao OCR troca-os pelo que se
+     conseguir ler do grafismo. Uma página sem imagem nenhuma não corre esse risco
+     — o OCR salta-a mais abaixo —, e é por isso que o limiar pode ser generoso
+     sem estragar documentos gerados por computador. */
+  var MIN_TEXTO_PAGINA=60;
 
   function paginasSemTexto(res){
     var fora=[];
@@ -5646,10 +5659,29 @@ var Tubo = (function () {
             if(fracao!=null) progBar.style.width=Math.round(fracao*100)+'%';
           };})(quantos)
         });
+        /* O OCR só entra se trouxer mais do que já lá estava.
+
+           O limiar acima é generoso de propósito, para apanhar digitalizações
+           cujo único texto é a marca da impressora. Mas apanha também capas: a
+           do «Catálogo Comercial América Latina» traz 42 caracteres de texto
+           exato — «Catálogo», «Comercial», «América Latina», «think ahead» —
+           e o OCR, posto a ler o grafismo dela, devolvia um «q» e ficava-se por
+           aí. Trocar quatro linhas certas por uma letra é perder informação,
+           não recuperá-la.
+
+           Numa digitalização a sério não havia texto nenhum, portanto qualquer
+           coisa que o OCR leia passa esta guarda. Ela só morde onde o extrator
+           já tinha feito melhor — e aí o que vale é o que ele leu. */
         if(itens.length){
-          res.pages[idx].lines=PDFText.assemble(itens);
-          res.pages[idx].ocr=true;
-          feitas++;
+          var lidas=PDFText.assemble(itens);
+          var antes=0, depois=0, q;
+          for(q=0;q<res.pages[idx].lines.length;q++) antes+=res.pages[idx].lines[q].text.length;
+          for(q=0;q<lidas.length;q++) depois+=lidas[q].text.length;
+          if(depois>antes){
+            res.pages[idx].lines=lidas;
+            res.pages[idx].ocr=true;
+            feitas++;
+          }
         }
       }catch(e){ if(!erro) erro=e; }
     }
