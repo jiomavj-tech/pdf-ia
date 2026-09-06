@@ -859,7 +859,7 @@
     <p>O leitor de PDF e o de legendas estão embutidos neste arquivo: PDFs e transcrições coladas nunca saem do seu computador, e tudo funciona em modo avião. Há duas exceções, ambas opcionais e ambas desligadas de origem: o repetidor do separador profissional, e o leitor de páginas escaneadas, que da primeira vez baixa ~5&nbsp;MB deste mesmo site. Nem um nem outro envia o que você abriu — e enquanto não os ligar, não há requisição de rede nenhuma.</p>
     <p>A estimativa de tokens usa a média de ~4 caracteres por token, para comparar tamanhos. PDFs escaneados não têm texto embutido: para esses, ligue «Ler páginas escaneadas» nas opções.</p>
     <p class="direitos">© 2026 Jeovani · Todos os direitos reservados. Usar é livre; copiar, redistribuir, hospedar ou vender exige autorização.
-      <span class="versao">versão <b id="versaoApp">19</b><span id="versaoEstado"></span></span></p>
+      <span class="versao">versão <b id="versaoApp">21</b><span id="versaoEstado"></span></span></p>
   </footer>
 
   <div class="avisos" id="avisos" role="status" aria-live="polite" aria-atomic="false"></div>
@@ -1736,8 +1736,17 @@ var PDFText = (function () {
     153: 8482, 154: 353, 155: 8250, 156: 339, 158: 382, 159: 376
   };
 
+  /* Quantos bytes tem cada código de caractere.
+
+     O /codespacerange devia dizê-lo, mas há geradores que escrevem sempre
+     <0000> <FFFF> — dois bytes — e a seguir listam os códigos com um byte só
+     (<20>, <43>, ...). Acreditar no cabeçalho fazia ler o texto aos pares:
+     "DE" virava um único caractere U+4445, e um manual inteiro em inglês saía
+     em ideogramas chineses.
+
+     As entradas mandam sobre o cabeçalho: são o código real, não a promessa. */
   function parseCMap(text) {
-    var map = {}, codeLen = 0, m;
+    var map = {}, codeLen = 0, entradaLen = 0, m;
     var csr = /begincodespacerange([\s\S]*?)endcodespacerange/g;
     while ((m = csr.exec(text)) !== null) {
       var pair = m[1].match(/<([0-9A-Fa-f]+)>/);
@@ -1758,7 +1767,7 @@ var PDFText = (function () {
       var re1 = /<([0-9A-Fa-f]+)>\s*(?:<([0-9A-Fa-f]+)>|\/(\S+))/g, r;
       while ((r = re1.exec(m[1])) !== null) {
         var src = parseInt(r[1], 16);
-        if (!codeLen) codeLen = Math.ceil(r[1].length / 2);
+        entradaLen = Math.max(entradaLen, Math.ceil(r[1].length / 2));
         map[src] = r[2] !== undefined ? hexToStr(r[2]) : glyphToUnicode(r[3]);
       }
     }
@@ -1768,7 +1777,7 @@ var PDFText = (function () {
       var re2 = /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*(?:<([0-9A-Fa-f]+)>|\[([\s\S]*?)\])/g, r2;
       while ((r2 = re2.exec(body)) !== null) {
         var lo = parseInt(r2[1], 16), hi = parseInt(r2[2], 16);
-        if (!codeLen) codeLen = Math.ceil(r2[1].length / 2);
+        entradaLen = Math.max(entradaLen, Math.ceil(r2[1].length / 2));
         if (hi - lo > 65535) continue;
         if (r2[3] !== undefined) {
           var base = r2[3];
@@ -1786,7 +1795,7 @@ var PDFText = (function () {
         }
       }
     }
-    return { map: map, codeLen: codeLen || 0 };
+    return { map: map, codeLen: entradaLen || codeLen || 0 };
   }
 
   /* ---- cmap de fontes TrueType embutidas: recupera glifo -> unicode ---- */
@@ -1917,6 +1926,13 @@ var PDFText = (function () {
     var base = this.get(fdict, "BaseFont");
     f.base = isName(base) ? base.__n : "";
     var isType0 = isName(sub, "Type0");
+    /* Fonte simples — TrueType, Type1, Type3 — é sempre de um byte por
+       caractere; está na norma e não há exceção. Só a Type0 é que pode ser de
+       dois. Por isso um /ToUnicode que se diga de dois bytes nunca pode mudar
+       isto numa fonte simples: seria a fonte a ser lida ao contrário do que o
+       fluxo da página escreveu. */
+    var simples = isName(sub, "TrueType") || isName(sub, "Type1") ||
+                  isName(sub, "MMType1") || isName(sub, "Type3");
 
     var tu = fdict.ToUnicode !== undefined ? this.objs[isRef(fdict.ToUnicode) ? String(fdict.ToUnicode.__r) : ""] : null;
     if (tu) {
@@ -1924,7 +1940,7 @@ var PDFText = (function () {
       if (data) {
         var cm = parseCMap(toLatin1(data));
         f.map = cm.map;
-        if (cm.codeLen >= 2) f.two = true;
+        if (cm.codeLen >= 2 && !simples) f.two = true;
       }
     }
     if (isType0) {
@@ -2002,14 +2018,78 @@ var PDFText = (function () {
     return f;
   };
 
+  function paresDe(raw) {
+    var codes = [];
+    for (var i = 0; i + 1 < raw.length; i += 2) codes.push((raw.charCodeAt(i) << 8) | raw.charCodeAt(i + 1));
+    if (raw.length % 2) codes.push(raw.charCodeAt(raw.length - 1));
+    return codes;
+  }
+  function avulsosDe(raw) {
+    var codes = [];
+    for (var i = 0; i < raw.length; i++) codes.push(raw.charCodeAt(i));
+    return codes;
+  }
+
+  /* Quantos destes códigos é que a fonte sabe mesmo explicar. É a pergunta que
+     decide entre ler a um byte ou a dois: a leitura certa é aquela que as
+     tabelas da própria fonte reconhecem. */
+  function explicados(font, codes) {
+    var n = 0;
+    for (var i = 0; i < codes.length; i++) {
+      var c = codes[i];
+      if (font.map && font.map[c] !== undefined) n++;
+      else if (font.gid && font.gid[c] !== undefined) n++;
+    }
+    return n;
+  }
+
+  /* Bytes que aparecem em texto latino escrito a um byte: o ASCII visível e,
+     acima dele, os acentuados do Latin-1 e a pontuação do WinAnsi.
+
+     Os de controlo (abaixo de 0x20) é que ficam de fora, e são eles a defesa:
+     numa fonte de dois bytes a sério os códigos são pequenos — 0x0001, 0x0243 —
+     e o primeiro byte cai sempre nessa zona. Exigir ASCII puro era estreito
+     demais para o que esta ferramenta lê: "REFRIGERAÇÃO" tem o Ç em 0xC7 e o Ã
+     em 0xC3, e por causa deles um guia inteiro de refrigeração continuava a sair
+     "剅䙒䥇䕒䇇썏". */
+  function soBytesDeTexto(raw) {
+    for (var i = 0; i < raw.length; i++) {
+      var b = raw.charCodeAt(i);
+      if (b < 0x20 || b === 0x7F) return false;
+    }
+    return raw.length > 0;
+  }
+
+  /* Há PDFs que declaram a fonte com dois bytes por caractere e depois escrevem
+     o texto byte a byte. Lido aos pares, "Braçadeira flexível" saía
+     "䉲懧慤敩r愠ṥ磭v敬" — um manual inteiro em ideogramas.
+
+     A decisão é tomada por cada pedaço de texto, não pela fonte, porque a mesma
+     fonte pode ser usada das duas maneiras na mesma página: num manual da
+     Samsung a SamsungOneKorean escreve "선택" a dois bytes, como manda, e umas
+     linhas abaixo "la pop-up" a um. Duas provas mandam desfazer os pares:
+
+       - um número ímpar de bytes, que numa fonte de dois é impossível;
+       - nenhum dos pares constar das tabelas da fonte, sendo todos os bytes
+         de texto latino — escrito a um byte, portanto.
+
+     Sem tabela nenhuma para consultar não há como julgar, e fica como está. */
+  function umByte(font, raw) {
+    if (!font.two) return true;
+    if (raw.length >= 3 && raw.length % 2 === 1) return true;
+    if (!font.map && !font.gid) return false;
+    var pares = paresDe(raw);
+    if (!pares.length || explicados(font, pares) > 0) return false;
+    if (explicados(font, avulsosDe(raw)) > 0) return true;
+    return soBytesDeTexto(raw);
+  }
+
   function decodeString(font, raw) {              // raw: string latin1 de bytes
     var out = "", codes = [];
-    if (font.two) {
-      for (var i = 0; i + 1 < raw.length; i += 2) codes.push((raw.charCodeAt(i) << 8) | raw.charCodeAt(i + 1));
-      if (raw.length % 2) codes.push(raw.charCodeAt(raw.length - 1));
-    } else {
-      for (var j = 0; j < raw.length; j++) codes.push(raw.charCodeAt(j));
-    }
+    var two = !umByte(font, raw);
+
+    if (two) codes = paresDe(raw);
+    else codes = avulsosDe(raw);
     for (var k = 0; k < codes.length; k++) {
       var c = codes[k], ch = null;
       if (font.map && font.map[c] !== undefined) ch = font.map[c];
@@ -2018,14 +2098,14 @@ var PDFText = (function () {
       else if (font.gid) { font.unresolved = (font.unresolved || 0) + 1; ch = ""; }
       if (ch === null || ch === undefined || ch === "") {
         if (font.gid) { out += ch || ""; continue; }
-        if (font.two) ch = c >= 32 && c < 0xd800 ? String.fromCharCode(c) : "";
+        if (two) ch = c >= 32 && c < 0xd800 ? String.fromCharCode(c) : "";
         else if (WIN_HIGH[c]) ch = String.fromCharCode(WIN_HIGH[c]);
         else if (c >= 32) ch = String.fromCharCode(c);
         else ch = "";
       }
       out += ch;
     }
-    return { text: out, codes: codes };
+    return { text: out, codes: codes, two: two };
   }
 
   function widthOf(font, codes) {
@@ -2038,6 +2118,30 @@ var PDFText = (function () {
   }
 
   /* ============ interpretador do content stream ============ */
+
+  /* Em que sentido corre a linha, em quartos de volta: 0 para a esquerda→direita
+     do costume, 1 para o texto que sobe, 2 de pernas para o ar, 3 para o que
+     desce. Sai da matriz de renderização, que é quem manda no desenho.
+
+     Sem isto, um rótulo virado de lado era lido como se fosse horizontal: as
+     letras ficam quase todas no mesmo x e espalhadas pelo y, por isso cada
+     palavra era partida por dezenas de «linhas» e as colunas vizinhas
+     entravam pelo meio. Uma tabela de códigos de erro da Daikin — a folha
+     inteira em /Rotate 90 — saía como "Def" numa linha e "eito do compressor"
+     noutra, com o resto da página misturado no meio. */
+  function quadrante(m) {
+    var a = m[0], b = m[1];
+    if (!a && !b) return 0;
+    var q = Math.round(Math.atan2(b, a) / (Math.PI / 2)) % 4;
+    return q < 0 ? q + 4 : q;
+  }
+
+  /* O mesmo ponto, dito no referencial de quem lê: `aoLongo` cresce ao correr
+     da linha, `atravessado` decresce de uma linha para a seguinte — tal como o
+     x e o y numa página direita. Assim o resto do extrator não precisa de saber
+     que houve rotação nenhuma. */
+  function aoLongo(q, x, y) { return q === 1 ? y : q === 2 ? -x : q === 3 ? -y : x; }
+  function atravessado(q, x, y) { return q === 1 ? -x : q === 2 ? -y : q === 3 ? x : y; }
 
   function mul(m, n) {                              // m * n (matrizes 3x2)
     return [
@@ -2126,19 +2230,23 @@ var PDFText = (function () {
       var dec = decodeString(font, rawStr);
       if (!dec.text) { advance(widthOf(font, dec.codes) * size * hscale + dec.codes.length * charSp * hscale); return; }
       var trm = mul([size * hscale, 0, 0, size, 0, rise], mul(tm, ctm));
-      var x = trm[4], y = trm[5];
+      /* x e y deixam de ser o x e o y da folha: passam a ser medidos ao longo
+         da linha e de linha para linha. Numa página direita dá exatamente o
+         mesmo; numa virada, endireita-a. */
+      var quad = quadrante(trm);
+      var x = aoLongo(quad, trm[4], trm[5]), y = atravessado(quad, trm[4], trm[5]);
       var scale = escala();
       var nspaces = 0;
-      for (var i = 0; i < dec.codes.length; i++) if (!font.two && dec.codes[i] === 32) nspaces++;
+      for (var i = 0; i < dec.codes.length; i++) if (!dec.two && dec.codes[i] === 32) nspaces++;
       var w = widthOf(font, dec.codes) * size + dec.codes.length * charSp + nspaces * wordSp;
       w *= hscale;
       var wDisp = w * scale;                         // o mesmo avanço, no espaço do dispositivo
       var last = items.length ? items[items.length - 1] : null;
-      if (last && Math.abs(last.y - y) < 0.6 && x - last.xEnd < 0.02 * size * scale && x >= last.xEnd - 0.6 * size * scale) {
+      if (last && last.q === quad && Math.abs(last.y - y) < 0.6 && x - last.xEnd < 0.02 * size * scale && x >= last.xEnd - 0.6 * size * scale) {
         last.text += dec.text;                       // continuação sem espaço
         last.xEnd = x + wDisp;
       } else {
-        items.push({ x: x, xEnd: x + wDisp, y: y, size: Math.max(1, size * scale), text: dec.text });
+        items.push({ x: x, xEnd: x + wDisp, y: y, size: Math.max(1, size * scale), text: dec.text, q: quad });
       }
       advance(w);                                    // o avanço da matriz é no espaço do texto
     }
@@ -2247,7 +2355,29 @@ var PDFText = (function () {
     return t.replace(/[ \t]*\.{4,}[ \t]*/g, " ");
   }
 
+  /* Uma folha pode ter texto em mais do que um sentido: o corpo direito e uma
+     legenda virada na margem, por exemplo. Cada sentido é montado por si — no
+     seu referencial as linhas são linhas outra vez — e sai primeiro o sentido
+     que traz mais texto, que é o que a página é de facto sobre.
+
+     Quem vem do OCR não traz `q`: já são coordenadas de leitura, contam como 0
+     e o caminho é o mesmo de sempre. */
   function assemble(items) {
+    var grupos = {}, ordem = [];
+    for (var g = 0; g < items.length; g++) {
+      var q = items[g].q || 0;
+      if (!grupos[q]) { grupos[q] = { itens: [], peso: 0 }; ordem.push(grupos[q]); }
+      grupos[q].itens.push(items[g]);
+      grupos[q].peso += items[g].text.length;
+    }
+    if (ordem.length < 2) return assembleUm(items);
+    ordem.sort(function (a, b) { return b.peso - a.peso; });
+    var todas = [];
+    for (var h = 0; h < ordem.length; h++) todas = todas.concat(assembleUm(ordem[h].itens));
+    return todas;
+  }
+
+  function assembleUm(items) {
     if (!items.length) return [];
 
     var semPontos = [];
@@ -2340,6 +2470,7 @@ var PDFText = (function () {
   async function extract(bytes, opts) {
     opts = opts || {};
     var doc = new Doc(bytes);
+    doc.__fontes = {};
     doc.scan();
     await doc.setupCrypto();          // lança se pedir palavra-passe a sério
     await doc.expandObjStreams();
@@ -2377,8 +2508,19 @@ var PDFText = (function () {
         var fd = doc.get(res.__d, "Font");
         if (isDict(fd)) {
           for (var key in fd.__d) {
-            var fo = doc.resolve(fd.__d[key]);
-            if (isDict(fo)) fonts[key] = await doc.buildFont(fo.__d);
+            /* A mesma fonte serve dezenas de páginas, e montá-la relê e analisa
+               o /ToUnicode de cada vez — num manual de 45 páginas era o mesmo
+               trabalho feito centenas de vezes. Guardada pela referência do
+               objeto, monta-se uma vez só. */
+            var ref = fd.__d[key];
+            var cacheId = isRef(ref) ? String(ref.__r) : null;
+            if (cacheId && doc.__fontes[cacheId]) fonts[key] = doc.__fontes[cacheId];
+            else {
+              var fo = doc.resolve(ref);
+              if (!isDict(fo)) continue;
+              fonts[key] = await doc.buildFont(fo.__d);
+              if (cacheId) doc.__fontes[cacheId] = fonts[key];
+            }
           }
         }
       }
@@ -5462,8 +5604,21 @@ var Tubo = (function () {
      a imagem está lá, o texto não. É essa que vale a pena mandar ao OCR. O
      limiar é por página, não por ficheiro, porque documentos meio digitalizados
      e meio nativos são comuns — um contrato assinado e digitalizado no meio de
-     páginas geradas por computador, por exemplo. */
-  var MIN_TEXTO_PAGINA=40;
+     páginas geradas por computador, por exemplo.
+
+     Sessenta caracteres, e não quarenta, por causa das folhas digitalizadas cujo
+     único texto é a marca da impressora que as gerou. Numas tabelas da Robertshaw
+     essa marca — «Tabelas_Robertshaw 01.02.2006 14:00 Page 2» — dá 45 caracteres,
+     e por cinco acima do limiar antigo a página escapava ao OCR sendo uma
+     digitalização como as outras.
+
+     O número é um equilíbrio, não uma certeza. Subi-lo apanha mais digitalizações,
+     mas também apanha capas: a do «Catálogo Comercial América Latina» tem 42
+     caracteres de texto perfeito, e ao ser mandada ao OCR troca-os pelo que se
+     conseguir ler do grafismo. Uma página sem imagem nenhuma não corre esse risco
+     — o OCR salta-a mais abaixo —, e é por isso que o limiar pode ser generoso
+     sem estragar documentos gerados por computador. */
+  var MIN_TEXTO_PAGINA=60;
 
   function paginasSemTexto(res){
     var fora=[];
@@ -5504,10 +5659,29 @@ var Tubo = (function () {
             if(fracao!=null) progBar.style.width=Math.round(fracao*100)+'%';
           };})(quantos)
         });
+        /* O OCR só entra se trouxer mais do que já lá estava.
+
+           O limiar acima é generoso de propósito, para apanhar digitalizações
+           cujo único texto é a marca da impressora. Mas apanha também capas: a
+           do «Catálogo Comercial América Latina» traz 42 caracteres de texto
+           exato — «Catálogo», «Comercial», «América Latina», «think ahead» —
+           e o OCR, posto a ler o grafismo dela, devolvia um «q» e ficava-se por
+           aí. Trocar quatro linhas certas por uma letra é perder informação,
+           não recuperá-la.
+
+           Numa digitalização a sério não havia texto nenhum, portanto qualquer
+           coisa que o OCR leia passa esta guarda. Ela só morde onde o extrator
+           já tinha feito melhor — e aí o que vale é o que ele leu. */
         if(itens.length){
-          res.pages[idx].lines=PDFText.assemble(itens);
-          res.pages[idx].ocr=true;
-          feitas++;
+          var lidas=PDFText.assemble(itens);
+          var antes=0, depois=0, q;
+          for(q=0;q<res.pages[idx].lines.length;q++) antes+=res.pages[idx].lines[q].text.length;
+          for(q=0;q<lidas.length;q++) depois+=lidas[q].text.length;
+          if(depois>antes){
+            res.pages[idx].lines=lidas;
+            res.pages[idx].ocr=true;
+            feitas++;
+          }
         }
       }catch(e){ if(!erro) erro=e; }
     }
